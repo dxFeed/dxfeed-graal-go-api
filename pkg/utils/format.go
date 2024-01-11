@@ -26,6 +26,9 @@ func FormatString(s *string) string {
 }
 
 func FormatTime(timeMillis int64) string {
+	if timeMillis == 0 {
+		return "0"
+	}
 	return time.UnixMilli(timeMillis).Format(defaultTimeFormat)
 }
 
