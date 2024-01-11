@@ -1,0 +1,32 @@
+package utils
+
+import (
+	"fmt"
+	"strconv"
+	"time"
+)
+
+func FormatChar(c rune) string {
+	if c >= 32 && c <= 126 {
+		return string(c)
+	}
+	if c == 0 {
+		return "\\0"
+	}
+	return fmt.Sprintf("\\u%04x", c)
+}
+
+func FormatString(s *string) string {
+	if s == nil {
+		return "nil"
+	}
+	return *s
+}
+
+func FormatTime(timeMillis int64) string {
+	return time.UnixMilli(timeMillis).String()
+}
+
+func FormatFloat64(f float64) string {
+	return strconv.FormatFloat(f, 'f', -1, 64)
+}
