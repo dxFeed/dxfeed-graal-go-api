@@ -10,7 +10,13 @@ func (s *DXFeedSubscription) IsClosed() bool {
 func (s *DXFeedSubscription) AddSymbol(symbol any) {
 }
 
+func (s *DXFeedSubscription) AddSymbols(symbols ...any) {
+}
+
 func (s *DXFeedSubscription) RemoveSymbol(symbol any) {
+}
+
+func (s *DXFeedSubscription) RemoveSymbols(symbol ...any) {
 }
 
 func (s *DXFeedSubscription) Clear() {

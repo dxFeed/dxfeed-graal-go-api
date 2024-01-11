@@ -22,6 +22,6 @@ func (e *DXEndpoint) Connect(address string) {
 func (e *DXEndpoint) Close() {
 }
 
-func (e *DXEndpoint) GetFeed() DXFeed {
-	return DXFeed{}
+func (e *DXEndpoint) GetFeed() *DXFeed {
+	return &DXFeed{}
 }
