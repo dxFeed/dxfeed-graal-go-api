@@ -1,12 +1,10 @@
-package utils
+package formatutil
 
 import (
 	"fmt"
 	"strconv"
 	"time"
 )
-
-const defaultTimeFormat = "20060102-150405.999-07:00"
 
 func FormatChar(c rune) string {
 	if c >= 32 && c <= 126 {
@@ -26,6 +24,7 @@ func FormatString(s *string) string {
 }
 
 func FormatTime(timeMillis int64) string {
+	const defaultTimeFormat = "20060102-150405.999-07:00"
 	if timeMillis == 0 {
 		return "0"
 	}

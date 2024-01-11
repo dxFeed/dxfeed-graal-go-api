@@ -1,7 +1,9 @@
 package market
 
 import (
-	"dxfeed-graal-go-api/pkg/utils"
+	"dxfeed-graal-go-api/pkg/formatutil"
+	"dxfeed-graal-go-api/pkg/mathutil"
+	"dxfeed-graal-go-api/pkg/timeutil"
 	"math"
 	"strconv"
 )
@@ -58,11 +60,11 @@ func (q *Quote) SetSequence(sequence int32) {
 }
 
 func (q *Quote) Time() int64 {
-	return utils.FloorDivInt64(max(q.bidTime, q.askTime), 1000)*1000 + int64(uint32(q.timeMillisSequence)>>22)
+	return mathutil.FloorDivInt64(max(q.bidTime, q.askTime), 1000)*1000 + int64(uint32(q.timeMillisSequence)>>22)
 }
 
 func (q *Quote) TimeNanos() int64 {
-	return utils.GetNanosFromMillisAndNanoPart(q.Time(), q.timeNanoPart)
+	return timeutil.GetNanosFromMillisAndNanoPart(q.Time(), q.timeNanoPart)
 }
 
 func (q *Quote) TimeNanoPart() int32 {
@@ -140,19 +142,19 @@ func (q *Quote) SetAskSize(askSize float64) {
 }
 
 func (q *Quote) String() string {
-	return "Quote{" + utils.FormatString(q.EventSymbol()) +
-		", eventTime=" + utils.FormatTime(q.EventTime()) +
-		", time=" + utils.FormatTime(q.Time()) +
+	return "Quote{" + formatutil.FormatString(q.EventSymbol()) +
+		", eventTime=" + formatutil.FormatTime(q.EventTime()) +
+		", time=" + formatutil.FormatTime(q.Time()) +
 		", timeNanoPart=" + strconv.FormatInt(int64(q.timeNanoPart), 10) +
 		", sequence=" + strconv.FormatInt(int64(q.Sequence()), 10) +
-		", bidTime=" + utils.FormatTime(q.bidTime) +
-		", bidExchange=" + utils.FormatChar(q.bidExchangeCode) +
-		", bidPrice=" + utils.FormatFloat64(q.bidPrice) +
-		", bidSize=" + utils.FormatFloat64(q.bidSize) +
-		", askTime=" + utils.FormatTime(q.askTime) +
-		", askExchange=" + utils.FormatChar(q.askExchangeCode) +
-		", askPrice=" + utils.FormatFloat64(q.askPrice) +
-		", askSize=" + utils.FormatFloat64(q.askSize) +
+		", bidTime=" + formatutil.FormatTime(q.bidTime) +
+		", bidExchange=" + formatutil.FormatChar(q.bidExchangeCode) +
+		", bidPrice=" + formatutil.FormatFloat64(q.bidPrice) +
+		", bidSize=" + formatutil.FormatFloat64(q.bidSize) +
+		", askTime=" + formatutil.FormatTime(q.askTime) +
+		", askExchange=" + formatutil.FormatChar(q.askExchangeCode) +
+		", askPrice=" + formatutil.FormatFloat64(q.askPrice) +
+		", askSize=" + formatutil.FormatFloat64(q.askSize) +
 		"}"
 }
 
@@ -165,5 +167,5 @@ func (q *Quote) setTimeMillisSequence(timeMillisSequence int32) {
 }
 
 func (q *Quote) recomputeTimeMillisPart() {
-	q.timeMillisSequence = utils.GetMillisFromTime(max(q.askTime, q.bidTime))<<22 | q.Sequence()
+	q.timeMillisSequence = timeutil.GetMillisFromTime(max(q.askTime, q.bidTime))<<22 | q.Sequence()
 }

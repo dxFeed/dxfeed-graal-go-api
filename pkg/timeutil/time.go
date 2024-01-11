@@ -1,6 +1,9 @@
-package utils
+package timeutil
 
-import "math"
+import (
+	"dxfeed-graal-go-api/pkg/mathutil"
+	"math"
+)
 
 const (
 	SECOND = 1000
@@ -17,5 +20,5 @@ func GetSecondsFromTime(timeMillis int64) int32 {
 }
 
 func GetMillisFromTime(timeMillis int64) int32 {
-	return int32(FloorModInt64(timeMillis, SECOND))
+	return int32(mathutil.FloorModInt64(timeMillis, SECOND))
 }

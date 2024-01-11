@@ -1,4 +1,4 @@
-package utils
+package mathutil
 
 func FloorDivInt64(x, y int64) int64 {
 	r := x / y

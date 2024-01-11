@@ -1,4 +1,4 @@
-package utils
+package timeutil
 
 const (
 	NanosInMillis = 1_000_000
