@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const defaultTimeFormat = "20060102-150405.999-07:00"
+
 func FormatChar(c rune) string {
 	if c >= 32 && c <= 126 {
 		return string(c)
@@ -24,7 +26,7 @@ func FormatString(s *string) string {
 }
 
 func FormatTime(timeMillis int64) string {
-	return time.UnixMilli(timeMillis).String()
+	return time.UnixMilli(timeMillis).Format(defaultTimeFormat)
 }
 
 func FormatFloat64(f float64) string {
