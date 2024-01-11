@@ -3,6 +3,7 @@ package market
 import (
 	"dxfeed-graal-go-api/pkg/utils"
 	"math"
+	"strconv"
 )
 
 type Quote struct {
@@ -142,8 +143,8 @@ func (q *Quote) String() string {
 	return "Quote{" + utils.FormatString(q.EventSymbol()) +
 		", eventTime=" + utils.FormatTime(q.EventTime()) +
 		", time=" + utils.FormatTime(q.Time()) +
-		", timeNanoPart=" + string(q.timeNanoPart) +
-		", sequence=" + string(q.Sequence()) +
+		", timeNanoPart=" + strconv.FormatInt(int64(q.timeNanoPart), 10) +
+		", sequence=" + strconv.FormatInt(int64(q.Sequence()), 10) +
 		", bidTime=" + utils.FormatTime(q.bidTime) +
 		", bidExchange=" + utils.FormatChar(q.bidExchangeCode) +
 		", bidPrice=" + utils.FormatFloat64(q.bidPrice) +
