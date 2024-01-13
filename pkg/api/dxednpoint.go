@@ -1,14 +1,9 @@
 package api
 
-type DXEndpoint struct {
-	role Role
-	feed *DXFeed
-}
-
-type Role int32
+import "dxfeed-graal-go-api/pkg/native"
 
 const (
-	Feed Role = iota
+	Feed native.Role = iota
 	OnDemandFeed
 	StreamFeed
 	Publisher
@@ -16,15 +11,22 @@ const (
 	LocalHub
 )
 
-func NewEndpoint(role Role) *DXEndpoint {
-	return &DXEndpoint{role: role}
+type DXEndpoint struct {
+	role     native.Role
+	endpoint *native.Endpoint
+	feed     *DXFeed
 }
 
-func CreateEndpoint(role Role) *DXEndpoint {
+func NewEndpoint(role native.Role) *DXEndpoint {
+	return &DXEndpoint{role: role, endpoint: native.NewEndpoint(role)}
+}
+
+func CreateEndpoint(role native.Role) *DXEndpoint {
 	return NewEndpoint(role)
 }
 
 func (e *DXEndpoint) Connect(address string) *DXEndpoint {
+	e.endpoint.Connect(address)
 	return e
 }
 
