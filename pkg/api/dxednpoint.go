@@ -13,7 +13,7 @@ const (
 
 type DXEndpoint struct {
 	role     native.Role
-	endpoint *native.Endpoint
+	endpoint *native.DXEndpoint
 	feed     *DXFeed
 }
 
