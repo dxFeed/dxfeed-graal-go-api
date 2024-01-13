@@ -10,6 +10,6 @@ type DXFeed struct {
 	ptr *C.dxfg_feed_t
 }
 
-func (f DXFeed) CreateSubscription(eventTypes ...int32) {
-
+func (f DXFeed) CreateSubscription(eventTypes ...int32) *DXFeedSubscription {
+	return &DXFeedSubscription{ptr: nil}
 }
