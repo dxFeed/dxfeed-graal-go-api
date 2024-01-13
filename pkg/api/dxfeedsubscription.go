@@ -1,6 +1,11 @@
 package api
 
+import (
+	"dxfeed-graal-go-api/pkg/native"
+)
+
 type DXFeedSubscription struct {
+	sub               *native.DXFeedSubscription
 	eventListenerList []EventListener
 }
 
@@ -17,6 +22,8 @@ func (s *DXFeedSubscription) RemoveListener(listener EventListener) {
 }
 
 func (s *DXFeedSubscription) AddSymbol(symbol any) {
+	strSymbol := symbol.(string)
+	s.sub.AddSymbol(strSymbol)
 }
 
 func (s *DXFeedSubscription) AddSymbols(symbols ...any) {

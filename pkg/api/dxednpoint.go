@@ -34,6 +34,6 @@ func (e *DXEndpoint) Close() {
 }
 
 func (e *DXEndpoint) GetFeed() *DXFeed {
-	e.feed = &DXFeed{}
+	e.feed = &DXFeed{feed: e.endpoint.GetFeed()}
 	return e.feed
 }
