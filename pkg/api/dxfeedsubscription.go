@@ -6,18 +6,19 @@ import (
 
 type DXFeedSubscription struct {
 	sub               *native.DXFeedSubscription
-	eventListenerList []EventListener
+	eventListenerList []native.EventListener
 }
 
 func (s *DXFeedSubscription) IsClosed() bool {
 	return true
 }
 
-func (s *DXFeedSubscription) AddListener(listener EventListener) {
+func (s *DXFeedSubscription) AddListener(listener native.EventListener) {
 	s.eventListenerList = append(s.eventListenerList, listener)
+	s.sub.AttachListener(listener)
 }
 
-func (s *DXFeedSubscription) RemoveListener(listener EventListener) {
+func (s *DXFeedSubscription) RemoveListener(listener native.EventListener) {
 	s.eventListenerList = removeFromSlice(s.eventListenerList, listener)
 }
 
@@ -41,7 +42,7 @@ func (s *DXFeedSubscription) Clear() {
 func (s *DXFeedSubscription) Close() {
 }
 
-func removeFromSlice(list []EventListener, observerToRemove EventListener) []EventListener {
+func removeFromSlice(list []native.EventListener, observerToRemove native.EventListener) []native.EventListener {
 	listLength := len(list)
 	for i, observer := range list {
 		if observerToRemove == observer {

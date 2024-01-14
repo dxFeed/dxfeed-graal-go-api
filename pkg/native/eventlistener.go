@@ -1,4 +1,4 @@
-package api
+package native
 
 type EventListener interface {
 	Update([]interface{})

@@ -158,11 +158,11 @@ func (q *Quote) String() string {
 		"}"
 }
 
-func (q *Quote) getTimeMillisSequence() int32 {
+func (q *Quote) GetTimeMillisSequence() int32 {
 	return q.timeMillisSequence
 }
 
-func (q *Quote) setTimeMillisSequence(timeMillisSequence int32) {
+func (q *Quote) SetTimeMillisSequence(timeMillisSequence int32) {
 	q.timeMillisSequence = timeMillisSequence
 }
 
