@@ -24,7 +24,7 @@ func FormatString(s *string) string {
 }
 
 func FormatTime(timeMillis int64) string {
-	const defaultTimeFormat = "20060102-150405.999-07:00"
+	const defaultTimeFormat = "20060102-150405.000-07:00"
 	if timeMillis == 0 {
 		return "0"
 	}
