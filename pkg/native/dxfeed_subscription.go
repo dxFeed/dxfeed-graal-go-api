@@ -47,17 +47,17 @@ func OnEventReceived(thread *C.graal_isolatethread_t, events *C.dxfg_event_type_
 }
 
 func (s DXFeedSubscription) AttachListener(listener EventListener) {
-	thread := attachIsolateThread()
-	defer thread.detachIsolateThread()
-	l := C.dxfg_DXFeedEventListener_new(thread.ptr, (*[0]byte)(C.OnEventReceived), gopointer.Save(listener))
-	C.dxfg_DXFeedSubscription_addEventListener(thread.ptr, s.ptr, l)
+	executeInIsolateThread(func(thread *isolateThread) {
+		l := C.dxfg_DXFeedEventListener_new(thread.ptr, (*[0]byte)(C.OnEventReceived), gopointer.Save(listener))
+		C.dxfg_DXFeedSubscription_addEventListener(thread.ptr, s.ptr, l)
+	})
 }
 
 func (s DXFeedSubscription) AddSymbol(symbol string) {
-	thread := attachIsolateThread()
-	defer thread.detachIsolateThread()
-	ss := &dxfg_symbol_t{}
-	ss.t = 0
-	ss.symbol = C.CString(symbol)
-	C.dxfg_DXFeedSubscription_addSymbol(thread.ptr, s.ptr, (*C.dxfg_symbol_t)(unsafe.Pointer(ss)))
+	executeInIsolateThread(func(thread *isolateThread) {
+		ss := &dxfg_symbol_t{}
+		ss.t = 0
+		ss.symbol = C.CString(symbol)
+		C.dxfg_DXFeedSubscription_addSymbol(thread.ptr, s.ptr, (*C.dxfg_symbol_t)(unsafe.Pointer(ss)))
+	})
 }

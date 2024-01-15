@@ -6,7 +6,7 @@ import (
 )
 
 type DXFeed struct {
-	feed *native.DXFeed
+	feed *native.DXFeedHandle
 }
 
 func (f *DXFeed) CreateSubscription(eventType ...events.EventType) *DXFeedSubscription {

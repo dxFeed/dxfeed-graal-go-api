@@ -12,17 +12,21 @@ type isolateThread struct {
 
 type isolateThreadOperation func(thread *isolateThread)
 
-func executeWithIsolateThread(operation isolateThreadOperation) {
-	thread := attachIsolateThread()
-	defer thread.detachIsolateThread()
+func executeInIsolateThread(operation isolateThreadOperation) {
+	thread, detach := attachIsolateThread()
+	defer detach()
 	operation(thread)
 }
 
-func attachIsolateThread() *isolateThread {
+func attachIsolateThread() (*isolateThread, func()) {
 	isolate := getOrCreateIsolate()
-	thread := &isolateThread{}
-	C.graal_attach_thread(isolate.ptr, &thread.ptr)
-	return thread
+	thread := &isolateThread{ptr: C.graal_get_current_thread(isolate.ptr)}
+	detach := func() {}
+	if thread.ptr == nil {
+		C.graal_attach_thread(isolate.ptr, &thread.ptr)
+		detach = func() { thread.detachIsolateThread() }
+	}
+	return thread, detach
 }
 
 func (t *isolateThread) detachIsolateThread() {
