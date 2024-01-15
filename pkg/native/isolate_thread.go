@@ -10,12 +10,12 @@ type isolateThread struct {
 	ptr *C.graal_isolatethread_t
 }
 
-type isolateThreadOperation func(thread *isolateThread)
+type isolateThreadOperation func(thread *isolateThread) error
 
-func executeInIsolateThread(operation isolateThreadOperation) {
+func executeInIsolateThread(operation isolateThreadOperation) error {
 	thread, detach := attachIsolateThread()
 	defer detach()
-	operation(thread)
+	return operation(thread)
 }
 
 func attachIsolateThread() (*isolateThread, func()) {

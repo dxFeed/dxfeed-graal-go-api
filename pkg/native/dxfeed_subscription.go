@@ -47,17 +47,19 @@ func OnEventReceived(thread *C.graal_isolatethread_t, events *C.dxfg_event_type_
 }
 
 func (s DXFeedSubscription) AttachListener(listener EventListener) {
-	executeInIsolateThread(func(thread *isolateThread) {
+	_ = executeInIsolateThread(func(thread *isolateThread) error {
 		l := C.dxfg_DXFeedEventListener_new(thread.ptr, (*[0]byte)(C.OnEventReceived), gopointer.Save(listener))
 		C.dxfg_DXFeedSubscription_addEventListener(thread.ptr, s.ptr, l)
+		return nil
 	})
 }
 
 func (s DXFeedSubscription) AddSymbol(symbol string) {
-	executeInIsolateThread(func(thread *isolateThread) {
+	_ = executeInIsolateThread(func(thread *isolateThread) error {
 		ss := &dxfg_symbol_t{}
 		ss.t = 0
 		ss.symbol = C.CString(symbol)
 		C.dxfg_DXFeedSubscription_addSymbol(thread.ptr, s.ptr, (*C.dxfg_symbol_t)(unsafe.Pointer(ss)))
+		return nil
 	})
 }
