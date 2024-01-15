@@ -1,6 +1,8 @@
 package api
 
-import "dxfeed-graal-go-api/pkg/native"
+import (
+	"dxfeed-graal-go-api/pkg/native"
+)
 
 const (
 	Feed native.Role = iota
@@ -12,28 +14,41 @@ const (
 )
 
 type DXEndpoint struct {
-	role     native.Role
-	endpoint *native.DXEndpointHandle
-	feed     *DXFeed
+	role           native.Role
+	endpointHandle *native.DXEndpointHandle
+	feedHandle     *DXFeed
 }
 
-func NewEndpoint(role native.Role) *DXEndpoint {
-	return &DXEndpoint{role: role, endpoint: native.NewDXEndpointHandle(role)}
+func NewEndpoint(role native.Role) (*DXEndpoint, error) {
+	handle, err := native.NewDXEndpointHandle(role)
+	if err != nil {
+		return nil, err
+	}
+
+	e := &DXEndpoint{
+		role:           role,
+		endpointHandle: handle,
+	}
+	return e, nil
 }
 
-func CreateEndpoint(role native.Role) *DXEndpoint {
+func CreateEndpoint(role native.Role) (*DXEndpoint, error) {
 	return NewEndpoint(role)
 }
 
-func (e *DXEndpoint) Connect(address string) *DXEndpoint {
-	e.endpoint.Connect(address)
-	return e
+func (e *DXEndpoint) Connect(address string) error {
+	return e.endpointHandle.Connect(address)
 }
 
 func (e *DXEndpoint) Close() {
 }
 
-func (e *DXEndpoint) GetFeed() *DXFeed {
-	e.feed = &DXFeed{feed: e.endpoint.GetFeed()}
-	return e.feed
+func (e *DXEndpoint) GetFeed() (*DXFeed, error) {
+	handle, err := e.endpointHandle.GetFeed()
+	if err != nil {
+		return nil, err
+	}
+
+	e.feedHandle = &DXFeed{feed: handle}
+	return e.feedHandle, nil
 }

@@ -17,10 +17,22 @@ func main() {
 	// Set scheme for dxLink.
 	api.SetSystemProperty("scheme", "ext:resource:dxlink.xml")
 
-	endpoint := api.NewEndpoint(api.Feed).Connect("demo.dxfeed.com:7300")
+	endpoint, err := api.NewEndpoint(api.Feed)
+	if err != nil {
+		panic(err)
+	}
 	defer endpoint.Close()
 
-	subscription := endpoint.GetFeed().CreateSubscription(events.Quote)
+	err = endpoint.Connect("demo.dxfeed.com:7300")
+	if err != nil {
+		panic(err)
+	}
+
+	feed, err := endpoint.GetFeed()
+	if err != nil {
+		panic(err)
+	}
+	subscription := feed.CreateSubscription(events.Quote)
 	subscription.AddListener(PrintEvents(func(events []interface{}) {
 		for _, event := range events {
 			switch v := event.(type) {
