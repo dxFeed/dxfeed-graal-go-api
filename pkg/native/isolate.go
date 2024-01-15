@@ -1,8 +1,8 @@
 package native
 
 /*
-#cgo CFLAGS: -I/${SRCDIR}/graal
-#cgo LDFLAGS: -L/${SRCDIR}/graal -lDxFeedGraalNativeSdk
+#cgo CFLAGS: -I${SRCDIR}/graal
+#cgo LDFLAGS: -L${SRCDIR}/graal -lDxFeedGraalNativeSdk
 #include "dxfg_api.h"
 */
 import "C"
