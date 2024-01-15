@@ -3,7 +3,7 @@ package native
 /*
 #include "dxfg_api.h"
 #include <stdlib.h>
-extern void cPrint(graal_isolatethread_t *thread, dxfg_event_type_list *events, void *user_data);
+extern void OnEventReceived(graal_isolatethread_t *thread, dxfg_event_type_list *events, void *user_data);
 */
 import "C"
 import (
@@ -21,8 +21,8 @@ type dxfg_symbol_t struct {
 	symbol *C.char
 }
 
-//export cPrint
-func cPrint(thread *C.graal_isolatethread_t, events *C.dxfg_event_type_list, userData unsafe.Pointer) {
+//export OnEventReceived
+func OnEventReceived(thread *C.graal_isolatethread_t, events *C.dxfg_event_type_list, userData unsafe.Pointer) {
 	size := int(events.size)
 	list := make([]interface{}, size)
 	for i := 0; i < size; i++ {
@@ -49,7 +49,7 @@ func cPrint(thread *C.graal_isolatethread_t, events *C.dxfg_event_type_list, use
 func (s DXFeedSubscription) AttachListener(listener EventListener) {
 	thread := attachIsolateThread()
 	defer thread.detachIsolateThread()
-	l := C.dxfg_DXFeedEventListener_new(thread.ptr, (*[0]byte)(C.cPrint), gopointer.Save(listener))
+	l := C.dxfg_DXFeedEventListener_new(thread.ptr, (*[0]byte)(C.OnEventReceived), gopointer.Save(listener))
 	C.dxfg_DXFeedSubscription_addEventListener(thread.ptr, s.ptr, l)
 }
 
