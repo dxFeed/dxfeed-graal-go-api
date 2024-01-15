@@ -13,12 +13,12 @@ const (
 
 type DXEndpoint struct {
 	role     native.Role
-	endpoint *native.DXEndpoint
+	endpoint *native.DXEndpointHandle
 	feed     *DXFeed
 }
 
 func NewEndpoint(role native.Role) *DXEndpoint {
-	return &DXEndpoint{role: role, endpoint: native.NewEndpoint(role)}
+	return &DXEndpoint{role: role, endpoint: native.NewDXEndpointHandle(role)}
 }
 
 func CreateEndpoint(role native.Role) *DXEndpoint {

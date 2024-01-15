@@ -3,23 +3,28 @@ package native
 /*
 #include "dxfg_api.h"
 #include <stdlib.h>
-#include <time.h>
-#include <memory.h>
-typedef struct tm tm_t;
 */
 import "C"
 
-type IsolateThread struct {
+type isolateThread struct {
 	ptr *C.graal_isolatethread_t
 }
 
-func attachIsolateThread() *IsolateThread {
+type isolateThreadOperation func(thread *isolateThread)
+
+func executeWithIsolateThread(operation isolateThreadOperation) {
+	thread := attachIsolateThread()
+	defer thread.detachIsolateThread()
+	operation(thread)
+}
+
+func attachIsolateThread() *isolateThread {
 	isolate := getOrCreateIsolate()
-	thread := &IsolateThread{}
+	thread := &isolateThread{}
 	C.graal_attach_thread(isolate.ptr, &thread.ptr)
 	return thread
 }
 
-func (t *IsolateThread) detachIsolateThread() {
+func (t *isolateThread) detachIsolateThread() {
 	C.graal_detach_thread(t.ptr)
 }

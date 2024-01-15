@@ -9,7 +9,7 @@ import (
 
 func main() {
 	api.SetSystemProperty("monitoring.stat", "1s")
-	e := native.NewEndpoint(api.Feed)
+	e := native.NewDXEndpointHandle(api.Feed)
 	e.Connect("demo.dxfeed.com:7300")
 	e.GetFeed().CreateSubscription(0).AddSymbol("ETH/USD:GDAX")
 	time.Sleep(time.Duration(math.MaxInt64))
