@@ -21,3 +21,13 @@ func TestGetEmptySystemProperty(t *testing.T) {
 		t.Fatalf(`GetSystemProperty("%s") should be "%s". But it equals "%s"`, key, value, returnValue)
 	}
 }
+
+func TestGetSystemPropertyWithUnicode(t *testing.T) {
+	key := "∑🍕🍔🍗"
+	value := "∏🍻🍺"
+	SetSystemProperty(key, value)
+	returnValue := GetSystemProperty(key)
+	if returnValue != value {
+		t.Fatalf(`GetSystemProperty("%s") should be "%s". But it equals "%s"`, key, value, returnValue)
+	}
+}
