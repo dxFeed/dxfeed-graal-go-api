@@ -1,9 +1,6 @@
 package native
 
-import (
-	"dxfeed-graal-go-api/pkg/events"
-	"testing"
-)
+import "testing"
 
 func TestCreateEmptyEventClazzList(t *testing.T) {
 	l := createEventClazzList()
@@ -18,7 +15,7 @@ func TestCreateEmptyEventClazzList(t *testing.T) {
 }
 
 func TestCreateEventClazzListWithRepeatingElements(t *testing.T) {
-	l := createEventClazzList((int32)(events.Candle), (int32)(events.Candle), (int32)(events.Order))
+	l := createEventClazzList(0, 0, 12)
 
 	if l.size != 3 {
 		t.Fatalf(`createEventClazzList() must not remove repetitive elements`)

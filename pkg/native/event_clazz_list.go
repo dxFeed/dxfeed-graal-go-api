@@ -5,9 +5,7 @@ package native
 #include <stdlib.h>
 */
 import "C"
-import (
-	"unsafe"
-)
+import "unsafe"
 
 type eventClazzList struct {
 	size     C.int32_t
