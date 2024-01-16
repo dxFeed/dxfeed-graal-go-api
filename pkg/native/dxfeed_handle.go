@@ -16,6 +16,8 @@ func (f DXFeedHandle) CreateSubscription(eventTypes ...int32) *DXFeedSubscriptio
 	_ = executeInIsolateThread(func(thread *isolateThread) error {
 		list := createEventClazzList(eventTypes...)
 		sub.ptr = C.dxfg_DXFeed_createSubscription2(thread.ptr, f.ptr, (*C.dxfg_event_clazz_list_t)(unsafe.Pointer(list)))
+		destroyEventClazzList(list)
+
 		return nil
 	})
 	return sub
