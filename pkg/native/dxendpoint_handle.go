@@ -33,6 +33,7 @@ func (e *DXEndpointHandle) Connect(address string) error {
 	return executeInIsolateThread(func(thread *isolateThread) error {
 		addressPtr := C.CString(address)
 		defer C.free(unsafe.Pointer(addressPtr))
+
 		return checkCall(func() {
 			C.dxfg_DXEndpoint_connect(thread.ptr, e.ptr, addressPtr)
 		})
@@ -42,8 +43,9 @@ func (e *DXEndpointHandle) Connect(address string) error {
 func (e *DXEndpointHandle) GetFeed() (*DXFeedHandle, error) {
 	var ptr *C.dxfg_feed_t
 	err := executeInIsolateThread(func(thread *isolateThread) error {
-		ptr = C.dxfg_DXEndpoint_getFeed(thread.ptr, e.ptr)
-		return nil
+		return checkCall(func() {
+			ptr = C.dxfg_DXEndpoint_getFeed(thread.ptr, e.ptr)
+		})
 	})
 	if err != nil {
 		return nil, err

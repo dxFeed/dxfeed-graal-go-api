@@ -5,7 +5,9 @@ package native
 #include <stdlib.h>
 */
 import "C"
-import "fmt"
+import (
+	"fmt"
+)
 
 type JavaError struct {
 	ClassName  string
@@ -14,7 +16,7 @@ type JavaError struct {
 }
 
 func (j JavaError) Error() string {
-	return fmt.Sprintf("error: java: exception of type '%s'. %s \n %s", j.ClassName, j.Message, j.StackTrace)
+	return fmt.Sprintf("java: exception of type '%s'. %s \n %s", j.ClassName, j.Message, j.StackTrace)
 }
 
 func checkCall(call func()) error {
@@ -23,14 +25,14 @@ func checkCall(call func()) error {
 }
 
 func getJavaThreadErrorIfExist() error {
-	var ptr *C.dxfg_exception_t
-	_ = executeInIsolateThread(func(thread *isolateThread) error {
-		ptr = C.dxfg_get_and_clear_thread_exception_t(thread.ptr)
-		return nil
-	})
+	thread, detach := attachIsolateThread()
+	defer detach()
+
+	ptr := C.dxfg_get_and_clear_thread_exception_t(thread.ptr)
 	if ptr == nil {
 		return nil
 	}
+	defer C.dxfg_Exception_release(thread.ptr, ptr)
 
 	return JavaError{
 		ClassName:  C.GoString(ptr.class_name),
