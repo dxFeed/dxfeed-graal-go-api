@@ -55,7 +55,7 @@ func destroyEventClazzList(l *eventClazzList) {
 		return
 	}
 
-	// Convert the C pointer to a Go slice for easier indexing
+	// Convert the C pointer to a Go slice for easier iterating
 	for _, elem := range unsafe.Slice(l.elements, C.size_t(l.size)) {
 		C.free(unsafe.Pointer(elem))
 	}
