@@ -1,5 +1,6 @@
 package ipf
 
+import "C"
 import (
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
@@ -21,6 +22,14 @@ func NewInstrumentProfileReader() (*InstrumentProfileReader, error) {
 	return e, nil
 }
 
+func ResolveSourceURL(address string) (*string, error) {
+	return native.ResolveSourceURL(address)
+}
+
+func (r *InstrumentProfileReader) Close() error {
+	return r.reader.Close()
+}
+
 func (r *InstrumentProfileReader) GetLastModified() (int64, error) {
 	return r.reader.GetLastModified()
 }
@@ -35,16 +44,4 @@ func (r *InstrumentProfileReader) ReadFromFile(address string) ([]*events.Instru
 
 func (r *InstrumentProfileReader) ReadFromFileWithPassword(address string, user string, password string) ([]*events.InstrumentProfile, error) {
 	return r.reader.ReadFromFileWithPassword(address, user, password)
-}
-
-func (r *InstrumentProfileReader) ReadDataWithAddress(data []byte, address string) ([]*events.InstrumentProfile, error) {
-	return r.reader.ReadDataWithAddress(data, address)
-}
-
-func (r *InstrumentProfileReader) ReadData(data []byte) ([]*events.InstrumentProfile, error) {
-	return r.reader.ReadData(data)
-}
-
-func ResolveSourceURL(address string) (*string, error) {
-	return native.ResolveSourceURL(address)
 }

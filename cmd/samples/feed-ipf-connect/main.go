@@ -16,12 +16,24 @@ func (pr PrintEvents) Update(events []any) {
 	pr(events)
 }
 
+// An sample that demonstrates a subscription using InstrumentProfile.
 func main() {
+	// The experimental property must be enabled.
+	api.SetSystemProperty("dxfeed.experimental.dxlink.enable", "true")
+	// Set scheme for dxLink.
+	api.SetSystemProperty("scheme", "ext:opt:sysprops,resource:dxlink.xml")
+
+	ipfFile := "https://demo:demo@tools.dxfeed.com/ipf?TYPE=STOCK&compression=zip"
+	fmt.Printf("Reading instruments from %s\n", ipfFile)
 	ipfReader, err := ipf.NewInstrumentProfileReader()
 	if err != nil {
 		panic(err)
 	}
-	profiles, err := ipfReader.ReadFromFile("https://demo:demo@tools.dxfeed.com/ipf?TYPE=STOCK&compression=zip")
+	defer func(reader *ipf.InstrumentProfileReader) {
+		_ = reader.Close()
+	}(ipfReader)
+
+	profiles, err := ipfReader.ReadFromFile(ipfFile)
 	if err != nil {
 		panic(err)
 	}
@@ -34,11 +46,6 @@ func main() {
 	fmt.Printf("Was Completed %t\n", completed)
 	lastModified, _ := ipfReader.GetLastModified()
 	fmt.Printf("LastModified %d\n", lastModified)
-
-	// The experimental property must be enabled.
-	api.SetSystemProperty("dxfeed.experimental.dxlink.enable", "true")
-	// Set scheme for dxLink.
-	api.SetSystemProperty("scheme", "ext:opt:sysprops,resource:dxlink.xml")
 
 	// For token-based authorization, use the following address format:
 	// "dxlink:wss://demo.dxfeed.com/dxlink-ws[login=dxlink:token]"

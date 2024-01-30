@@ -70,15 +70,6 @@ func (m *profileMapper) goProfiles(profileList *C.dxfg_instrument_profile_list) 
 		profile.SetLastTrade(int64(nativeEvent.last_trade))
 		profile.SetStrike(float64(nativeEvent.strike))
 
-		customFieldsSize := int(nativeEvent.custom_fields.size)
-		customFieldsList := make([]*string, customFieldsSize)
-
-		customFieldsSlice := unsafe.Slice(nativeEvent.custom_fields.elements, C.size_t(customFieldsSize))
-		for j, field := range customFieldsSlice {
-			customFieldsList[j] = convertString(field)
-		}
-		profile.SetCustomFields(customFieldsList)
-
 		list[i] = profile
 	}
 
