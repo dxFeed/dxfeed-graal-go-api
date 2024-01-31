@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
 	"math"
 	"os"
 	"time"
@@ -46,8 +46,8 @@ func (c Connect) Run(args []string) {
 	}
 
 	address := arguments[0]
-	symbols := common.ParseSymbols(arguments[2])
-	types := common.ParseEventTypes(arguments[1])
+	symbols := parser.ParseSymbols(arguments[2])
+	types := parser.ParseEventTypes(arguments[1])
 	err := connect(address, types, symbols, dxarguments.properties(), dxarguments.forceStream(), dxarguments.isQuite())
 	if err != nil {
 		fmt.Printf("Error during connect: %v", err)

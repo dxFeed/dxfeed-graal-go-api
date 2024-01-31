@@ -8,6 +8,7 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
 	"os"
 )
 
@@ -49,8 +50,8 @@ func (c Dump) Run(args []string) {
 		os.Exit(0)
 	}
 	inputFile := arguments[0]
-	symbols := common.ParseSymbols(arguments[2])
-	types := common.ParseEventTypes(arguments[1])
+	symbols := parser.ParseSymbols(arguments[2])
+	types := parser.ParseEventTypes(arguments[1])
 
 	err := dump(inputFile, tape, symbols, types, properties, isQuite)
 	if err != nil {
