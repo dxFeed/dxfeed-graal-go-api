@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/ipf"
 	"math"
 	"time"
@@ -77,6 +79,10 @@ func main() {
 		for _, event := range events {
 			switch v := event.(type) {
 			case *quote.Quote:
+				fmt.Printf("%s\n", v.String())
+			case *profile.Profile:
+				fmt.Printf("%s\n", v.String())
+			case timeandsale.TimeAndSale:
 				fmt.Printf("%s\n", v.String())
 			}
 		}

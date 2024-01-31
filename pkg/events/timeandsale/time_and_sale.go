@@ -2,6 +2,7 @@ package timeandsale
 
 import (
 	"fmt"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/side"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/formatutil"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
@@ -55,6 +56,10 @@ func NewTimeAndSale(eventSymbol string) *TimeAndSale {
 		bidPrice:    math.NaN(),
 		askPrice:    math.NaN(),
 	}
+}
+
+func (t *TimeAndSale) Type() eventcodes.EventCode {
+	return eventcodes.TimeAndSale
 }
 
 func (t *TimeAndSale) EventSymbol() *string {
