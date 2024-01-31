@@ -14,6 +14,8 @@ func ParseSymbols(symbols string) ([]any, error) {
 		defer C.free(unsafe.Pointer(symbolsPtr))
 		return checkCall(func() {
 			resultPtr := C.dxfg_Tools_parseSymbols(thread.ptr, symbolsPtr)
+			defer C.dxfg_CList_String_release(thread.ptr, resultPtr)
+
 			if resultPtr == nil || resultPtr.elements == nil || int(resultPtr.size) == 0 {
 				return
 			}
