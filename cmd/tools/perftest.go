@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
 	"math"
 	"os"
 	"sync"
@@ -42,8 +42,8 @@ func (c PerfTest) Run(args []string) {
 		os.Exit(0)
 	}
 	address := arguments[0]
-	types := common.ParseEventTypes(arguments[1])
-	symbols := common.ParseSymbols(arguments[2])
+	types := parser.ParseEventTypes(arguments[1])
+	symbols := parser.ParseSymbols(arguments[2])
 
 	err := perf(address, types, symbols, dxarguments.forceStream())
 	if err != nil {
