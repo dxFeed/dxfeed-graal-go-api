@@ -6,11 +6,10 @@ package native
 */
 import "C"
 import (
+	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"unsafe"
 )
 
@@ -47,19 +46,16 @@ func allocElement[T CMapper, U comparable](element U, mappers map[int32]mappers.
 	switch t := any(element).(type) {
 	case int32:
 		return (*T)(C.malloc(C.size_t(unsafe.Sizeof(element))))
-	case *quote.Quote:
-		mapper := mappers[C.DXFG_EVENT_QUOTE]
-		return (*T)(mapper.CEvent(t))
-	case *timeandsale.TimeAndSale:
-		mapper := mappers[C.DXFG_EVENT_TIME_AND_SALE]
-		return (*T)(mapper.CEvent(t))
-	case *profile.Profile:
-		mapper := mappers[C.DXFG_EVENT_PROFILE]
+	case events.EventType:
+		// all market events have to implement this interface
+		mapper := mappers[int32(t.Type())]
 		return (*T)(mapper.CEvent(t))
 	case string:
 		return (*T)(unsafe.Pointer(newEventMapper().cStringSymbol(t)))
 	case Osub.WildcardSymbol:
 		return (*T)(unsafe.Pointer(newEventMapper().cWildCardSymbol()))
+	default:
+		fmt.Printf("Couldn't alloc element for %T\n", element)
+		return nil
 	}
-	return nil
 }

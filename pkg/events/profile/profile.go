@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/formatutil"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
 	"math"
@@ -33,6 +34,10 @@ type Profile struct {
 	freeFloat         float64
 
 	flags int32
+}
+
+func (p *Profile) Type() eventcodes.EventCode {
+	return eventcodes.Profile
 }
 
 func (p *Profile) ShortSaleRestriction() ShortSaleRestriction {

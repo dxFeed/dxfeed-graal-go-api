@@ -1,6 +1,7 @@
 package quote
 
 import (
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/formatutil"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/timeutil"
@@ -33,6 +34,10 @@ func NewQuote(eventSymbol string) *Quote {
 		askPrice:    math.NaN(),
 		askSize:     math.NaN(),
 	}
+}
+
+func (q *Quote) Type() eventcodes.EventCode {
+	return eventcodes.Quote
 }
 
 func (q *Quote) EventSymbol() *string {
