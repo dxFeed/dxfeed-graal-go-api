@@ -44,7 +44,6 @@ func main() {
 		symbols = append(symbols, *profile.Symbol())
 		fmt.Printf("%s\n", profile.String())
 	}
-	symbols = append(symbols, "ETH/USD:GDAX")
 	completed, _ := ipfReader.WasComplete()
 	fmt.Printf("Was Completed %t\n", completed)
 	lastModified, _ := ipfReader.GetLastModified()
@@ -70,7 +69,7 @@ func main() {
 		panic(err)
 	}
 
-	subscription, err := feed.CreateSubscription(eventcodes.Profile)
+	subscription, err := feed.CreateSubscription(eventcodes.Quote)
 	if err != nil {
 		panic(err)
 	}
