@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/ipf"
 	"math"
 	"time"
@@ -42,6 +44,7 @@ func main() {
 		symbols = append(symbols, *profile.Symbol())
 		fmt.Printf("%s\n", profile.String())
 	}
+	symbols = append(symbols, "ETH/USD:GDAX")
 	completed, _ := ipfReader.WasComplete()
 	fmt.Printf("Was Completed %t\n", completed)
 	lastModified, _ := ipfReader.GetLastModified()
@@ -67,7 +70,7 @@ func main() {
 		panic(err)
 	}
 
-	subscription, err := feed.CreateSubscription(eventcodes.Quote)
+	subscription, err := feed.CreateSubscription(eventcodes.Profile)
 	if err != nil {
 		panic(err)
 	}
@@ -77,6 +80,10 @@ func main() {
 		for _, event := range events {
 			switch v := event.(type) {
 			case *quote.Quote:
+				fmt.Printf("%s\n", v.String())
+			case *profile.Profile:
+				fmt.Printf("%s\n", v.String())
+			case timeandsale.TimeAndSale:
 				fmt.Printf("%s\n", v.String())
 			}
 		}

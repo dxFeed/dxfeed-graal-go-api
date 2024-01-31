@@ -6,6 +6,7 @@ package native
 */
 import "C"
 import (
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
@@ -23,11 +24,17 @@ type ListMapper[T CMapper] struct {
 }
 
 func NewListMapper[T CMapper, U comparable](elements []U) *ListMapper[T] {
+	eventMappers := make(map[int32]mappers.MapperInterface)
+
+	eventMappers[C.DXFG_EVENT_QUOTE] = mappers.QuoteMapper{}
+	eventMappers[C.DXFG_EVENT_TIME_AND_SALE] = mappers.TimeAndSaleMapper{}
+	eventMappers[C.DXFG_EVENT_PROFILE] = mappers.ProfileMapper{}
+
 	size := len(elements)
 	e := (**T)(C.malloc(C.size_t(size) * C.size_t(unsafe.Sizeof((*int)(nil)))))
 	slice := unsafe.Slice(e, C.size_t(size))
 	for i, element := range elements {
-		slice[i] = allocElement[T, U](element)
+		slice[i] = allocElement[T, U](element, eventMappers)
 	}
 
 	return &ListMapper[T]{
@@ -36,16 +43,19 @@ func NewListMapper[T CMapper, U comparable](elements []U) *ListMapper[T] {
 	}
 }
 
-func allocElement[T CMapper, U comparable](element U) *T {
+func allocElement[T CMapper, U comparable](element U, mappers map[int32]mappers.MapperInterface) *T {
 	switch t := any(element).(type) {
 	case int32:
 		return (*T)(C.malloc(C.size_t(unsafe.Sizeof(element))))
 	case *quote.Quote:
-		return (*T)(unsafe.Pointer(newEventMapper().cQuote(t)))
+		mapper := mappers[C.DXFG_EVENT_QUOTE]
+		return (*T)(mapper.CEvent(t))
 	case *timeandsale.TimeAndSale:
-		return (*T)(unsafe.Pointer(newEventMapper().cTimeAndSale(t)))
+		mapper := mappers[C.DXFG_EVENT_TIME_AND_SALE]
+		return (*T)(mapper.CEvent(t))
 	case *profile.Profile:
-		return (*T)(unsafe.Pointer(newEventMapper().cProfile(t)))
+		mapper := mappers[C.DXFG_EVENT_PROFILE]
+		return (*T)(mapper.CEvent(t))
 	case string:
 		return (*T)(unsafe.Pointer(newEventMapper().cStringSymbol(t)))
 	case Osub.WildcardSymbol:
