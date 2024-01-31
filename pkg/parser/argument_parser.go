@@ -1,23 +1,20 @@
-package common
+package parser
 
 import (
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"strings"
 )
 
 func ParseSymbols(value string) []any {
-	var symbols []any
-	symbolStr := strings.Split(value, ",")
-	for _, element := range symbolStr {
-		element = strings.TrimSpace(element)
-		if element == "all" {
-			symbols = append(symbols, Osub.NewWildcardSymbol())
-		} else {
-			symbols = append(symbols, element)
-		}
+	value = strings.TrimSpace(value)
+
+	if value == "all" {
+		return []any{Osub.WildcardSymbol{}}
 	}
-	return symbols
+	values, _ := native.ParseSymbols(value)
+	return values
 }
 
 func ParseEventTypes(value string) []eventcodes.EventCode {
