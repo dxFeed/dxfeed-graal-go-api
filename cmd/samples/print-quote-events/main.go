@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"math"
@@ -13,6 +14,12 @@ type PrintEvents func(events []interface{})
 
 func (pr PrintEvents) Update(events []any) {
 	pr(events)
+}
+
+type PrintState func(old common.ConnectionState, new common.ConnectionState)
+
+func (pr PrintState) UpdateState(old common.ConnectionState, new common.ConnectionState) {
+	pr(old, new)
 }
 
 func main() {
@@ -30,6 +37,9 @@ func main() {
 	defer func(endpoint *api.DXEndpoint) {
 		_ = endpoint.Close()
 	}(endpoint)
+	endpoint.AddListener(PrintState(func(old common.ConnectionState, new common.ConnectionState) {
+		fmt.Printf("Connection state changed from %s to %s\n", old, new)
+	}))
 
 	err = endpoint.Connect("dxlink:wss://demo.dxfeed.com/dxlink-ws")
 	if err != nil {

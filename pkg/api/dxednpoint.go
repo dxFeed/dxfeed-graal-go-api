@@ -19,6 +19,14 @@ type DXEndpoint struct {
 	endpointHandle  *native.DXEndpointHandle
 	feedHandle      *DXFeed
 	publisherHandle *DXPublisher
+
+	stateListenerList []common.ConnectionStateListener
+}
+
+func (e *DXEndpoint) UpdateState(old common.ConnectionState, new common.ConnectionState) {
+	for _, listener := range e.stateListenerList {
+		listener.UpdateState(old, new)
+	}
 }
 
 func NewEndpoint(role common.Role) (*DXEndpoint, error) {
@@ -30,6 +38,11 @@ func NewEndpoint(role common.Role) (*DXEndpoint, error) {
 	e := &DXEndpoint{
 		role:           role,
 		endpointHandle: handle,
+	}
+	err = handle.AttachListener(e)
+	if err != nil {
+		_ = handle.Close()
+		return nil, err
 	}
 	return e, nil
 }
@@ -88,5 +101,23 @@ func (e *DXEndpoint) CloseAndAwaitTermination() error {
 
 func (e *DXEndpoint) AwaitProcessed() error {
 	return e.endpointHandle.AwaitProcessed()
+}
 
+func (e *DXEndpoint) AddListener(listener common.ConnectionStateListener) {
+	e.stateListenerList = append(e.stateListenerList, listener)
+}
+
+func (e *DXEndpoint) RemoveListener(listener common.ConnectionStateListener) {
+	e.stateListenerList = removeStateListenerFromSlice(e.stateListenerList, listener)
+}
+
+func removeStateListenerFromSlice(list []common.ConnectionStateListener, observerToRemove common.ConnectionStateListener) []common.ConnectionStateListener {
+	listLength := len(list)
+	for i, observer := range list {
+		if observerToRemove == observer {
+			list[listLength-1], list[i] = list[i], list[listLength-1]
+			return list[:listLength-1]
+		}
+	}
+	return list
 }

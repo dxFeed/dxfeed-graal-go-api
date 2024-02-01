@@ -3,6 +3,7 @@ package native
 /*
 #include "dxfg_api.h"
 #include <stdlib.h>
+extern void OnStateChanged(graal_isolatethread_t *thread, dxfg_endpoint_state_t old_state, dxfg_endpoint_state_t new_state, void *user_data);
 */
 import "C"
 import (
@@ -152,6 +153,20 @@ func (e *DXEndpointHandle) GetPublisher() (*DXPublisherHandle, error) {
 	})
 
 	return e.publisher, err
+}
+
+//export OnStateChanged
+func OnStateChanged(thread *C.graal_isolatethread_t, old C.dxfg_endpoint_state_t, new C.dxfg_endpoint_state_t, userData unsafe.Pointer) {
+	Restore(userData).(common.ConnectionStateListener).UpdateState(common.ConnectionState(old), common.ConnectionState(new))
+}
+
+func (e *DXEndpointHandle) AttachListener(listener common.ConnectionStateListener) error {
+	err := executeInIsolateThread(func(thread *isolateThread) error {
+		l := C.dxfg_PropertyChangeListener_new(thread.ptr, (*[0]byte)(C.OnStateChanged), Save(listener))
+		C.dxfg_DXEndpoint_addStateChangeListener(thread.ptr, e.ptr(), l)
+		return nil
+	})
+	return err
 }
 
 func (e *DXEndpointHandle) Free() error {
