@@ -3,9 +3,11 @@ package order
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/side"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/formatutil"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/timeutil"
 	"math"
+	"strconv"
 )
 
 const (
@@ -272,48 +274,71 @@ func (b *Base) SetScope(value Scope) {
 	b.SetFlags(int32(mathutil.SetBits(int64(b.Flags()), scopeMask, scopeShift, int64(value))))
 }
 
+func (b *Base) OrderSourceName() *string {
+	source, err := b.OrderSource()
+	if err != nil {
+		emptyStr := ""
+		return &emptyStr
+	}
+	return source.name
+}
+
 func (b *Base) OrderSource() (*OrderSource, error) {
 	sourceId := b.Index() >> 48
 	if !IsSpecialSourceId(sourceId) {
 		sourceId = b.Index() >> 32
 	}
-	value, err := OrderSourceValueOfIdentifier(sourceId)
+	value, err := ValueOfIdentifier(sourceId)
 	if err != nil {
 		return nil, err
+	}
+	if value == nil {
+		return nil, fmt.Errorf("incorrect value for eventsource %d", b.Index())
 	}
 	return value, nil
 }
 
 func (b *Base) SetOrderSource(value *OrderSource) {
-
+	var shift int64
+	if IsSpecialSourceId(value.identifier) {
+		shift = 48
+	} else {
+		shift = 32
+	}
+	var mask int64
+	if IsSpecialSourceId(b.index >> 48) {
+		mask = ^(int64(-1) << 48)
+	} else {
+		mask = ^(int64(-1) << 32)
+	}
+	b.SetIndex((value.identifier << shift) | (b.Index() & mask))
 }
 
 func (b *Base) SetIndexedEventSource(value OrderSource) {
 	//b.SetFlags(int32(mathutil.SetBits(int64(b.Flags()), scopeMask, scopeShift, int64(value))))
 }
 
-//
-//func (b *Base) baseFieldsToString() string {
-//	return formatutil.FormatString(b.EventSymbol()) +
-//		", eventTime=" + formatutil.FormatTime(b.EventTime()) +
-//		", source=" + formatutil.HexFormat(int64(t.EventFlags())) +
-//		", eventFlags=" + formatutil.HexFormat(int64(t.EventFlags())) +
-//		", time=" + formatutil.FormatTime(t.Time()) +
-//		", timeNanoPart=" + strconv.FormatInt(int64(t.timeNanoPart), 10) +
-//		", sequence=" + strconv.FormatInt(int64(t.Sequence()), 10) +
-//		", exchange=" + formatutil.FormatChar(rune(t.exchangeCode)) +
-//		", price=" + formatutil.FormatFloat64(t.Price()) +
-//		", size=" + formatutil.FormatFloat64(t.Size()) +
-//		", bid=" + formatutil.FormatFloat64(t.BidPrice()) +
-//		", ask=" + formatutil.FormatFloat64(t.AskPrice()) +
-//		", ESC=" + formatutil.FormatString(t.ExchangeSaleConditions()) +
-//		", TTE=" + formatutil.FormatChar(t.TradeThroughExempt()) +
-//		", side=" + formatutil.FormatInt64(int64(t.AggressorSide())) +
-//		", spread=" + formatutil.FormatBool(t.IsSpreadLeg()) +
-//		", ETH=" + formatutil.FormatBool(t.IsExtendedTradingHours()) +
-//		", validTick=" + formatutil.FormatBool(t.IsValidTick()) +
-//		", type=" + formatutil.FormatInt64(int64(t.TimeAndSaleType())) +
-//		formatutil.FormatNullableString(", buyer=%s", t.Buyer(), "") +
-//		formatutil.FormatNullableString(", seller=%s", t.Seller(), "") +
-//		"}"
-//}
+func (b *Base) baseFieldsToString() string {
+	return formatutil.FormatString(b.EventSymbol()) +
+		", eventTime=" + formatutil.FormatTime(b.EventTime()) +
+		", source=" + formatutil.FormatString(b.OrderSourceName()) +
+		", eventFlags=" + formatutil.HexFormat(int64(b.EventFlags())) +
+		", index=" + formatutil.HexFormat(int64(b.Index())) +
+		", time=" + formatutil.FormatTime(b.Time()) +
+		", sequence=" + strconv.FormatInt(int64(b.Sequence()), 10) +
+		", timeNanoPart=" + strconv.FormatInt(int64(b.TimeNanoPart()), 10) +
+		", action=" + formatutil.FormatInt64(int64(b.Action())) +
+		", actionTime=" + formatutil.FormatTime(b.ActionTime()) +
+		", orderId=" + formatutil.FormatInt64(b.OrderId()) +
+		", auxOrderId=" + formatutil.FormatInt64(b.AuxOrderId()) +
+		", price=" + formatutil.FormatFloat64(b.Price()) +
+		", size=" + formatutil.FormatFloat64(b.Size()) +
+		", executedSize=" + formatutil.FormatFloat64(b.ExecutedSize()) +
+		", count=" + formatutil.FormatInt64(b.Count()) +
+		", exchange=" + formatutil.FormatChar(rune(b.ExchangeCode())) +
+		", side=" + formatutil.FormatInt64(int64(b.Side())) +
+		", scope=" + formatutil.FormatInt64(int64(b.Scope())) +
+		", tradeId=" + formatutil.FormatInt64(b.TradeId()) +
+		", tradePrice=" + formatutil.FormatFloat64(b.TradePrice()) +
+		", tradeSize=" + formatutil.FormatFloat64(b.TradeSize())
+}

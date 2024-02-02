@@ -5,6 +5,7 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
@@ -78,7 +79,7 @@ func main() {
 		panic(err)
 	}
 
-	subscription, err := feed.CreateSubscription(eventcodes.Quote)
+	subscription, err := feed.CreateSubscription(eventcodes.Order)
 	if err != nil {
 		panic(err)
 	}
@@ -91,7 +92,9 @@ func main() {
 				fmt.Printf("%s\n", v.String())
 			case *profile.Profile:
 				fmt.Printf("%s\n", v.String())
-			case timeandsale.TimeAndSale:
+			case *timeandsale.TimeAndSale:
+				fmt.Printf("%s\n", v.String())
+			case *order.Order:
 				fmt.Printf("%s\n", v.String())
 			}
 		}
