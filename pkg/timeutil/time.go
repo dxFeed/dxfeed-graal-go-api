@@ -14,9 +14,9 @@ const (
 
 func GetSecondsFromTime(timeMillis int64) int32 {
 	if timeMillis >= 0 {
-		return int32(min(timeMillis/SECOND, math.MaxInt32))
+		return int32(mathutil.MinInt64(timeMillis/SECOND, math.MaxInt32))
 	}
-	return int32(min((timeMillis+1)/SECOND-1, math.MinInt32))
+	return int32(mathutil.MinInt64((timeMillis+1)/SECOND-1, math.MinInt32))
 }
 
 func GetMillisFromTime(timeMillis int64) int32 {
