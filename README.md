@@ -13,7 +13,7 @@ and [dxFeed Java API](https://docs.dxfeed.com/dxfeed/api/overview-summary.html) 
 
 ![Build](https://github.com/dxFeed/dxfeed-graal-go-api/actions/workflows/build.yml/badge.svg)
 ![Platform](https://img.shields.io/badge/platform-win--x64%20%7C%20linux--x64%20%7C%20osx--x64%20%7C%20osx--arm64-lightgrey)
-[![Go](https://img.shields.io/badge/go_version-1.21-blueviolet)](https://dotnet.microsoft.com/en-us/)
+[![Go](https://img.shields.io/badge/go_version-1.20-blueviolet)](https://dotnet.microsoft.com/en-us/)
 [![License](https://img.shields.io/badge/license-MPL--2.0-orange)](https://github.com/dxFeed/dxfeed-graal-net-api/blob/master/LICENSE)
 [![Release](https://img.shields.io/github/v/release/dxFeed/dxfeed-graal-go-api)](https://github.com/dxFeed/dxfeed-graal-net-api/releases/latest)
 
@@ -73,17 +73,12 @@ As a result, we get a full-featured, similar performance as with Java API.
 Regardless of the language, writing the final application logic using API calls will be very similar (only the syntax
 will be amended, *"best practices"*, specific language restrictions)
 
-[//]: # (Below is a scheme of this process:)
+Below is a scheme of this process:
 
-[//]: # ()
-
-[//]: # (<!-- <picture>)
-
-[//]: # ( <source media="&#40;prefers-color-scheme: dark&#41;" srcset="docs/images/scheme_dark.svg">)
-
-[//]: # ( <img alt="light" src="docs/images/scheme_light.svg">)
-
-[//]: # (</picture> -->)
+<picture>
+ <source media="(prefers-color-scheme: dark)" srcset="docs/images/scheme_dark.svg">
+ <img alt="light" src="docs/images/scheme_light.svg">
+</picture>
 
 ## Documentation
 
