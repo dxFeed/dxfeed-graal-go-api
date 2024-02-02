@@ -53,8 +53,6 @@ Features planned with **high priority**:
 * add all market events
 * provide more tools and samples
 * generate documentation
-* ipf functionality
-* add multiple symbols support
 
 ---
 
