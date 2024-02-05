@@ -31,97 +31,97 @@ var (
 	agregateAsk = newOrderSourceWithIDNameFlags(6, "AGGREGATE_ASK", 0)
 
 	/// NASDAQ Total View.
-	ntvL2 = newOrderSourceName("NTV", pubOrder|fullOrderBook)
+	ntvL3 = newOrderSourceName("NTV", pubOrder|fullOrderBook)
 
 	/// NASDAQ Total View. Record for price level book.
-	ntvL3 = newOrderSourceName("ntv", pubOrder)
+	ntvL2 = newOrderSourceName("ntv", pubOrder)
 
 	/// NASDAQ Futures Exchange.
-	nfx = newOrderSourceName("NFX", pubOrder)
+	nfxL3 = newOrderSourceName("NFX", pubOrder)
 
 	/// NASDAQ eSpeed.
-	espd = newOrderSourceName("ESPD", pubOrder)
+	espdL3 = newOrderSourceName("ESPD", pubOrder)
 
 	/// NASDAQ Fixed Income.
-	xnfi = newOrderSourceName("XNFI", pubOrder)
+	xnfiL3 = newOrderSourceName("XNFI", pubOrder)
 
 	/// Intercontinental Exchange.
-	ice = newOrderSourceName("ICE", pubOrder)
+	iceL3 = newOrderSourceName("ICE", pubOrder)
 
 	/// International Securities Exchange.
-	ise = newOrderSourceName("ISE", pubOrder|pubSpreadOrder)
+	iseL3 = newOrderSourceName("ISE", pubOrder|pubSpreadOrder)
 
 	/// Direct-Edge EDGA Exchange.
-	dea = newOrderSourceName("DEA", pubOrder)
+	deaL3 = newOrderSourceName("DEA", pubOrder)
 
 	/// Direct-Edge EDGX Exchange.
-	dex = newOrderSourceName("DEX", pubOrder)
+	dexL3 = newOrderSourceName("DEX", pubOrder)
 
 	/// Bats BYX Exchange.
-	byx = newOrderSourceName("BYX", pubOrder)
+	byxL3 = newOrderSourceName("BYX", pubOrder)
 
 	/// Bats BZX Exchange.
-	bzx = newOrderSourceName("BZX", pubOrder)
+	bzxL3 = newOrderSourceName("BZX", pubOrder)
 
 	/// Bats Europe BXE Exchange.
-	bate = newOrderSourceName("BATE", pubOrder)
+	bateL3 = newOrderSourceName("BATE", pubOrder)
 
 	/// Bats Europe CXE Exchange.
-	chix = newOrderSourceName("CHIX", pubOrder)
+	chixL3 = newOrderSourceName("CHIX", pubOrder)
 
 	/// Bats Europe DXE Exchange.
-	ceux = newOrderSourceName("CEUX", pubOrder)
+	ceuxL3 = newOrderSourceName("CEUX", pubOrder)
 
 	/// Bats Europe TRF.
-	bxtr = newOrderSourceName("BXTR", pubOrder)
+	bxtrL3 = newOrderSourceName("BXTR", pubOrder)
 
 	/// Borsa Istanbul Exchange.
-	ist = newOrderSourceName("IST", pubOrder)
+	istL3 = newOrderSourceName("IST", pubOrder)
 
 	/// Borsa Istanbul Exchange. Record for particular top 20 order book.
-	bi20 = newOrderSourceName("BI20", pubOrder)
+	bi20L3 = newOrderSourceName("BI20", pubOrder)
 
 	/// ABE (abe.io) exchange.
-	abe = newOrderSourceName("ABE", pubOrder)
+	abeL3 = newOrderSourceName("ABE", pubOrder)
 
 	/// FAIR (FairX) exchange.
-	fair = newOrderSourceName("FAIR", pubOrder)
+	fairL3 = newOrderSourceName("FAIR", pubOrder)
 
 	/// CME Globex.
-	glbxL2 = newOrderSourceName("GLBX", pubOrder|pubAnalyticOrder)
+	glbxL3 = newOrderSourceName("GLBX", pubOrder|pubAnalyticOrder)
 
 	/// CME Globex. Record for price level book.
-	glbxL3 = newOrderSourceName("glbx", pubOrder)
+	glbxL2 = newOrderSourceName("glbx", pubOrder)
 
 	/// Eris Exchange group of companies.
-	eris = newOrderSourceName("ERIS", pubOrder)
+	erisL3 = newOrderSourceName("ERIS", pubOrder)
 
 	/// Eurex Exchange.
-	xeurL2 = newOrderSourceName("XEUR", pubOrder)
+	xeurL3 = newOrderSourceName("XEUR", pubOrder)
 
 	/// Eurex Exchange. Record for price level book.
-	xeurL3 = newOrderSourceName("xeur", pubOrder)
+	xeurL2 = newOrderSourceName("xeur", pubOrder)
 
 	/// CBOE Futures Exchange.
-	cfe = newOrderSourceName("CFE", pubOrder)
+	cfeL3 = newOrderSourceName("CFE", pubOrder)
 
 	/// CBOE Options C2 Exchange.
-	c20x = newOrderSourceName("C2OX", pubOrder)
+	c20xL3 = newOrderSourceName("C2OX", pubOrder)
 
 	/// Small Exchange.
-	smfeL2 = newOrderSourceName("SMFE", pubOrder)
+	smfeL3 = newOrderSourceName("SMFE", pubOrder)
 
 	/// Small Exchange. Record for price level book.
-	smfeL3 = newOrderSourceName("smfe", pubOrder)
+	smfeL2 = newOrderSourceName("smfe", pubOrder)
 
 	/// Investors exchange. Record for price level book.
-	iex = newOrderSourceName("iex", pubOrder)
+	iexL2 = newOrderSourceName("iex", pubOrder)
 
 	/// Members Exchange.
-	memxL2 = newOrderSourceName("MEMX", pubOrder)
+	memxL3 = newOrderSourceName("MEMX", pubOrder)
 
 	/// Members Exchange. Record for price level book.
-	memxL3 = newOrderSourceName("memx", pubOrder)
+	memxL2 = newOrderSourceName("memx", pubOrder)
 )
 
 func Default() *OrderSource {
@@ -160,72 +160,72 @@ func NtvL3() *OrderSource {
 	return ntvL3
 }
 
-func Nfx() *OrderSource {
-	return nfx
+func NfxL3() *OrderSource {
+	return nfxL3
 }
 
-func Espd() *OrderSource {
-	return espd
+func EspdL3() *OrderSource {
+	return espdL3
 }
 
-func Xnfi() *OrderSource {
-	return xnfi
+func XnfiL3() *OrderSource {
+	return xnfiL3
 }
 
-func Ice() *OrderSource {
-	return ice
+func IceL3() *OrderSource {
+	return iceL3
 }
 
-func Ise() *OrderSource {
-	return ise
+func IseL3() *OrderSource {
+	return iseL3
 }
 
-func Dea() *OrderSource {
-	return dea
+func DeaL3() *OrderSource {
+	return deaL3
 }
 
-func Dex() *OrderSource {
-	return dex
+func DexL23() *OrderSource {
+	return dexL3
 }
 
-func Byx() *OrderSource {
-	return byx
+func ByxL3() *OrderSource {
+	return byxL3
 }
 
-func Bzx() *OrderSource {
-	return bzx
+func BzxL3() *OrderSource {
+	return bzxL3
 }
 
-func Bate() *OrderSource {
-	return bate
+func BateL3() *OrderSource {
+	return bateL3
 }
 
-func Chix() *OrderSource {
-	return chix
+func ChixL3() *OrderSource {
+	return chixL3
 }
 
-func Ceux() *OrderSource {
-	return ceux
+func CeuxL3() *OrderSource {
+	return ceuxL3
 }
 
-func Bxtr() *OrderSource {
-	return bxtr
+func BxtrL3() *OrderSource {
+	return bxtrL3
 }
 
-func Ist() *OrderSource {
-	return ist
+func IstL3() *OrderSource {
+	return istL3
 }
 
-func Bi20() *OrderSource {
-	return bi20
+func Bi20L3() *OrderSource {
+	return bi20L3
 }
 
-func Abe() *OrderSource {
-	return abe
+func AbeL3() *OrderSource {
+	return abeL3
 }
 
-func Fair() *OrderSource {
-	return fair
+func FairL3() *OrderSource {
+	return fairL3
 }
 
 func GlbxL3() *OrderSource {
@@ -236,8 +236,8 @@ func GlbxL2() *OrderSource {
 	return glbxL2
 }
 
-func Eris() *OrderSource {
-	return eris
+func ErisL3() *OrderSource {
+	return erisL3
 }
 
 func XeurL2() *OrderSource {
@@ -248,12 +248,12 @@ func XeurL3() *OrderSource {
 	return xeurL3
 }
 
-func Cfe() *OrderSource {
-	return cfe
+func CfeL3() *OrderSource {
+	return cfeL3
 }
 
-func C20x() *OrderSource {
-	return c20x
+func C20xL3() *OrderSource {
+	return c20xL3
 }
 
 func SmfeL2() *OrderSource {
@@ -264,8 +264,8 @@ func SmfeL3() *OrderSource {
 	return smfeL3
 }
 
-func Iex() *OrderSource {
-	return iex
+func IexL2() *OrderSource {
+	return iexL2
 }
 
 func MemxL2() *OrderSource {
