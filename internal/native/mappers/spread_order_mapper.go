@@ -1,8 +1,8 @@
 package mappers
 
 /*
-#include "../graal/dxfg_api.h"
-#include <stdlib.h>
+   #include "../graal/dxfg_api.h"
+   #include <stdlib.h>
 */
 import "C"
 import (
@@ -10,14 +10,14 @@ import (
 	"unsafe"
 )
 
-type OrderMapper struct {
+type SpreadOrderMapper struct {
 }
 
-func (m OrderMapper) CEvent(event interface{}) unsafe.Pointer {
-	orderEvent := event.(*order.Order)
+func (m SpreadOrderMapper) CEvent(event interface{}) unsafe.Pointer {
+	orderEvent := event.(*order.SpreadOrder)
 
-	q := (*C.dxfg_order_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_order_t{}))))
-	q.order_base.market_event.event_type.clazz = C.DXFG_EVENT_ORDER
+	q := (*C.dxfg_spread_order_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_spread_order_t{}))))
+	q.order_base.market_event.event_type.clazz = C.DXFG_EVENT_SPREAD_ORDER
 
 	q.order_base.market_event.event_symbol = C.CString(*orderEvent.EventSymbol())
 	q.order_base.market_event.event_time = C.int64_t(orderEvent.EventTime())
@@ -38,16 +38,16 @@ func (m OrderMapper) CEvent(event interface{}) unsafe.Pointer {
 	q.order_base.trade_price = C.double(orderEvent.TradePrice())
 	q.order_base.trade_size = C.double(orderEvent.TradeSize())
 
-	if orderEvent.MarketMaker() != nil {
-		q.market_maker = C.CString(*orderEvent.MarketMaker())
+	if orderEvent.SpreadSymbol() != nil {
+		q.spread_symbol = C.CString(*orderEvent.SpreadSymbol())
 	}
 
 	return unsafe.Pointer(q)
 }
 
-func (m OrderMapper) GoEvent(native unsafe.Pointer) interface{} {
-	orderNative := (*C.dxfg_order_t)(native)
-	o := order.NewOrder(C.GoString(orderNative.order_base.market_event.event_symbol))
+func (m SpreadOrderMapper) GoEvent(native unsafe.Pointer) interface{} {
+	orderNative := (*C.dxfg_spread_order_t)(native)
+	o := order.NewSpreadOrder(C.GoString(orderNative.order_base.market_event.event_symbol))
 	o.SetEventTime(int64(orderNative.order_base.market_event.event_time))
 
 	o.SetEventFlags(int32(orderNative.order_base.event_flags))
@@ -66,7 +66,7 @@ func (m OrderMapper) GoEvent(native unsafe.Pointer) interface{} {
 	o.SetTradePrice(float64(orderNative.order_base.trade_price))
 	o.SetTradeSize(float64(orderNative.order_base.trade_size))
 
-	o.SetMarketMaker(convertString(orderNative.market_maker))
+	o.SetSpreadSymbol(convertString(orderNative.spread_symbol))
 
 	return o
 }
