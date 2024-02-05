@@ -5,6 +5,7 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
@@ -129,6 +130,10 @@ func dump(
 				case *timeandsale.TimeAndSale:
 					count = count + 1
 				case *profile.Profile:
+					count = count + 1
+				case *order.Order:
+					count = count + 1
+				case *order.SpreadOrder:
 					count = count + 1
 				default:
 				}
