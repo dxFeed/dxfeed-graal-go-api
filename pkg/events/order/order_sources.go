@@ -200,7 +200,7 @@ func Bate() *OrderSource {
 	return bate
 }
 
-func CHIX() *OrderSource {
+func Chix() *OrderSource {
 	return chix
 }
 

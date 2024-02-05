@@ -79,7 +79,7 @@ func main() {
 		panic(err)
 	}
 
-	subscription, err := feed.CreateSubscription(eventcodes.Order)
+	subscription, err := feed.CreateSubscription(eventcodes.Quote)
 	if err != nil {
 		panic(err)
 	}

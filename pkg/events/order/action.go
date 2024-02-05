@@ -2,7 +2,7 @@ package order
 
 import "github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
 
-type Action int64
+type Action int32
 
 const (
 	ActionUndefined = iota
@@ -21,6 +21,6 @@ var (
 		[]int64{ActionUndefined, ActionNew, ActionReplace, ActionModify, ActionDelete, ActionPartial, ActionExecute, ActionTrade, ActionBurst})
 )
 
-func ActionValueOf(value int64) Action {
+func ActionValueOf(value int32) Action {
 	return Action(allValues[value])
 }

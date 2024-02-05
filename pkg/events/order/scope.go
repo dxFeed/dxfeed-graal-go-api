@@ -2,7 +2,7 @@ package order
 
 import "github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
 
-type Scope int64
+type Scope int32
 
 const (
 	ScopeComposite = iota
@@ -16,6 +16,6 @@ var (
 		[]int64{ScopeComposite, ScopeRegional, ScopeAggregate, ScopeOrder})
 )
 
-func ScopeValueOf(value int64) Scope {
+func ScopeValueOf(value int32) Scope {
 	return Scope(scopeAllValues[value])
 }

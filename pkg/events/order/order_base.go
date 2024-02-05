@@ -259,7 +259,7 @@ func (b *Base) SetTimeNanos(value int64) {
 }
 
 func (b *Base) Action() Action {
-	return ActionValueOf(mathutil.GetBits(int64(b.Flags()), actionMask, actionShift))
+	return ActionValueOf(int32(mathutil.GetBits(int64(b.Flags()), actionMask, actionShift)))
 }
 
 func (b *Base) SetAction(value Action) {
@@ -267,7 +267,7 @@ func (b *Base) SetAction(value Action) {
 }
 
 func (b *Base) Scope() Scope {
-	return ScopeValueOf(mathutil.GetBits(int64(b.Flags()), scopeMask, scopeShift))
+	return ScopeValueOf(int32(mathutil.GetBits(int64(b.Flags()), scopeMask, scopeShift)))
 }
 
 func (b *Base) SetScope(value Scope) {
