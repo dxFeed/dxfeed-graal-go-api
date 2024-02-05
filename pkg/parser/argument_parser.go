@@ -19,7 +19,13 @@ func ParseSymbols(value string) []any {
 
 func ParseEventTypes(value string) []eventcodes.EventCode {
 	if value == "all" {
-		return []eventcodes.EventCode{eventcodes.Quote, eventcodes.TimeAndSale, eventcodes.Profile}
+		return []eventcodes.EventCode{
+			eventcodes.Quote,
+			eventcodes.TimeAndSale,
+			eventcodes.Profile,
+			eventcodes.Order,
+			eventcodes.SpreadOrder,
+		}
 	}
 	typeStr := strings.Split(value, ",")
 	var types []eventcodes.EventCode

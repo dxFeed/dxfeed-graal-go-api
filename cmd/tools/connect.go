@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
@@ -103,6 +104,10 @@ func connect(
 				case *timeandsale.TimeAndSale:
 					fmt.Printf("%s\n", v.String())
 				case *profile.Profile:
+					fmt.Printf("%s\n", v.String())
+				case *order.Order:
+					fmt.Printf("%s\n", v.String())
+				case *order.SpreadOrder:
 					fmt.Printf("%s\n", v.String())
 				default:
 					fmt.Printf("Unsupported event %T!\n", v)
