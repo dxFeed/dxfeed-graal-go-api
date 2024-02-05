@@ -1,34 +1,34 @@
 package order
 
 var (
-	defaultSource = newOrderSourceWithIDNameFlagsNoError(0, "DEFAULT", pubOrder|pubAnalyticOrder|pubSpreadOrder|fullOrderBook)
+	defaultSource = newOrderSourceWithIDNameFlags(0, "DEFAULT", pubOrder|pubAnalyticOrder|pubSpreadOrder|fullOrderBook)
 
 	/// Bid side of a composite ``Quote``
 	///
 	/// It is a synthetic source.
 	/// The subscription on composite ``Quote`` event is observed when this source is subscribed to.
-	compsoiteBid = newOrderSourceWithIDNameFlagsNoError(1, "COMPOSITE_BID", pubOrder|pubAnalyticOrder|pubSpreadOrder|fullOrderBook)
+	compsoiteBid = newOrderSourceWithIDNameFlags(1, "COMPOSITE_BID", pubOrder|pubAnalyticOrder|pubSpreadOrder|fullOrderBook)
 	/// Ask side of a composite ``Quote``.
 	/// It is a synthetic source.
 	/// The subscription on composite ``Quote`` event is observed when this source is subscribed to.
-	compsoiteAsk = newOrderSourceWithIDNameFlagsNoError(2, "COMPOSITE_ASK", 0)
+	compsoiteAsk = newOrderSourceWithIDNameFlags(2, "COMPOSITE_ASK", 0)
 	/// Bid side of a regional ``Quote``.
 	/// It is a synthetic source.
 	/// The subscription on regional ``Quote`` event is observed when this source is subscribed to.
 
-	regionalBid = newOrderSourceWithIDNameFlagsNoError(3, "REGIONAL_BID", 0)
+	regionalBid = newOrderSourceWithIDNameFlags(3, "REGIONAL_BID", 0)
 	/// Ask side of a regional ``Quote``.
 	/// It is a synthetic source.
 	/// The subscription on regional ``Quote`` event is observed when this source is subscribed to.
 
-	regionalAsk = newOrderSourceWithIDNameFlagsNoError(4, "REGIONAL_ASK", 0)
+	regionalAsk = newOrderSourceWithIDNameFlags(4, "REGIONAL_ASK", 0)
 	/// Bid side of an aggregate order book (futures depth and NASDAQ Level II).
 	/// This source cannot be directly published via dxFeed API, but otherwise it is fully operational.
-	agregateBid = newOrderSourceWithIDNameFlagsNoError(5, "AGGREGATE_BID", 0)
+	agregateBid = newOrderSourceWithIDNameFlags(5, "AGGREGATE_BID", 0)
 
 	/// Ask side of an aggregate order book (futures depth and NASDAQ Level II).
 	/// This source cannot be directly published via dxFeed API, but otherwise it is fully operational.
-	agregateAsk = newOrderSourceWithIDNameFlagsNoError(6, "AGGREGATE_ASK", 0)
+	agregateAsk = newOrderSourceWithIDNameFlags(6, "AGGREGATE_ASK", 0)
 
 	/// NASDAQ Total View.
 	ntvL2 = newOrderSourceName("NTV", pubOrder|fullOrderBook)

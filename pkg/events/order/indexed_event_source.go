@@ -5,7 +5,15 @@ type IndexedEventSource struct {
 	name       *string
 }
 
-func DefaultIndexedEventSource() *IndexedEventSource {
+var (
+	defaultIndexedEventSource = newDefaultIndexedEventSource()
+)
+
+func newDefaultIndexedEventSource() *IndexedEventSource {
 	defaultStr := "DEFAULT"
 	return &IndexedEventSource{identifier: 0, name: &defaultStr}
+}
+
+func DefaultIndexedEventSource() *IndexedEventSource {
+	return defaultIndexedEventSource
 }

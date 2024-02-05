@@ -31,31 +31,26 @@ func newOrderSourceWithIDName(identifier int64, name *string) *OrderSource {
 	return &OrderSource{IndexedEventSource: IndexedEventSource{identifier: identifier, name: name}, pubFlags: 0, isBuiltin: false}
 }
 
-func newOrderSourceWithIDNameFlagsNoError(identifier int64, name string, pubflags int64) *OrderSource {
-	value, _ := newOrderSourceWithIDNameFlags(identifier, name, pubflags)
-	return value
-}
-
-func newOrderSourceWithIDNameFlags(identifier int64, name string, pubflags int64) (*OrderSource, error) {
+func newOrderSourceWithIDNameFlags(identifier int64, name string, pubflags int64) *OrderSource {
 	err := checkIdAndName(identifier, name)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	// Flag FullOrderBook requires that source must be publishable.
 	if (pubflags&fullOrderBook) != 0 &&
 		(pubflags&(pubOrder|pubAnalyticOrder|pubSpreadOrder)) == 0 {
-		return nil, fmt.Errorf("unpublishable full order book order")
+		panic("unpublishable full order book order")
 	}
 	value := &OrderSource{IndexedEventSource: IndexedEventSource{identifier: identifier, name: &name}, pubFlags: pubflags, isBuiltin: true}
 	_, loadedById := sourcesById.LoadOrStore(identifier, value)
 	if loadedById {
-		return nil, fmt.Errorf("duplicate id %d", identifier)
+		panic(fmt.Sprintf("duplicate id %d", identifier))
 	}
 	_, loadedByName := sourcesByName.LoadOrStore(name, value)
 	if loadedByName {
-		return nil, fmt.Errorf("duplicate name %s", name)
+		panic(fmt.Sprintf("duplicate name %s", name))
 	}
-	return value, nil
+	return value
 }
 
 func checkIdAndName(identifier int64, name string) error {
@@ -108,7 +103,7 @@ func newOrderSourceName(name string, pubflags int64) *OrderSource {
 	if err != nil {
 		return nil
 	}
-	return newOrderSourceWithIDNameFlagsNoError(id, name, pubflags)
+	return newOrderSourceWithIDNameFlags(id, name, pubflags)
 }
 
 func orderSourceComposeId(name string) (int64, error) {
