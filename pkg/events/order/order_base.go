@@ -311,11 +311,7 @@ func (b *Base) SetOrderSource(value *OrderSource) {
 	} else {
 		mask = ^(int64(-1) << 32)
 	}
-	b.SetIndex((value.identifier << shift) | (b.Index() & mask))
-}
-
-func (b *Base) SetIndexedEventSource(value OrderSource) {
-	//b.SetFlags(int32(mathutil.SetBits(int64(b.Flags()), scopeMask, scopeShift, int64(value))))
+	_ = b.SetIndex((value.identifier << shift) | (b.Index() & mask))
 }
 
 func (b *Base) baseFieldsToString() string {

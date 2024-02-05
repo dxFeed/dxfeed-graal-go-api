@@ -11,7 +11,7 @@ type Order struct {
 }
 
 func NewOrder(eventSymbol string) *Order {
-	return &Order{Base: Base{eventSymbol: &eventSymbol}}
+	return &Order{Base: *NewBase(eventSymbol)}
 }
 
 func (o *Order) MarketMaker() *string {

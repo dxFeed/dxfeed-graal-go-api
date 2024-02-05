@@ -1,368 +1,277 @@
 package order
 
-import "sync"
+var (
+	sourceDefault = newOrderSourceWithIDNameFlagsNoError(0, "DEFAULT", pubOrder|pubAnalyticOrder|pubSpreadOrder|fullOrderBook)
 
-type OrderSources interface {
-	OsDefault() *OrderSource
-	OsCompsoiteBid() *OrderSource
-	OsCompsoiteAsk() *OrderSource
-	OsRegionalBid() *OrderSource
-	OsRegionalAsk() *OrderSource
-	OsAgregateBid() *OrderSource
-	OsAgregateAsk() *OrderSource
-	OsNTV() *OrderSource
-	Osntv() *OrderSource
-	OsNFX() *OrderSource
-	OsESPD() *OrderSource
-	OsXNFI() *OrderSource
-	OsICE() *OrderSource
-	OsISE() *OrderSource
-	OsDEA() *OrderSource
-	OsDEX() *OrderSource
-	OsBYX() *OrderSource
-	OsBZX() *OrderSource
-	OsBATE() *OrderSource
-	OsCHIX() *OrderSource
-	OsCEUX() *OrderSource
-	OsBXTR() *OrderSource
-	OsIST() *OrderSource
-	OsBI20() *OrderSource
-	OsABE() *OrderSource
-	OsFAIR() *OrderSource
-	OsGLBX() *OrderSource
-	Osglbx() *OrderSource
-	OsERIS() *OrderSource
-	OsXEUR() *OrderSource
-	Osxeur() *OrderSource
-	OsCFE() *OrderSource
-	OsC2OX() *OrderSource
-	OsSMFE() *OrderSource
-	Ossmfe() *OrderSource
-	Osiex() *OrderSource
-	OsMEMX() *OrderSource
-	Osmemx() *OrderSource
+	/// Bid side of a composite ``Quote``
+	///
+	/// It is a synthetic source.
+	/// The subscription on composite ``Quote`` event is observed when this source is subscribed to.
+	sourceCompsoiteBid = newOrderSourceWithIDNameFlagsNoError(1, "COMPOSITE_BID", pubOrder|pubAnalyticOrder|pubSpreadOrder|fullOrderBook)
+	/// Ask side of a composite ``Quote``.
+	/// It is a synthetic source.
+	/// The subscription on composite ``Quote`` event is observed when this source is subscribed to.
+	sourceCompsoiteAsk = newOrderSourceWithIDNameFlagsNoError(2, "COMPOSITE_ASK", 0)
+	/// Bid side of a regional ``Quote``.
+	/// It is a synthetic source.
+	/// The subscription on regional ``Quote`` event is observed when this source is subscribed to.
+
+	sourceRegionalBid = newOrderSourceWithIDNameFlagsNoError(3, "REGIONAL_BID", 0)
+	/// Ask side of a regional ``Quote``.
+	/// It is a synthetic source.
+	/// The subscription on regional ``Quote`` event is observed when this source is subscribed to.
+
+	sourceRegionalAsk = newOrderSourceWithIDNameFlagsNoError(4, "REGIONAL_ASK", 0)
+	/// Bid side of an aggregate order book (futures depth and NASDAQ Level II).
+	/// This source cannot be directly published via dxFeed API, but otherwise it is fully operational.
+	sourceAgregateBid = newOrderSourceWithIDNameFlagsNoError(5, "AGGREGATE_BID", 0)
+
+	/// Ask side of an aggregate order book (futures depth and NASDAQ Level II).
+	/// This source cannot be directly published via dxFeed API, but otherwise it is fully operational.
+	sourceAgregateAsk = newOrderSourceWithIDNameFlagsNoError(6, "AGGREGATE_ASK", 0)
+
+	/// NASDAQ Total View.
+	sourceNTV = newOrderSourceName("NTV", pubOrder|fullOrderBook)
+
+	/// NASDAQ Total View. Record for price level book.
+	sourcentv = newOrderSourceName("ntv", pubOrder)
+
+	/// NASDAQ Futures Exchange.
+	sourceNFX = newOrderSourceName("NFX", pubOrder)
+
+	/// NASDAQ eSpeed.
+	sourceESPD = newOrderSourceName("ESPD", pubOrder)
+
+	/// NASDAQ Fixed Income.
+	sourceXNFI = newOrderSourceName("XNFI", pubOrder)
+
+	/// Intercontinental Exchange.
+	sourceICE = newOrderSourceName("ICE", pubOrder)
+
+	/// International Securities Exchange.
+	sourceISE = newOrderSourceName("ISE", pubOrder|pubSpreadOrder)
+
+	/// Direct-Edge EDGA Exchange.
+	sourceDEA = newOrderSourceName("DEA", pubOrder)
+
+	/// Direct-Edge EDGX Exchange.
+	sourceDEX = newOrderSourceName("DEX", pubOrder)
+
+	/// Bats BYX Exchange.
+	sourceBYX = newOrderSourceName("BYX", pubOrder)
+
+	/// Bats BZX Exchange.
+	sourceBZX = newOrderSourceName("BZX", pubOrder)
+
+	/// Bats Europe BXE Exchange.
+	sourceBATE = newOrderSourceName("BATE", pubOrder)
+
+	/// Bats Europe CXE Exchange.
+	sourceCHIX = newOrderSourceName("CHIX", pubOrder)
+
+	/// Bats Europe DXE Exchange.
+	sourceCEUX = newOrderSourceName("CEUX", pubOrder)
+
+	/// Bats Europe TRF.
+	sourceBXTR = newOrderSourceName("BXTR", pubOrder)
+
+	/// Borsa Istanbul Exchange.
+	sourceIST = newOrderSourceName("IST", pubOrder)
+
+	/// Borsa Istanbul Exchange. Record for particular top 20 order book.
+	sourceBI20 = newOrderSourceName("BI20", pubOrder)
+
+	/// ABE (abe.io) exchange.
+	sourceABE = newOrderSourceName("ABE", pubOrder)
+
+	/// FAIR (FairX) exchange.
+	sourceFAIR = newOrderSourceName("FAIR", pubOrder)
+
+	/// CME Globex.
+	sourceGLBX = newOrderSourceName("GLBX", pubOrder|pubAnalyticOrder)
+
+	/// CME Globex. Record for price level book.
+	sourceglbx = newOrderSourceName("glbx", pubOrder)
+
+	/// Eris Exchange group of companies.
+	sourceERIS = newOrderSourceName("ERIS", pubOrder)
+
+	/// Eurex Exchange.
+	sourceXEUR = newOrderSourceName("XEUR", pubOrder)
+
+	/// Eurex Exchange. Record for price level book.
+	sourcexeur = newOrderSourceName("xeur", pubOrder)
+
+	/// CBOE Futures Exchange.
+	sourceCFE = newOrderSourceName("CFE", pubOrder)
+
+	/// CBOE Options C2 Exchange.
+	sourceC2OX = newOrderSourceName("C2OX", pubOrder)
+
+	/// Small Exchange.
+	sourceSMFE = newOrderSourceName("SMFE", pubOrder)
+
+	/// Small Exchange. Record for price level book.
+	sourcesmfe = newOrderSourceName("smfe", pubOrder)
+
+	/// Investors exchange. Record for price level book.
+	sourceiex = newOrderSourceName("iex", pubOrder)
+
+	/// Members Exchange.
+	sourceMEMX = newOrderSourceName("MEMX", pubOrder)
+
+	/// Members Exchange. Record for price level book.
+	sourcememx = newOrderSourceName("memx", pubOrder)
+)
+
+func SourceDefault() *OrderSource {
+	return sourceDefault
 }
 
-type orderSourceConsts struct {
-	osDefault      *OrderSource
-	osCompsoiteBid *OrderSource
-	osCompsoiteAsk *OrderSource
-	osRegionalBid  *OrderSource
-	osRegionalAsk  *OrderSource
-	osAgregateBid  *OrderSource
-	osAgregateAsk  *OrderSource
-	osNTV          *OrderSource
-	osntv          *OrderSource
-	osNFX          *OrderSource
-	osESPD         *OrderSource
-	osXNFI         *OrderSource
-	osICE          *OrderSource
-	osISE          *OrderSource
-	osDEA          *OrderSource
-	osDEX          *OrderSource
-	osBYX          *OrderSource
-	osBZX          *OrderSource
-	osBATE         *OrderSource
-	osCHIX         *OrderSource
-	osCEUX         *OrderSource
-	osBXTR         *OrderSource
-	osIST          *OrderSource
-	osBI20         *OrderSource
-	osABE          *OrderSource
-	osFAIR         *OrderSource
-	osGLBX         *OrderSource
-	osglbx         *OrderSource
-	osERIS         *OrderSource
-	osXEUR         *OrderSource
-	osxeur         *OrderSource
-	osCFE          *OrderSource
-	osC2OX         *OrderSource
-	osSMFE         *OrderSource
-	ossmfe         *OrderSource
-	osiex          *OrderSource
-	osMEMX         *OrderSource
-	osmemx         *OrderSource
+func SourceCompsoiteBid() *OrderSource {
+	return sourceCompsoiteBid
 }
 
-func (o orderSourceConsts) OsDefault() *OrderSource {
-	return o.osDefault
+func SourceCompsoiteAsk() *OrderSource {
+	return sourceCompsoiteAsk
 }
 
-func (o orderSourceConsts) OsCompsoiteBid() *OrderSource {
-	return o.osCompsoiteBid
+func SourceRegionalBid() *OrderSource {
+	return sourceRegionalBid
 }
 
-func (o orderSourceConsts) OsCompsoiteAsk() *OrderSource {
-	return o.osCompsoiteAsk
+func SourceRegionalAsk() *OrderSource {
+	return sourceRegionalAsk
 }
 
-func (o orderSourceConsts) OsRegionalBid() *OrderSource {
-	return o.osRegionalBid
+func SourceAgregateBid() *OrderSource {
+	return sourceAgregateBid
 }
 
-func (o orderSourceConsts) OsRegionalAsk() *OrderSource {
-	return o.osRegionalAsk
+func SourceAgregateAsk() *OrderSource {
+	return sourceAgregateAsk
 }
 
-func (o orderSourceConsts) OsAgregateBid() *OrderSource {
-	return o.osAgregateBid
+func SourceNTV() *OrderSource {
+	return sourceNTV
 }
 
-func (o orderSourceConsts) OsAgregateAsk() *OrderSource {
-	return o.osAgregateAsk
+func Sourcentv() *OrderSource {
+	return sourcentv
 }
 
-func (o orderSourceConsts) OsNTV() *OrderSource {
-	return o.osNTV
+func SourceNFX() *OrderSource {
+	return sourceNFX
 }
 
-func (o orderSourceConsts) Osntv() *OrderSource {
-	return o.osntv
+func SourceESPD() *OrderSource {
+	return sourceESPD
 }
 
-func (o orderSourceConsts) OsNFX() *OrderSource {
-	return o.osNFX
+func SourceXNFI() *OrderSource {
+	return sourceXNFI
 }
 
-func (o orderSourceConsts) OsESPD() *OrderSource {
-	return o.osESPD
+func SourceICE() *OrderSource {
+	return sourceICE
 }
 
-func (o orderSourceConsts) OsXNFI() *OrderSource {
-	return o.osXNFI
+func SourceISE() *OrderSource {
+	return sourceISE
 }
 
-func (o orderSourceConsts) OsICE() *OrderSource {
-	return o.osICE
+func SourceDEA() *OrderSource {
+	return sourceDEA
 }
 
-func (o orderSourceConsts) OsISE() *OrderSource {
-	return o.osISE
+func SourceDEX() *OrderSource {
+	return sourceDEX
 }
 
-func (o orderSourceConsts) OsDEA() *OrderSource {
-	return o.osDEA
+func SourceBYX() *OrderSource {
+	return sourceBYX
 }
 
-func (o orderSourceConsts) OsDEX() *OrderSource {
-	return o.osDEX
+func SourceBZX() *OrderSource {
+	return sourceBZX
 }
 
-func (o orderSourceConsts) OsBYX() *OrderSource {
-	return o.osBYX
+func SourceBATE() *OrderSource {
+	return sourceBATE
 }
 
-func (o orderSourceConsts) OsBZX() *OrderSource {
-	return o.osBZX
+func SourceCHIX() *OrderSource {
+	return sourceCHIX
 }
 
-func (o orderSourceConsts) OsBATE() *OrderSource {
-	return o.osBATE
+func SourceCEUX() *OrderSource {
+	return sourceCEUX
 }
 
-func (o orderSourceConsts) OsCHIX() *OrderSource {
-	return o.osCHIX
+func SourceBXTR() *OrderSource {
+	return sourceBXTR
 }
 
-func (o orderSourceConsts) OsCEUX() *OrderSource {
-	return o.osCEUX
+func SourceIST() *OrderSource {
+	return sourceIST
 }
 
-func (o orderSourceConsts) OsBXTR() *OrderSource {
-	return o.osBXTR
+func SourceBI20() *OrderSource {
+	return sourceBI20
 }
 
-func (o orderSourceConsts) OsIST() *OrderSource {
-	return o.osIST
+func SourceABE() *OrderSource {
+	return sourceABE
 }
 
-func (o orderSourceConsts) OsBI20() *OrderSource {
-	return o.osBI20
+func SourceFAIR() *OrderSource {
+	return sourceFAIR
 }
 
-func (o orderSourceConsts) OsABE() *OrderSource {
-	return o.osABE
+func SourceGLBX() *OrderSource {
+	return sourceGLBX
 }
 
-func (o orderSourceConsts) OsFAIR() *OrderSource {
-	return o.osFAIR
+func Sourceglbx() *OrderSource {
+	return sourceglbx
 }
 
-func (o orderSourceConsts) OsGLBX() *OrderSource {
-	return o.osGLBX
+func SourceERIS() *OrderSource {
+	return sourceERIS
 }
 
-func (o orderSourceConsts) Osglbx() *OrderSource {
-	return o.osglbx
+func SourceXEUR() *OrderSource {
+	return sourceXEUR
 }
 
-func (o orderSourceConsts) OsERIS() *OrderSource {
-	return o.osERIS
+func Sourcexeur() *OrderSource {
+	return sourcexeur
 }
 
-func (o orderSourceConsts) OsXEUR() *OrderSource {
-	return o.osXEUR
+func SourceCFE() *OrderSource {
+	return sourceCFE
 }
 
-func (o orderSourceConsts) Osxeur() *OrderSource {
-	return o.osxeur
+func SourceC2OX() *OrderSource {
+	return sourceC2OX
 }
 
-func (o orderSourceConsts) OsCFE() *OrderSource {
-	return o.osCFE
+func SourceSMFE() *OrderSource {
+	return sourceSMFE
 }
 
-func (o orderSourceConsts) OsC2OX() *OrderSource {
-	return o.osC2OX
+func Sourcesmfe() *OrderSource {
+	return sourcesmfe
 }
 
-func (o orderSourceConsts) OsSMFE() *OrderSource {
-	return o.osSMFE
+func Sourceiex() *OrderSource {
+	return sourceiex
 }
 
-func (o orderSourceConsts) Ossmfe() *OrderSource {
-	return o.ossmfe
+func SourceMEMX() *OrderSource {
+	return sourceMEMX
 }
 
-func (o orderSourceConsts) Osiex() *OrderSource {
-	return o.osiex
-}
-
-func (o orderSourceConsts) OsMEMX() *OrderSource {
-	return o.osMEMX
-}
-
-func (o orderSourceConsts) Osmemx() *OrderSource {
-	return o.osmemx
-}
-
-var instance OrderSources = nil
-var once sync.Once
-
-func GetConsts() OrderSources {
-	once.Do(func() {
-		instance = &orderSourceConsts{ /// The default source with zero identifier for all events that do not support multiple sources.
-			osDefault: newOrderSourceWithIDNameFlagsNoError(0, "DEFAULT", pubOrder|pubAnalyticOrder|pubSpreadOrder|fullOrderBook),
-
-			/// Bid side of a composite ``Quote``
-			///
-			/// It is a synthetic source.
-			/// The subscription on composite ``Quote`` event is observed when this source is subscribed to.
-			osCompsoiteBid: newOrderSourceWithIDNameFlagsNoError(1, "COMPOSITE_BID", pubOrder|pubAnalyticOrder|pubSpreadOrder|fullOrderBook),
-			/// Ask side of a composite ``Quote``.
-			/// It is a synthetic source.
-			/// The subscription on composite ``Quote`` event is observed when this source is subscribed to.
-			osCompsoiteAsk: newOrderSourceWithIDNameFlagsNoError(2, "COMPOSITE_ASK", 0),
-			/// Bid side of a regional ``Quote``.
-			/// It is a synthetic source.
-			/// The subscription on regional ``Quote`` event is observed when this source is subscribed to.
-
-			osRegionalBid: newOrderSourceWithIDNameFlagsNoError(3, "REGIONAL_BID", 0),
-			/// Ask side of a regional ``Quote``.
-			/// It is a synthetic source.
-			/// The subscription on regional ``Quote`` event is observed when this source is subscribed to.
-
-			osRegionalAsk: newOrderSourceWithIDNameFlagsNoError(4, "REGIONAL_ASK", 0),
-			/// Bid side of an aggregate order book (futures depth and NASDAQ Level II).
-			/// This source cannot be directly published via dxFeed API, but otherwise it is fully operational.
-			osAgregateBid: newOrderSourceWithIDNameFlagsNoError(5, "AGGREGATE_BID", 0),
-
-			/// Ask side of an aggregate order book (futures depth and NASDAQ Level II).
-			/// This source cannot be directly published via dxFeed API, but otherwise it is fully operational.
-			osAgregateAsk: newOrderSourceWithIDNameFlagsNoError(6, "AGGREGATE_ASK", 0),
-
-			/// NASDAQ Total View.
-			osNTV: newOrderSourceName("NTV", pubOrder|fullOrderBook),
-
-			/// NASDAQ Total View. Record for price level book.
-			osntv: newOrderSourceName("ntv", pubOrder),
-
-			/// NASDAQ Futures Exchange.
-			osNFX: newOrderSourceName("NFX", pubOrder),
-
-			/// NASDAQ eSpeed.
-			osESPD: newOrderSourceName("ESPD", pubOrder),
-
-			/// NASDAQ Fixed Income.
-			osXNFI: newOrderSourceName("XNFI", pubOrder),
-
-			/// Intercontinental Exchange.
-			osICE: newOrderSourceName("ICE", pubOrder),
-
-			/// International Securities Exchange.
-			osISE: newOrderSourceName("ISE", pubOrder|pubSpreadOrder),
-
-			/// Direct-Edge EDGA Exchange.
-			osDEA: newOrderSourceName("DEA", pubOrder),
-
-			/// Direct-Edge EDGX Exchange.
-			osDEX: newOrderSourceName("DEX", pubOrder),
-
-			/// Bats BYX Exchange.
-			osBYX: newOrderSourceName("BYX", pubOrder),
-
-			/// Bats BZX Exchange.
-			osBZX: newOrderSourceName("BZX", pubOrder),
-
-			/// Bats Europe BXE Exchange.
-			osBATE: newOrderSourceName("BATE", pubOrder),
-
-			/// Bats Europe CXE Exchange.
-			osCHIX: newOrderSourceName("CHIX", pubOrder),
-
-			/// Bats Europe DXE Exchange.
-			osCEUX: newOrderSourceName("CEUX", pubOrder),
-
-			/// Bats Europe TRF.
-			osBXTR: newOrderSourceName("BXTR", pubOrder),
-
-			/// Borsa Istanbul Exchange.
-			osIST: newOrderSourceName("IST", pubOrder),
-
-			/// Borsa Istanbul Exchange. Record for particular top 20 order book.
-			osBI20: newOrderSourceName("BI20", pubOrder),
-
-			/// ABE (abe.io) exchange.
-			osABE: newOrderSourceName("ABE", pubOrder),
-
-			/// FAIR (FairX) exchange.
-			osFAIR: newOrderSourceName("FAIR", pubOrder),
-
-			/// CME Globex.
-			osGLBX: newOrderSourceName("GLBX", pubOrder|pubAnalyticOrder),
-
-			/// CME Globex. Record for price level book.
-			osglbx: newOrderSourceName("glbx", pubOrder),
-
-			/// Eris Exchange group of companies.
-			osERIS: newOrderSourceName("ERIS", pubOrder),
-
-			/// Eurex Exchange.
-			osXEUR: newOrderSourceName("XEUR", pubOrder),
-
-			/// Eurex Exchange. Record for price level book.
-			osxeur: newOrderSourceName("xeur", pubOrder),
-
-			/// CBOE Futures Exchange.
-			osCFE: newOrderSourceName("CFE", pubOrder),
-
-			/// CBOE Options C2 Exchange.
-			osC2OX: newOrderSourceName("C2OX", pubOrder),
-
-			/// Small Exchange.
-			osSMFE: newOrderSourceName("SMFE", pubOrder),
-
-			/// Small Exchange. Record for price level book.
-			ossmfe: newOrderSourceName("smfe", pubOrder),
-
-			/// Investors exchange. Record for price level book.
-			osiex: newOrderSourceName("iex", pubOrder),
-
-			/// Members Exchange.
-			osMEMX: newOrderSourceName("MEMX", pubOrder),
-
-			/// Members Exchange. Record for price level book.
-			osmemx: newOrderSourceName("memx", pubOrder)}
-	})
-	return instance
+func Sourcememx() *OrderSource {
+	return sourcememx
 }

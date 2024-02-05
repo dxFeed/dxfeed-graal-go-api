@@ -11,7 +11,7 @@ type SpreadOrder struct {
 }
 
 func NewSpreadOrder(eventSymbol string) *SpreadOrder {
-	return &SpreadOrder{Base: Base{eventSymbol: &eventSymbol}}
+	return &SpreadOrder{Base: *NewBase(eventSymbol)}
 }
 
 func (o *SpreadOrder) SpreadSymbol() *string {
