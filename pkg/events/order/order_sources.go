@@ -1,277 +1,277 @@
 package order
 
 var (
-	sourceDefault = newOrderSourceWithIDNameFlagsNoError(0, "DEFAULT", pubOrder|pubAnalyticOrder|pubSpreadOrder|fullOrderBook)
+	defaultSource = newOrderSourceWithIDNameFlagsNoError(0, "DEFAULT", pubOrder|pubAnalyticOrder|pubSpreadOrder|fullOrderBook)
 
 	/// Bid side of a composite ``Quote``
 	///
 	/// It is a synthetic source.
 	/// The subscription on composite ``Quote`` event is observed when this source is subscribed to.
-	sourceCompsoiteBid = newOrderSourceWithIDNameFlagsNoError(1, "COMPOSITE_BID", pubOrder|pubAnalyticOrder|pubSpreadOrder|fullOrderBook)
+	compsoiteBid = newOrderSourceWithIDNameFlagsNoError(1, "COMPOSITE_BID", pubOrder|pubAnalyticOrder|pubSpreadOrder|fullOrderBook)
 	/// Ask side of a composite ``Quote``.
 	/// It is a synthetic source.
 	/// The subscription on composite ``Quote`` event is observed when this source is subscribed to.
-	sourceCompsoiteAsk = newOrderSourceWithIDNameFlagsNoError(2, "COMPOSITE_ASK", 0)
+	compsoiteAsk = newOrderSourceWithIDNameFlagsNoError(2, "COMPOSITE_ASK", 0)
 	/// Bid side of a regional ``Quote``.
 	/// It is a synthetic source.
 	/// The subscription on regional ``Quote`` event is observed when this source is subscribed to.
 
-	sourceRegionalBid = newOrderSourceWithIDNameFlagsNoError(3, "REGIONAL_BID", 0)
+	regionalBid = newOrderSourceWithIDNameFlagsNoError(3, "REGIONAL_BID", 0)
 	/// Ask side of a regional ``Quote``.
 	/// It is a synthetic source.
 	/// The subscription on regional ``Quote`` event is observed when this source is subscribed to.
 
-	sourceRegionalAsk = newOrderSourceWithIDNameFlagsNoError(4, "REGIONAL_ASK", 0)
+	regionalAsk = newOrderSourceWithIDNameFlagsNoError(4, "REGIONAL_ASK", 0)
 	/// Bid side of an aggregate order book (futures depth and NASDAQ Level II).
 	/// This source cannot be directly published via dxFeed API, but otherwise it is fully operational.
-	sourceAgregateBid = newOrderSourceWithIDNameFlagsNoError(5, "AGGREGATE_BID", 0)
+	agregateBid = newOrderSourceWithIDNameFlagsNoError(5, "AGGREGATE_BID", 0)
 
 	/// Ask side of an aggregate order book (futures depth and NASDAQ Level II).
 	/// This source cannot be directly published via dxFeed API, but otherwise it is fully operational.
-	sourceAgregateAsk = newOrderSourceWithIDNameFlagsNoError(6, "AGGREGATE_ASK", 0)
+	agregateAsk = newOrderSourceWithIDNameFlagsNoError(6, "AGGREGATE_ASK", 0)
 
 	/// NASDAQ Total View.
-	sourceNTV = newOrderSourceName("NTV", pubOrder|fullOrderBook)
+	ntvL2 = newOrderSourceName("NTV", pubOrder|fullOrderBook)
 
 	/// NASDAQ Total View. Record for price level book.
-	sourcentv = newOrderSourceName("ntv", pubOrder)
+	ntvL3 = newOrderSourceName("ntv", pubOrder)
 
 	/// NASDAQ Futures Exchange.
-	sourceNFX = newOrderSourceName("NFX", pubOrder)
+	nfx = newOrderSourceName("NFX", pubOrder)
 
 	/// NASDAQ eSpeed.
-	sourceESPD = newOrderSourceName("ESPD", pubOrder)
+	espd = newOrderSourceName("ESPD", pubOrder)
 
 	/// NASDAQ Fixed Income.
-	sourceXNFI = newOrderSourceName("XNFI", pubOrder)
+	xnfi = newOrderSourceName("XNFI", pubOrder)
 
 	/// Intercontinental Exchange.
-	sourceICE = newOrderSourceName("ICE", pubOrder)
+	ice = newOrderSourceName("ICE", pubOrder)
 
 	/// International Securities Exchange.
-	sourceISE = newOrderSourceName("ISE", pubOrder|pubSpreadOrder)
+	ise = newOrderSourceName("ISE", pubOrder|pubSpreadOrder)
 
 	/// Direct-Edge EDGA Exchange.
-	sourceDEA = newOrderSourceName("DEA", pubOrder)
+	dea = newOrderSourceName("DEA", pubOrder)
 
 	/// Direct-Edge EDGX Exchange.
-	sourceDEX = newOrderSourceName("DEX", pubOrder)
+	dex = newOrderSourceName("DEX", pubOrder)
 
 	/// Bats BYX Exchange.
-	sourceBYX = newOrderSourceName("BYX", pubOrder)
+	byx = newOrderSourceName("BYX", pubOrder)
 
 	/// Bats BZX Exchange.
-	sourceBZX = newOrderSourceName("BZX", pubOrder)
+	bzx = newOrderSourceName("BZX", pubOrder)
 
 	/// Bats Europe BXE Exchange.
-	sourceBATE = newOrderSourceName("BATE", pubOrder)
+	bate = newOrderSourceName("BATE", pubOrder)
 
 	/// Bats Europe CXE Exchange.
-	sourceCHIX = newOrderSourceName("CHIX", pubOrder)
+	chix = newOrderSourceName("CHIX", pubOrder)
 
 	/// Bats Europe DXE Exchange.
-	sourceCEUX = newOrderSourceName("CEUX", pubOrder)
+	ceux = newOrderSourceName("CEUX", pubOrder)
 
 	/// Bats Europe TRF.
-	sourceBXTR = newOrderSourceName("BXTR", pubOrder)
+	bxtr = newOrderSourceName("BXTR", pubOrder)
 
 	/// Borsa Istanbul Exchange.
-	sourceIST = newOrderSourceName("IST", pubOrder)
+	ist = newOrderSourceName("IST", pubOrder)
 
 	/// Borsa Istanbul Exchange. Record for particular top 20 order book.
-	sourceBI20 = newOrderSourceName("BI20", pubOrder)
+	bi20 = newOrderSourceName("BI20", pubOrder)
 
 	/// ABE (abe.io) exchange.
-	sourceABE = newOrderSourceName("ABE", pubOrder)
+	abe = newOrderSourceName("ABE", pubOrder)
 
 	/// FAIR (FairX) exchange.
-	sourceFAIR = newOrderSourceName("FAIR", pubOrder)
+	fair = newOrderSourceName("FAIR", pubOrder)
 
 	/// CME Globex.
-	sourceGLBX = newOrderSourceName("GLBX", pubOrder|pubAnalyticOrder)
+	glbxL2 = newOrderSourceName("GLBX", pubOrder|pubAnalyticOrder)
 
 	/// CME Globex. Record for price level book.
-	sourceglbx = newOrderSourceName("glbx", pubOrder)
+	glbxL3 = newOrderSourceName("glbx", pubOrder)
 
 	/// Eris Exchange group of companies.
-	sourceERIS = newOrderSourceName("ERIS", pubOrder)
+	eris = newOrderSourceName("ERIS", pubOrder)
 
 	/// Eurex Exchange.
-	sourceXEUR = newOrderSourceName("XEUR", pubOrder)
+	xeurL2 = newOrderSourceName("XEUR", pubOrder)
 
 	/// Eurex Exchange. Record for price level book.
-	sourcexeur = newOrderSourceName("xeur", pubOrder)
+	xeurL3 = newOrderSourceName("xeur", pubOrder)
 
 	/// CBOE Futures Exchange.
-	sourceCFE = newOrderSourceName("CFE", pubOrder)
+	cfe = newOrderSourceName("CFE", pubOrder)
 
 	/// CBOE Options C2 Exchange.
-	sourceC2OX = newOrderSourceName("C2OX", pubOrder)
+	c20x = newOrderSourceName("C2OX", pubOrder)
 
 	/// Small Exchange.
-	sourceSMFE = newOrderSourceName("SMFE", pubOrder)
+	smfeL2 = newOrderSourceName("SMFE", pubOrder)
 
 	/// Small Exchange. Record for price level book.
-	sourcesmfe = newOrderSourceName("smfe", pubOrder)
+	smfeL3 = newOrderSourceName("smfe", pubOrder)
 
 	/// Investors exchange. Record for price level book.
-	sourceiex = newOrderSourceName("iex", pubOrder)
+	iex = newOrderSourceName("iex", pubOrder)
 
 	/// Members Exchange.
-	sourceMEMX = newOrderSourceName("MEMX", pubOrder)
+	memxL2 = newOrderSourceName("MEMX", pubOrder)
 
 	/// Members Exchange. Record for price level book.
-	sourcememx = newOrderSourceName("memx", pubOrder)
+	memxL3 = newOrderSourceName("memx", pubOrder)
 )
 
-func SourceDefault() *OrderSource {
-	return sourceDefault
+func Default() *OrderSource {
+	return defaultSource
 }
 
-func SourceCompsoiteBid() *OrderSource {
-	return sourceCompsoiteBid
+func CompsoiteBid() *OrderSource {
+	return compsoiteBid
 }
 
-func SourceCompsoiteAsk() *OrderSource {
-	return sourceCompsoiteAsk
+func CompsoiteAsk() *OrderSource {
+	return compsoiteAsk
 }
 
-func SourceRegionalBid() *OrderSource {
-	return sourceRegionalBid
+func RegionalBid() *OrderSource {
+	return regionalBid
 }
 
-func SourceRegionalAsk() *OrderSource {
-	return sourceRegionalAsk
+func RegionalAsk() *OrderSource {
+	return regionalAsk
 }
 
-func SourceAgregateBid() *OrderSource {
-	return sourceAgregateBid
+func AgregateBid() *OrderSource {
+	return agregateBid
 }
 
-func SourceAgregateAsk() *OrderSource {
-	return sourceAgregateAsk
+func AgregateAsk() *OrderSource {
+	return agregateAsk
 }
 
-func SourceNTV() *OrderSource {
-	return sourceNTV
+func NtvL2() *OrderSource {
+	return ntvL2
 }
 
-func Sourcentv() *OrderSource {
-	return sourcentv
+func NtvL3() *OrderSource {
+	return ntvL3
 }
 
-func SourceNFX() *OrderSource {
-	return sourceNFX
+func Nfx() *OrderSource {
+	return nfx
 }
 
-func SourceESPD() *OrderSource {
-	return sourceESPD
+func Espd() *OrderSource {
+	return espd
 }
 
-func SourceXNFI() *OrderSource {
-	return sourceXNFI
+func Xnfi() *OrderSource {
+	return xnfi
 }
 
-func SourceICE() *OrderSource {
-	return sourceICE
+func Ice() *OrderSource {
+	return ice
 }
 
-func SourceISE() *OrderSource {
-	return sourceISE
+func Ise() *OrderSource {
+	return ise
 }
 
-func SourceDEA() *OrderSource {
-	return sourceDEA
+func Dea() *OrderSource {
+	return dea
 }
 
-func SourceDEX() *OrderSource {
-	return sourceDEX
+func Dex() *OrderSource {
+	return dex
 }
 
-func SourceBYX() *OrderSource {
-	return sourceBYX
+func Byx() *OrderSource {
+	return byx
 }
 
-func SourceBZX() *OrderSource {
-	return sourceBZX
+func Bzx() *OrderSource {
+	return bzx
 }
 
-func SourceBATE() *OrderSource {
-	return sourceBATE
+func Bate() *OrderSource {
+	return bate
 }
 
-func SourceCHIX() *OrderSource {
-	return sourceCHIX
+func CHIX() *OrderSource {
+	return chix
 }
 
-func SourceCEUX() *OrderSource {
-	return sourceCEUX
+func Ceux() *OrderSource {
+	return ceux
 }
 
-func SourceBXTR() *OrderSource {
-	return sourceBXTR
+func Bxtr() *OrderSource {
+	return bxtr
 }
 
-func SourceIST() *OrderSource {
-	return sourceIST
+func Ist() *OrderSource {
+	return ist
 }
 
-func SourceBI20() *OrderSource {
-	return sourceBI20
+func Bi20() *OrderSource {
+	return bi20
 }
 
-func SourceABE() *OrderSource {
-	return sourceABE
+func Abe() *OrderSource {
+	return abe
 }
 
-func SourceFAIR() *OrderSource {
-	return sourceFAIR
+func Fair() *OrderSource {
+	return fair
 }
 
-func SourceGLBX() *OrderSource {
-	return sourceGLBX
+func GlbxL3() *OrderSource {
+	return glbxL3
 }
 
-func Sourceglbx() *OrderSource {
-	return sourceglbx
+func GlbxL2() *OrderSource {
+	return glbxL2
 }
 
-func SourceERIS() *OrderSource {
-	return sourceERIS
+func Eris() *OrderSource {
+	return eris
 }
 
-func SourceXEUR() *OrderSource {
-	return sourceXEUR
+func XeurL2() *OrderSource {
+	return xeurL2
 }
 
-func Sourcexeur() *OrderSource {
-	return sourcexeur
+func XeurL3() *OrderSource {
+	return xeurL3
 }
 
-func SourceCFE() *OrderSource {
-	return sourceCFE
+func Cfe() *OrderSource {
+	return cfe
 }
 
-func SourceC2OX() *OrderSource {
-	return sourceC2OX
+func C20x() *OrderSource {
+	return c20x
 }
 
-func SourceSMFE() *OrderSource {
-	return sourceSMFE
+func SmfeL2() *OrderSource {
+	return smfeL2
 }
 
-func Sourcesmfe() *OrderSource {
-	return sourcesmfe
+func SmfeL3() *OrderSource {
+	return smfeL3
 }
 
-func Sourceiex() *OrderSource {
-	return sourceiex
+func Iex() *OrderSource {
+	return iex
 }
 
-func SourceMEMX() *OrderSource {
-	return sourceMEMX
+func MemxL2() *OrderSource {
+	return memxL2
 }
 
-func Sourcememx() *OrderSource {
-	return sourcememx
+func MemxL3() *OrderSource {
+	return memxL3
 }

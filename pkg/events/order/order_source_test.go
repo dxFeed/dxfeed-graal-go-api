@@ -18,8 +18,8 @@ func TestGetOrder(t *testing.T) {
 	if err != nil {
 		t.Fatalf(`Get Source with error "%v".`, err)
 	}
-	println(sourceABE)
-	constV := SourceCompsoiteBid()
+	constV := CompsoiteBid()
+
 	if constV != value {
 		t.Fatalf(`Value %v doesn't equal "%v".`, constV, value)
 	}
