@@ -53,6 +53,7 @@ func (m *eventMapper) goEvent(event *C.dxfg_event_type_t) interface{} {
 	}
 }
 
+// TODO add recursive release for symbols
 func (m *eventMapper) cSymbol(symbol any) unsafe.Pointer {
 	switch value := symbol.(type) {
 	case string:

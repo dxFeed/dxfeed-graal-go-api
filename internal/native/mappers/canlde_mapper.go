@@ -16,24 +16,24 @@ type CandleMapper struct {
 func (c CandleMapper) GoEvent(nativeEvent unsafe.Pointer) interface{} {
 	candleNative := (*C.dxfg_candle_t)(nativeEvent)
 
-	candle := candle.NewCandle(C.GoString(candleNative.event_symbol))
-	candle.SetEventTime(int64(candleNative.event_time))
-	candle.SetEventFlags(int32(candleNative.event_flags))
-	candle.SetIndex(int64(candleNative.index))
-	candle.SetCount(int64(candleNative.count))
+	newCandle := candle.NewCandle(C.GoString(candleNative.event_symbol))
+	newCandle.SetEventTime(int64(candleNative.event_time))
+	newCandle.SetEventFlags(int32(candleNative.event_flags))
+	newCandle.SetIndex(int64(candleNative.index))
+	newCandle.SetCount(int64(candleNative.count))
 
-	candle.SetOpen(float64(candleNative.open))
-	candle.SetHigh(float64(candleNative.high))
-	candle.SetLow(float64(candleNative.low))
-	candle.SetClose(float64(candleNative.close))
-	candle.SetVolume(float64(candleNative.volume))
-	candle.SetVwap(float64(candleNative.vwap))
-	candle.SetBidVolume(float64(candleNative.bid_volume))
+	newCandle.SetOpen(float64(candleNative.open))
+	newCandle.SetHigh(float64(candleNative.high))
+	newCandle.SetLow(float64(candleNative.low))
+	newCandle.SetClose(float64(candleNative.close))
+	newCandle.SetVolume(float64(candleNative.volume))
+	newCandle.SetVwap(float64(candleNative.vwap))
+	newCandle.SetBidVolume(float64(candleNative.bid_volume))
 
-	candle.SetAskVolume(float64(candleNative.ask_volume))
-	candle.SetImpVolatility(float64(candleNative.imp_volatility))
-	candle.SetOpenInterest(float64(candleNative.open_interest))
-	return candle
+	newCandle.SetAskVolume(float64(candleNative.ask_volume))
+	newCandle.SetImpVolatility(float64(candleNative.imp_volatility))
+	newCandle.SetOpenInterest(float64(candleNative.open_interest))
+	return newCandle
 }
 
 func (c CandleMapper) CEvent(event interface{}) unsafe.Pointer {

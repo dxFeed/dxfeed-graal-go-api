@@ -130,11 +130,11 @@ func connect(
 	}
 	for _, symbol := range symbols {
 		if fromTime != nil {
-			time, err := parser.ParseTime(*fromTime)
+			parseTime, err := parser.ParseTime(*fromTime)
 			if err != nil {
 				return err
 			}
-			timeSeriesSubscriptionSymbol := Osub.NewTimeSeriesSubscriptionSymbol(symbol, time)
+			timeSeriesSubscriptionSymbol := Osub.NewTimeSeriesSubscriptionSymbol(symbol, parseTime)
 			subscription.AddSymbol(timeSeriesSubscriptionSymbol)
 		} else {
 			err = subscription.AddSymbol(symbol)
