@@ -184,7 +184,7 @@ func DeaL3() *OrderSource {
 	return deaL3
 }
 
-func DexL23() *OrderSource {
+func DexL3() *OrderSource {
 	return dexL3
 }
 
