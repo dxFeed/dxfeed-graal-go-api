@@ -188,7 +188,7 @@ func (q *Candle) SetTime(value int64) {
 }
 
 func (c *Candle) String() string {
-	return "Candle{" + formatutil.FormatString(c.EventSymbol().Symbol()) +
+	return "Candle{" + c.EventSymbol().String() +
 		", eventTime=" + formatutil.FormatTime(c.EventTime()) +
 		", eventFlags=" + formatutil.HexFormat(int64(c.EventFlags())) +
 		", time=" + formatutil.FormatTime(c.Time()) +

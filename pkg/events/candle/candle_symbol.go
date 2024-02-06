@@ -15,3 +15,7 @@ func (c *CandleSymbol) Symbol() *string {
 func (c *CandleSymbol) SetSymbol(symbol *string) {
 	c.symbol = symbol
 }
+
+func (c *CandleSymbol) String() string {
+	return *c.symbol
+}
