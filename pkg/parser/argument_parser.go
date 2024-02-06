@@ -25,6 +25,7 @@ func ParseEventTypes(value string) []eventcodes.EventCode {
 			eventcodes.Profile,
 			eventcodes.Order,
 			eventcodes.SpreadOrder,
+			eventcodes.Candle,
 		}
 	}
 	typeStr := strings.Split(value, ",")
@@ -42,6 +43,8 @@ func ParseEventTypes(value string) []eventcodes.EventCode {
 			types = append(types, eventcodes.Order)
 		} else if strings.ToLower(element) == "spreadorder" {
 			types = append(types, eventcodes.SpreadOrder)
+		} else if strings.ToLower(element) == "candle" {
+			types = append(types, eventcodes.Candle)
 		}
 	}
 	return types

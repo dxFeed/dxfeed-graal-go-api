@@ -29,6 +29,18 @@ func (a DXArguments) tape() *string {
 	return nil
 }
 
+func (a DXArguments) time() *string {
+	for index, arg := range a.args {
+		if arg == "-f" || arg == "--from-time" {
+			if index+1 >= len(a.args) {
+				panic("Check value after -t parameter")
+			}
+			return &a.args[index+1]
+		}
+	}
+	return nil
+}
+
 func (a DXArguments) forceStream() bool {
 	for _, arg := range a.args {
 		if arg == "--force-stream" {

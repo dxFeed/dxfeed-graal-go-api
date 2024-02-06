@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
@@ -108,6 +109,8 @@ func connect(
 				case *order.Order:
 					fmt.Printf("%s\n", v.String())
 				case *order.SpreadOrder:
+					fmt.Printf("%s\n", v.String())
+				case *candle.Candle:
 					fmt.Printf("%s\n", v.String())
 				default:
 					fmt.Printf("Unsupported event %T!\n", v)

@@ -30,6 +30,7 @@ func NewListMapper[T CMapper, U comparable](elements []U) *ListMapper[T] {
 	eventMappers[C.DXFG_EVENT_PROFILE] = mappers.ProfileMapper{}
 	eventMappers[C.DXFG_EVENT_ORDER] = mappers.OrderMapper{}
 	eventMappers[C.DXFG_EVENT_SPREAD_ORDER] = mappers.SpreadOrderMapper{}
+	eventMappers[C.DXFG_EVENT_CANDLE] = mappers.CandleMapper{}
 
 	size := len(elements)
 	e := (**T)(C.malloc(C.size_t(size) * C.size_t(unsafe.Sizeof((*int)(nil)))))

@@ -22,6 +22,7 @@ func newEventMapper() *eventMapper {
 	eventMappers[C.DXFG_EVENT_PROFILE] = mappers.ProfileMapper{}
 	eventMappers[C.DXFG_EVENT_ORDER] = mappers.OrderMapper{}
 	eventMappers[C.DXFG_EVENT_SPREAD_ORDER] = mappers.SpreadOrderMapper{}
+	eventMappers[C.DXFG_EVENT_CANDLE] = mappers.CandleMapper{}
 
 	return &eventMapper{mappers: eventMappers}
 }
