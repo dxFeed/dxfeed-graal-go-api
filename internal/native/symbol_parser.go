@@ -34,3 +34,18 @@ func ParseSymbols(symbols string) ([]any, error) {
 
 	return result, err
 }
+
+func ParseTime(time string) (int64, error) {
+	var result int64
+	err := executeInIsolateThread(func(thread *isolateThread) error {
+		timePtr := C.CString(time)
+		defer C.free(unsafe.Pointer(timePtr))
+		return checkCall(func() {
+			defaultTimeFormat := C.dxfg_TimeFormat_DEFAULT(thread.ptr)
+			defer C.dxfg_JavaObjectHandler_release(thread.ptr, (*C.dxfg_java_object_handler)(unsafe.Pointer(defaultTimeFormat)))
+			result = int64(C.dxfg_TimeFormat_parse(thread.ptr, defaultTimeFormat, timePtr))
+		})
+	})
+
+	return result, err
+}

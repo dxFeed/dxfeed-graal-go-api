@@ -18,31 +18,33 @@ func ParseSymbols(value string) []any {
 }
 
 func ParseEventTypes(value string) []eventcodes.EventCode {
+	codes := map[string]eventcodes.EventCode{
+		"quote":       eventcodes.Quote,
+		"timeandsale": eventcodes.TimeAndSale,
+		"profile":     eventcodes.Profile,
+		"order":       eventcodes.Order,
+		"spreadorder": eventcodes.SpreadOrder,
+		"candle":      eventcodes.Candle}
+	var values []eventcodes.EventCode
 	if value == "all" {
-		return []eventcodes.EventCode{
-			eventcodes.Quote,
-			eventcodes.TimeAndSale,
-			eventcodes.Profile,
-			eventcodes.Order,
-			eventcodes.SpreadOrder,
+		for k := range codes {
+			values = append(values, codes[k])
 		}
+		return values
 	}
-	typeStr := strings.Split(value, ",")
-	var types []eventcodes.EventCode
 
+	typeStr := strings.Split(value, ",")
 	for _, element := range typeStr {
-		element = strings.TrimSpace(element)
-		if strings.ToLower(element) == "quote" {
-			types = append(types, eventcodes.Quote)
-		} else if strings.ToLower(element) == "timeandsale" {
-			types = append(types, eventcodes.TimeAndSale)
-		} else if strings.ToLower(element) == "profile" {
-			types = append(types, eventcodes.Profile)
-		} else if strings.ToLower(element) == "order" {
-			types = append(types, eventcodes.Order)
-		} else if strings.ToLower(element) == "spreadorder" {
-			types = append(types, eventcodes.SpreadOrder)
+		element = strings.ToLower(strings.TrimSpace(element))
+		eventCode, exists := codes[element]
+		if exists {
+			values = append(values, eventCode)
 		}
 	}
-	return types
+	return values
+}
+
+func ParseTime(time string) (int64, error) {
+	value, err := native.ParseTime(time)
+	return value, err
 }

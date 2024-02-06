@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
@@ -49,7 +51,8 @@ func (c Connect) Run(args []string) {
 	address := arguments[0]
 	symbols := parser.ParseSymbols(arguments[2])
 	types := parser.ParseEventTypes(arguments[1])
-	err := connect(address, types, symbols, dxarguments.properties(), dxarguments.forceStream(), dxarguments.isQuite())
+
+	err := connect(address, types, symbols, dxarguments.properties(), dxarguments.forceStream(), dxarguments.isQuite(), dxarguments.time())
 	if err != nil {
 		fmt.Printf("Error during connect: %v", err)
 	}
@@ -62,6 +65,7 @@ func connect(
 	properties map[string]string,
 	forceStream bool,
 	isQuite bool,
+	fromTime *string,
 ) error {
 	for key, value := range properties {
 		api.SetSystemProperty(key, value)
@@ -109,6 +113,8 @@ func connect(
 					fmt.Printf("%s\n", v.String())
 				case *order.SpreadOrder:
 					fmt.Printf("%s\n", v.String())
+				case *candle.Candle:
+					fmt.Printf("%s\n", v.String())
 				default:
 					fmt.Printf("Unsupported event %T!\n", v)
 				}
@@ -123,11 +129,20 @@ func connect(
 		return fmt.Errorf("CreateSubscription: %we", err)
 	}
 	for _, symbol := range symbols {
-		err = subscription.AddSymbol(symbol)
-
+		if fromTime != nil {
+			parseTime, err := parser.ParseTime(*fromTime)
+			if err != nil {
+				return err
+			}
+			timeSeriesSubscriptionSymbol := Osub.NewTimeSeriesSubscriptionSymbol(symbol, parseTime)
+			subscription.AddSymbol(timeSeriesSubscriptionSymbol)
+		} else {
+			err = subscription.AddSymbol(symbol)
+		}
 		if err != nil {
 			return fmt.Errorf("AddSymbol: %we", err)
 		}
+
 	}
 	time.Sleep(time.Duration(math.MaxInt64))
 	return nil

@@ -8,7 +8,6 @@ extern void OnEventReceived(graal_isolatethread_t *thread, dxfg_event_type_list 
 import "C"
 import (
 	"fmt"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"unsafe"
 )
@@ -20,6 +19,12 @@ type DXFeedSubscription struct {
 type dxfg_symbol_t struct {
 	t      C.int32_t
 	symbol *C.char
+}
+
+type dxfg_time_series_subscription_symbol_t struct {
+	t         C.int32_t
+	symbol    *dxfg_symbol_t
+	from_time C.int64_t
 }
 
 func ConvertString(value *C.char) *string {
@@ -68,14 +73,8 @@ func (s DXFeedSubscription) AddSymbols(symbols ...any) error {
 }
 
 func (s DXFeedSubscription) convertSymbol(symbol any) *C.dxfg_symbol_t {
-	switch value := symbol.(type) {
-	case string:
-		return (*C.dxfg_symbol_t)(unsafe.Pointer(newEventMapper().cStringSymbol(value)))
-	case Osub.WildcardSymbol:
-		return (*C.dxfg_symbol_t)(unsafe.Pointer(newEventMapper().cWildCardSymbol()))
-	default:
-		return nil
-	}
+	value := newEventMapper().cSymbol(symbol)
+	return (*C.dxfg_symbol_t)(value)
 }
 
 func (s DXFeedSubscription) RemoveSymbol(symbol any) error {

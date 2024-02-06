@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
@@ -134,6 +135,8 @@ func dump(
 				case *order.Order:
 					count = count + 1
 				case *order.SpreadOrder:
+					count = count + 1
+				case *candle.Candle:
 					count = count + 1
 				default:
 				}
