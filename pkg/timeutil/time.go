@@ -22,3 +22,7 @@ func GetSecondsFromTime(timeMillis int64) int32 {
 func GetMillisFromTime(timeMillis int64) int32 {
 	return int32(mathutil.FloorModInt64(timeMillis, SECOND))
 }
+
+func GetYearMonthDayByDayId(dayId int32) int32 {
+	panic("add impl")
+}
