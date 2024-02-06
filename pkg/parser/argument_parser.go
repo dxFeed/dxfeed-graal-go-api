@@ -49,3 +49,8 @@ func ParseEventTypes(value string) []eventcodes.EventCode {
 	}
 	return types
 }
+
+func ParseTime(time string) (int64, error) {
+	value, err := native.ParseTime(time)
+	return value, err
+}

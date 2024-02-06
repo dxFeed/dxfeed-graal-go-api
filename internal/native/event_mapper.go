@@ -8,6 +8,7 @@ import "C"
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
 	"unsafe"
 )
 
@@ -52,6 +53,19 @@ func (m *eventMapper) goEvent(event *C.dxfg_event_type_t) interface{} {
 	}
 }
 
+func (m *eventMapper) cSymbol(symbol any) unsafe.Pointer {
+	switch value := symbol.(type) {
+	case string:
+		return unsafe.Pointer(m.cStringSymbol(value))
+	case Osub.WildcardSymbol:
+		return unsafe.Pointer(m.cWildCardSymbol())
+	case Osub.TimeSeriesSubscriptionSymbol:
+		return unsafe.Pointer(m.cTimeSeriesSymbol(value.GetSymbol(), value.GetFromTime()))
+	default:
+		return nil
+	}
+}
+
 func (m *eventMapper) cStringSymbol(str string) *dxfg_symbol_t {
 	ss := &dxfg_symbol_t{}
 	ss.t = 0
@@ -62,5 +76,13 @@ func (m *eventMapper) cStringSymbol(str string) *dxfg_symbol_t {
 func (m *eventMapper) cWildCardSymbol() *dxfg_symbol_t {
 	ss := &dxfg_symbol_t{}
 	ss.t = 2
+	return ss
+}
+
+func (m *eventMapper) cTimeSeriesSymbol(str any, fromTime int64) *dxfg_time_series_subscription_symbol_t {
+	ss := &dxfg_time_series_subscription_symbol_t{}
+	ss.t = 4
+	ss.symbol = (*dxfg_symbol_t)(m.cSymbol(str))
+	ss.from_time = C.int64_t(fromTime)
 	return ss
 }
