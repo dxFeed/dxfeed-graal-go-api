@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
@@ -78,11 +79,7 @@ func dump(
 		listeners = append(listeners, DumpEvents(func(eventsList []interface{}) {
 			for _, event := range eventsList {
 				switch v := event.(type) {
-				case *quote.Quote:
-					fmt.Printf("%s\n", v.String())
-				case *timeandsale.TimeAndSale:
-					fmt.Printf("%s\n", v.String())
-				case *profile.Profile:
+				case events.StringConverter:
 					fmt.Printf("%s\n", v.String())
 				default:
 					fmt.Printf("Unsupported event %T!\n", v)

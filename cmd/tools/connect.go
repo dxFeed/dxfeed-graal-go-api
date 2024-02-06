@@ -4,12 +4,8 @@ import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
 	"math"
 	"os"
@@ -103,17 +99,7 @@ func connect(
 		err = subscription.AddListener(PrintEvents(func(eventsList []interface{}) {
 			for _, event := range eventsList {
 				switch v := event.(type) {
-				case *quote.Quote:
-					fmt.Printf("%s\n", v.String())
-				case *timeandsale.TimeAndSale:
-					fmt.Printf("%s\n", v.String())
-				case *profile.Profile:
-					fmt.Printf("%s\n", v.String())
-				case *order.Order:
-					fmt.Printf("%s\n", v.String())
-				case *order.SpreadOrder:
-					fmt.Printf("%s\n", v.String())
-				case *candle.Candle:
+				case events.StringConverter:
 					fmt.Printf("%s\n", v.String())
 				default:
 					fmt.Printf("Unsupported event %T!\n", v)
