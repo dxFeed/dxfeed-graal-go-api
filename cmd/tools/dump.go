@@ -5,12 +5,7 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
 	"os"
 )
@@ -121,23 +116,7 @@ func dump(
 		}
 
 		listeners = append(listeners, DumpEvents(func(eventsList []interface{}) {
-			for _, event := range eventsList {
-				switch event.(type) {
-				case *quote.Quote:
-					count = count + 1
-				case *timeandsale.TimeAndSale:
-					count = count + 1
-				case *profile.Profile:
-					count = count + 1
-				case *order.Order:
-					count = count + 1
-				case *order.SpreadOrder:
-					count = count + 1
-				case *candle.Candle:
-					count = count + 1
-				default:
-				}
-			}
+			count = count + len(eventsList)
 			err := publisher.Publish(eventsList)
 			if err != nil {
 				fmt.Printf("Publish error %ve", err)
