@@ -135,6 +135,8 @@ func dump(
 					count = count + 1
 				case *candle.Candle:
 					count = count + 1
+				case *order.AnalyticOrder:
+					count = count + 1
 				default:
 				}
 			}
