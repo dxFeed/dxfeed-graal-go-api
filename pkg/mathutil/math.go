@@ -1,5 +1,9 @@
 package mathutil
 
+type Integer interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
+}
+
 func FloorDivInt64(x, y int64) int64 {
 	r := x / y
 	// if the signs are different and modulo not zero, round down
@@ -36,4 +40,23 @@ func MaxInt64(a, b int64) int64 {
 		return a
 	}
 	return b
+}
+
+func Div[T Integer](a, b T) T {
+	if a >= 0 {
+		return a / b
+	} else {
+		if b >= 0 {
+			return (a+1)/b - 1
+		} else {
+			return (a+1)/b + 1
+		}
+	}
+}
+
+func Abs[T Integer](a T) T {
+	if a < 0 {
+		return -a
+	}
+	return a
 }

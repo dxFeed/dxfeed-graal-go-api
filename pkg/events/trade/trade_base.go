@@ -50,6 +50,10 @@ func (t *TradeBase) TimeSequence() int64 {
 	return t.timeSequence
 }
 
+func (t *TradeBase) SetTimeSequence(timeSequence int64) {
+	t.timeSequence = timeSequence
+}
+
 func (t *TradeBase) EventTime() int64 {
 	return t.eventTime
 }
@@ -130,10 +134,6 @@ func (t *TradeBase) SetFlags(flags int32) {
 	t.flags = flags
 }
 
-func (t *TradeBase) Type() eventcodes.EventCode {
-	return eventcodes.Trade
-}
-
 func (t *TradeBase) TickDirection() Direction {
 	return ValueOf(mathutil.GetBits(int64(t.Flags()), directionMask, directionShift))
 }
@@ -171,13 +171,17 @@ func (t *TradeBase) Time() int64 {
 }
 
 func (t *TradeBase) SetTime(value int64) {
-	t.timeSequence = int64(timeutil.GetSecondsFromTime(value)<<32) |
+	t.timeSequence = timeutil.GetSecondsFromTime(value)<<32 |
 		int64(timeutil.GetMillisFromTime(value)<<22) |
 		value
 }
 
 func (t *TradeBase) TimeNanos() int64 {
 	return timeutil.GetNanosFromMillisAndNanoPart(t.Time(), t.TimeNanoPart())
+}
+
+func (t *TradeBase) Type() eventcodes.EventCode {
+	return eventcodes.Trade
 }
 
 func (t *TradeBase) SetTimeNanos(value int64) {
