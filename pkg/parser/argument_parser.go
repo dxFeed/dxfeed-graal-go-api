@@ -27,6 +27,7 @@ func ParseEventTypes(value string) []eventcodes.EventCode {
 		"candle":      eventcodes.Candle,
 		"trade":       eventcodes.Trade,
 		"tradeeth":    eventcodes.TradeETH,
+		"analyticorder": eventcodes.AnalyticOrder,
 	}
 	var values []eventcodes.EventCode
 	if value == "all" {
