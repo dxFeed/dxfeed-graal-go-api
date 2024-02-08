@@ -434,11 +434,11 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   is an `Order` extension that introduces analytic information, such as adding iceberg-related information to a given
   order
 
-- [ ] [Trade](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/Trade.html)
+- [x] [Trade](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/Trade.html)
   is a snapshot of the price and size of the last trade during regular trading hours and an overall day volume and day
   turnover
 
-- [ ] [TradeETH](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/TradeETH.html)
+- [x] [TradeETH](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/TradeETH.html)
   is a snapshot of the price and size of the last trade during extended trading hours and the extended trading hours day
   volume and day turnover
 
