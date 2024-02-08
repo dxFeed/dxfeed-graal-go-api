@@ -65,7 +65,7 @@ func (q *Quote) SetSequence(sequence int32) {
 }
 
 func (q *Quote) Time() int64 {
-	return mathutil.FloorDivInt64(mathutil.MaxInt64(q.bidTime, q.askTime), 1000)*1000 + int64(uint32(q.timeMillisSequence)>>22)
+	return mathutil.FloorDivInt(mathutil.MaxInt(q.bidTime, q.askTime), 1000)*1000 + int64(uint32(q.timeMillisSequence)>>22)
 }
 
 func (q *Quote) TimeNanos() int64 {
@@ -172,5 +172,5 @@ func (q *Quote) SetTimeMillisSequence(timeMillisSequence int32) {
 }
 
 func (q *Quote) recomputeTimeMillisPart() {
-	q.timeMillisSequence = timeutil.GetMillisFromTime(mathutil.MaxInt64(q.askTime, q.bidTime))<<22 | q.Sequence()
+	q.timeMillisSequence = timeutil.GetMillisFromTime(mathutil.MaxInt(q.askTime, q.bidTime))<<22 | q.Sequence()
 }
