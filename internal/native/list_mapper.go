@@ -23,21 +23,11 @@ type ListMapper[T CMapper] struct {
 }
 
 func NewListMapper[T CMapper, U comparable](elements []U) *ListMapper[T] {
-	eventMappers := make(map[int32]mappers.MapperInterface)
-
-	eventMappers[C.DXFG_EVENT_QUOTE] = mappers.QuoteMapper{}
-	eventMappers[C.DXFG_EVENT_TIME_AND_SALE] = mappers.TimeAndSaleMapper{}
-	eventMappers[C.DXFG_EVENT_PROFILE] = mappers.ProfileMapper{}
-	eventMappers[C.DXFG_EVENT_ORDER] = mappers.OrderMapper{}
-	eventMappers[C.DXFG_EVENT_SPREAD_ORDER] = mappers.SpreadOrderMapper{}
-	eventMappers[C.DXFG_EVENT_CANDLE] = mappers.CandleMapper{}
-	eventMappers[C.DXFG_EVENT_ANALYTIC_ORDER] = mappers.AnalyticOrderMapper{}
-
 	size := len(elements)
 	e := (**T)(C.malloc(C.size_t(size) * C.size_t(unsafe.Sizeof((*int)(nil)))))
 	slice := unsafe.Slice(e, C.size_t(size))
 	for i, element := range elements {
-		slice[i] = allocElement[T, U](element, eventMappers)
+		slice[i] = allocElement[T, U](element, mappers.AvailableMappers())
 	}
 
 	return &ListMapper[T]{

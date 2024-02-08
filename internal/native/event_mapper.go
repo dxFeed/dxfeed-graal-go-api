@@ -17,16 +17,7 @@ type eventMapper struct {
 }
 
 func newEventMapper() *eventMapper {
-	eventMappers := make(map[int32]mappers.MapperInterface)
-	eventMappers[C.DXFG_EVENT_QUOTE] = mappers.QuoteMapper{}
-	eventMappers[C.DXFG_EVENT_TIME_AND_SALE] = mappers.TimeAndSaleMapper{}
-	eventMappers[C.DXFG_EVENT_PROFILE] = mappers.ProfileMapper{}
-	eventMappers[C.DXFG_EVENT_ORDER] = mappers.OrderMapper{}
-	eventMappers[C.DXFG_EVENT_SPREAD_ORDER] = mappers.SpreadOrderMapper{}
-	eventMappers[C.DXFG_EVENT_CANDLE] = mappers.CandleMapper{}
-	eventMappers[C.DXFG_EVENT_ANALYTIC_ORDER] = mappers.AnalyticOrderMapper{}
-
-	return &eventMapper{mappers: eventMappers}
+	return &eventMapper{mappers: mappers.AvailableMappers()}
 }
 
 func (m *eventMapper) goEvents(eventsList *C.dxfg_event_type_list) []interface{} {

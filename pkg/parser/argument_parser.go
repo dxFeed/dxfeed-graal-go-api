@@ -19,13 +19,16 @@ func ParseSymbols(value string) []any {
 
 func ParseEventTypes(value string) []eventcodes.EventCode {
 	codes := map[string]eventcodes.EventCode{
-		"quote":         eventcodes.Quote,
-		"timeandsale":   eventcodes.TimeAndSale,
-		"profile":       eventcodes.Profile,
-		"order":         eventcodes.Order,
-		"spreadorder":   eventcodes.SpreadOrder,
+		"quote":       eventcodes.Quote,
+		"timeandsale": eventcodes.TimeAndSale,
+		"profile":     eventcodes.Profile,
+		"order":       eventcodes.Order,
+		"spreadorder": eventcodes.SpreadOrder,
+		"candle":      eventcodes.Candle,
+		"trade":       eventcodes.Trade,
+		"tradeeth":    eventcodes.TradeETH,
 		"analyticorder": eventcodes.AnalyticOrder,
-		"candle":        eventcodes.Candle}
+	}
 	var values []eventcodes.EventCode
 	if value == "all" {
 		for k := range codes {
