@@ -14,13 +14,13 @@ const (
 
 func GetSecondsFromTime(timeMillis int64) int64 {
 	if timeMillis >= 0 {
-		return mathutil.MinInt64(timeMillis/SECOND, math.MaxInt32)
+		return mathutil.MinInt(timeMillis/SECOND, math.MaxInt32)
 	}
-	return mathutil.MinInt64((timeMillis+1)/SECOND-1, math.MinInt32)
+	return mathutil.MinInt((timeMillis+1)/SECOND-1, math.MinInt32)
 }
 
 func GetMillisFromTime(timeMillis int64) int32 {
-	return int32(mathutil.FloorModInt64(timeMillis, SECOND))
+	return int32(mathutil.FloorModInt(timeMillis, SECOND))
 }
 
 func GetYearMonthDayByDayId(dayId int32) int32 {

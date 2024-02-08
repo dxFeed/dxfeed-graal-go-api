@@ -11,9 +11,9 @@ func GetNanosFromMillisAndNanoPart(timeMillis int64, timeNanoPart int32) int64 {
 }
 
 func GetMillisFromNanos(nanos int64) int64 {
-	return mathutil.FloorDivInt64(nanos, NanosInMillis)
+	return mathutil.FloorDivInt(nanos, NanosInMillis)
 }
 
 func GetNanoPartFromNanos(nanos int64) int64 {
-	return mathutil.FloorModInt64(nanos, NanosInMillis)
+	return mathutil.FloorModInt(nanos, NanosInMillis)
 }

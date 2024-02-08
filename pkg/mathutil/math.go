@@ -4,7 +4,7 @@ type Integer interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
 }
 
-func FloorDivInt64(x, y int64) int64 {
+func FloorDivInt[T Integer](x, y T) T {
 	r := x / y
 	// if the signs are different and modulo not zero, round down
 	if x^y < 0 && r*y != x {
@@ -13,11 +13,11 @@ func FloorDivInt64(x, y int64) int64 {
 	return r
 }
 
-func FloorModInt64(x, y int64) int64 {
-	return x - FloorDivInt64(x, y)*y
+func FloorModInt[T Integer](x, y T) T {
+	return x - FloorDivInt(x, y)*y
 }
 
-func RoundUp(numToRound int64, multiple int64) int64 {
+func RoundUp[T Integer](numToRound T, multiple T) T {
 	if multiple == 0 {
 		return numToRound
 	}
@@ -28,14 +28,14 @@ func RoundUp(numToRound int64, multiple int64) int64 {
 	return numToRound + multiple - remainder
 }
 
-func MinInt64(a, b int64) int64 {
+func MinInt[T Integer](a, b T) T {
 	if a <= b {
 		return a
 	}
 	return b
 }
 
-func MaxInt64(a, b int64) int64 {
+func MaxInt[T Integer](a, b T) T {
 	if a >= b {
 		return a
 	}
