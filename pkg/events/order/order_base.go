@@ -332,8 +332,8 @@ func (b *Base) baseFieldsToString() string {
 		", executedSize=" + formatutil.FormatFloat64(b.ExecutedSize()) +
 		", count=" + formatutil.FormatInt64(b.Count()) +
 		", exchange=" + formatutil.FormatChar(b.ExchangeCode()) +
-		", side=" + formatutil.FormatInt64(int64(b.Side())) +
-		", scope=" + formatutil.FormatInt64(int64(b.Scope())) +
+		", side=" + b.Side().String() +
+		", scope=" + b.Scope().String() +
 		", tradeId=" + formatutil.FormatInt64(b.TradeId()) +
 		", tradePrice=" + formatutil.FormatFloat64(b.TradePrice()) +
 		", tradeSize=" + formatutil.FormatFloat64(b.TradeSize())
