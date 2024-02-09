@@ -28,7 +28,8 @@ func TestGetOrder(t *testing.T) {
 	if err != nil {
 		t.Fatalf(`Get Source with error "%v".`, err)
 	}
-	if constV.name != valueByName.name {
+
+	if *constV.Name() != *valueByName.Name() {
 		t.Fatalf(`Value %v doesn't equal "%v".`, constV, value)
 	}
 }

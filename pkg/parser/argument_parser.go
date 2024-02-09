@@ -11,7 +11,7 @@ func ParseSymbols(value string) []any {
 	value = strings.TrimSpace(value)
 
 	if value == "all" {
-		return []any{Osub.WildcardSymbol{}}
+		return []any{Osub.NewWildcardSymbol()}
 	}
 	values, _ := native.ParseSymbols(value)
 	return values
@@ -19,14 +19,14 @@ func ParseSymbols(value string) []any {
 
 func ParseEventTypes(value string) []eventcodes.EventCode {
 	codes := map[string]eventcodes.EventCode{
-		"quote":       eventcodes.Quote,
-		"timeandsale": eventcodes.TimeAndSale,
-		"profile":     eventcodes.Profile,
-		"order":       eventcodes.Order,
-		"spreadorder": eventcodes.SpreadOrder,
-		"candle":      eventcodes.Candle,
-		"trade":       eventcodes.Trade,
-		"tradeeth":    eventcodes.TradeETH,
+		"quote":         eventcodes.Quote,
+		"timeandsale":   eventcodes.TimeAndSale,
+		"profile":       eventcodes.Profile,
+		"order":         eventcodes.Order,
+		"spreadorder":   eventcodes.SpreadOrder,
+		"candle":        eventcodes.Candle,
+		"trade":         eventcodes.Trade,
+		"tradeeth":      eventcodes.TradeETH,
 		"analyticorder": eventcodes.AnalyticOrder,
 	}
 	var values []eventcodes.EventCode

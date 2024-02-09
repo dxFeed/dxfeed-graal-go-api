@@ -27,6 +27,18 @@ type dxfg_time_series_subscription_symbol_t struct {
 	from_time C.int64_t
 }
 
+type dxfg_indexed_event_source_t struct {
+	t    C.int32_t
+	id   C.int32_t
+	name *C.char
+}
+
+type dxfg_indexed_event_subscription_symbol_t struct {
+	t      C.int32_t
+	symbol *dxfg_symbol_t
+	source *dxfg_indexed_event_source_t
+}
+
 func ConvertString(value *C.char) *string {
 	if value == nil {
 		return nil

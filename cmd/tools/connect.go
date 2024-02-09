@@ -121,7 +121,7 @@ func connect(
 				return err
 			}
 			timeSeriesSubscriptionSymbol := Osub.NewTimeSeriesSubscriptionSymbol(symbol, parseTime)
-			subscription.AddSymbol(timeSeriesSubscriptionSymbol)
+			err = subscription.AddSymbol(timeSeriesSubscriptionSymbol)
 		} else {
 			err = subscription.AddSymbol(symbol)
 		}

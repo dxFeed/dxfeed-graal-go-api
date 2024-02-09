@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"unsafe"
 )
 
@@ -50,10 +52,12 @@ func (m *eventMapper) cSymbol(symbol any) unsafe.Pointer {
 	switch value := symbol.(type) {
 	case string:
 		return unsafe.Pointer(m.cStringSymbol(value))
-	case Osub.WildcardSymbol:
+	case *Osub.WildcardSymbol:
 		return unsafe.Pointer(m.cWildCardSymbol())
-	case Osub.TimeSeriesSubscriptionSymbol:
-		return unsafe.Pointer(m.cTimeSeriesSymbol(value.GetSymbol(), value.GetFromTime()))
+	case *Osub.IndexedEventSubscriptionSymbol:
+		return unsafe.Pointer(m.cIndexedEventSubscriptionSymbol(value.Symbol(), value.Source()))
+	case *Osub.TimeSeriesSubscriptionSymbol:
+		return unsafe.Pointer(m.cTimeSeriesSymbol(value.Symbol(), value.FromTime()))
 	default:
 		return nil
 	}
@@ -77,5 +81,24 @@ func (m *eventMapper) cTimeSeriesSymbol(str any, fromTime int64) *dxfg_time_seri
 	ss.t = 4
 	ss.symbol = (*dxfg_symbol_t)(m.cSymbol(str))
 	ss.from_time = C.int64_t(fromTime)
+	return ss
+}
+
+func (m *eventMapper) cIndexedEventSubscriptionSymbol(str any, source events.IndexedEventSourceInterface) *dxfg_indexed_event_subscription_symbol_t {
+	ss := &dxfg_indexed_event_subscription_symbol_t{}
+	ss.t = 3
+	ss.symbol = (*dxfg_symbol_t)(m.cSymbol(str))
+	nativeSource := &dxfg_indexed_event_source_t{}
+	nativeSource.id = C.int32_t(source.Id())
+	nativeSource.name = C.CString(*source.Name())
+	switch value := source.(type) {
+	case *events.IndexedEventSource:
+		nativeSource.t = 0
+	case *order.OrderSource:
+		nativeSource.t = 1
+	default:
+		panic(fmt.Sprintf("Undefined source %T", value))
+	}
+	ss.source = nativeSource
 	return ss
 }

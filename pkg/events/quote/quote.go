@@ -163,7 +163,7 @@ func (q *Quote) String() string {
 		"}"
 }
 
-func (q *Quote) GetTimeMillisSequence() int32 {
+func (q *Quote) TimeMillisSequence() int32 {
 	return q.timeMillisSequence
 }
 

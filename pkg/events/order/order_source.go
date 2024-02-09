@@ -3,12 +3,13 @@ package order
 import (
 	"bytes"
 	"fmt"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"regexp"
 	"sync"
 )
 
 type OrderSource struct {
-	IndexedEventSource
+	events.IndexedEventSource
 	pubFlags  int64
 	isBuiltin bool
 }
@@ -28,7 +29,7 @@ var (
 )
 
 func newOrderSourceWithIDName(identifier int64, name *string) *OrderSource {
-	return &OrderSource{IndexedEventSource: IndexedEventSource{identifier: identifier, name: name}, pubFlags: 0, isBuiltin: false}
+	return &OrderSource{IndexedEventSource: *events.NewIndexedEventSource(identifier, *name), pubFlags: 0, isBuiltin: false}
 }
 
 func newOrderSourceWithIDNameFlags(identifier int64, name string, pubflags int64) *OrderSource {
@@ -41,7 +42,7 @@ func newOrderSourceWithIDNameFlags(identifier int64, name string, pubflags int64
 		(pubflags&(pubOrder|pubAnalyticOrder|pubSpreadOrder)) == 0 {
 		panic("unpublishable full order book order")
 	}
-	value := &OrderSource{IndexedEventSource: IndexedEventSource{identifier: identifier, name: &name}, pubFlags: pubflags, isBuiltin: true}
+	value := &OrderSource{IndexedEventSource: *events.NewIndexedEventSource(identifier, name), pubFlags: pubflags, isBuiltin: true}
 	_, loadedById := sourcesById.LoadOrStore(identifier, value)
 	if loadedById {
 		panic(fmt.Sprintf("duplicate id %d", identifier))

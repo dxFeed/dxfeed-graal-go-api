@@ -193,7 +193,7 @@ func (t *TradeBase) String() string {
 	return formatutil.FormatString(t.EventSymbol()) +
 		", eventTime=" + formatutil.FormatTime(t.EventTime()) +
 		", time=" + formatutil.FormatTime(t.Time()) +
-		", sequence=" + strconv.FormatInt(int64(t.Sequence()), 10) +
+		", sequence=" + strconv.FormatInt(t.Sequence(), 10) +
 		", timeNanoPart=" + strconv.FormatInt(int64(t.TimeNanoPart()), 10) +
 		", exchange=" + formatutil.FormatChar(rune(t.ExchangeCode())) +
 		", price=" + formatutil.FormatFloat64(t.Price()) +

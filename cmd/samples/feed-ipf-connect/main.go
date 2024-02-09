@@ -54,7 +54,7 @@ func main() {
 	}
 	completed, _ := ipfReader.WasComplete()
 	fmt.Printf("Was Completed %t\n", completed)
-	lastModified, _ := ipfReader.GetLastModified()
+	lastModified, _ := ipfReader.LastModified()
 	fmt.Printf("LastModified %d\n", lastModified)
 
 	// For token-based authorization, use the following address format:
