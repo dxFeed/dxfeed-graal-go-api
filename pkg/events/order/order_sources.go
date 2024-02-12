@@ -124,154 +124,154 @@ var (
 	memxL2 = newOrderSourceName("memx", pubOrder)
 )
 
-func Default() *OrderSource {
+func Default() *Source {
 	return defaultSource
 }
 
-func CompsoiteBid() *OrderSource {
+func CompsoiteBid() *Source {
 	return compsoiteBid
 }
 
-func CompsoiteAsk() *OrderSource {
+func CompsoiteAsk() *Source {
 	return compsoiteAsk
 }
 
-func RegionalBid() *OrderSource {
+func RegionalBid() *Source {
 	return regionalBid
 }
 
-func RegionalAsk() *OrderSource {
+func RegionalAsk() *Source {
 	return regionalAsk
 }
 
-func AgregateBid() *OrderSource {
+func AgregateBid() *Source {
 	return agregateBid
 }
 
-func AgregateAsk() *OrderSource {
+func AgregateAsk() *Source {
 	return agregateAsk
 }
 
-func NtvL2() *OrderSource {
+func NtvL2() *Source {
 	return ntvL2
 }
 
-func NtvL3() *OrderSource {
+func NtvL3() *Source {
 	return ntvL3
 }
 
-func NfxL3() *OrderSource {
+func NfxL3() *Source {
 	return nfxL3
 }
 
-func EspdL3() *OrderSource {
+func EspdL3() *Source {
 	return espdL3
 }
 
-func XnfiL3() *OrderSource {
+func XnfiL3() *Source {
 	return xnfiL3
 }
 
-func IceL3() *OrderSource {
+func IceL3() *Source {
 	return iceL3
 }
 
-func IseL3() *OrderSource {
+func IseL3() *Source {
 	return iseL3
 }
 
-func DeaL3() *OrderSource {
+func DeaL3() *Source {
 	return deaL3
 }
 
-func DexL3() *OrderSource {
+func DexL3() *Source {
 	return dexL3
 }
 
-func ByxL3() *OrderSource {
+func ByxL3() *Source {
 	return byxL3
 }
 
-func BzxL3() *OrderSource {
+func BzxL3() *Source {
 	return bzxL3
 }
 
-func BateL3() *OrderSource {
+func BateL3() *Source {
 	return bateL3
 }
 
-func ChixL3() *OrderSource {
+func ChixL3() *Source {
 	return chixL3
 }
 
-func CeuxL3() *OrderSource {
+func CeuxL3() *Source {
 	return ceuxL3
 }
 
-func BxtrL3() *OrderSource {
+func BxtrL3() *Source {
 	return bxtrL3
 }
 
-func IstL3() *OrderSource {
+func IstL3() *Source {
 	return istL3
 }
 
-func Bi20L3() *OrderSource {
+func Bi20L3() *Source {
 	return bi20L3
 }
 
-func AbeL3() *OrderSource {
+func AbeL3() *Source {
 	return abeL3
 }
 
-func FairL3() *OrderSource {
+func FairL3() *Source {
 	return fairL3
 }
 
-func GlbxL3() *OrderSource {
+func GlbxL3() *Source {
 	return glbxL3
 }
 
-func GlbxL2() *OrderSource {
+func GlbxL2() *Source {
 	return glbxL2
 }
 
-func ErisL3() *OrderSource {
+func ErisL3() *Source {
 	return erisL3
 }
 
-func XeurL2() *OrderSource {
+func XeurL2() *Source {
 	return xeurL2
 }
 
-func XeurL3() *OrderSource {
+func XeurL3() *Source {
 	return xeurL3
 }
 
-func CfeL3() *OrderSource {
+func CfeL3() *Source {
 	return cfeL3
 }
 
-func C20xL3() *OrderSource {
+func C20xL3() *Source {
 	return c20xL3
 }
 
-func SmfeL2() *OrderSource {
+func SmfeL2() *Source {
 	return smfeL2
 }
 
-func SmfeL3() *OrderSource {
+func SmfeL3() *Source {
 	return smfeL3
 }
 
-func IexL2() *OrderSource {
+func IexL2() *Source {
 	return iexL2
 }
 
-func MemxL2() *OrderSource {
+func MemxL2() *Source {
 	return memxL2
 }
 
-func MemxL3() *OrderSource {
+func MemxL3() *Source {
 	return memxL3
 }

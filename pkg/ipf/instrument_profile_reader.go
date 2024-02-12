@@ -30,7 +30,7 @@ func (r *InstrumentProfileReader) Close() error {
 	return r.reader.Close()
 }
 
-func (r *InstrumentProfileReader) GetLastModified() (int64, error) {
+func (r *InstrumentProfileReader) LastModified() (int64, error) {
 	return r.reader.GetLastModified()
 }
 

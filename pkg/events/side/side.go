@@ -1,8 +1,24 @@
 package side
 
-import "github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
+import (
+	"fmt"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
+)
 
 type Side int64
+
+func (s Side) String() string {
+	switch s {
+	case Undefined:
+		return "Undefined"
+	case Buy:
+		return "Buy"
+	case Sell:
+		return "Sell"
+	default:
+		return fmt.Sprintf("Side: Wrong value %d", s)
+	}
+}
 
 const (
 	Undefined = 0

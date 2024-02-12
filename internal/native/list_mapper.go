@@ -8,7 +8,6 @@ import "C"
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"unsafe"
 )
@@ -44,14 +43,14 @@ func allocElement[T CMapper, U comparable](element U, mappers map[int32]mappers.
 		// all market events have to implement this interface
 		mapper := mappers[int32(t.Type())]
 		return (*T)(mapper.CEvent(t))
-	case string:
-		return (*T)(unsafe.Pointer(newEventMapper().cStringSymbol(t)))
-	case Osub.WildcardSymbol:
-		return (*T)(unsafe.Pointer(newEventMapper().cWildCardSymbol()))
-	case Osub.TimeSeriesSubscriptionSymbol:
-		return (*T)(unsafe.Pointer(newEventMapper().cTimeSeriesSymbol(t.GetSymbol(), t.GetFromTime())))
 	default:
-		fmt.Printf("Couldn't alloc element for %T\n", element)
-		return nil
+		symbol := newEventMapper().cSymbol(t)
+		if symbol != nil {
+			return (*T)(symbol)
+		} else {
+			fmt.Printf("Couldn't alloc element for %T\n", element)
+			return nil
+		}
+
 	}
 }

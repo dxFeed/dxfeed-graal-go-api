@@ -280,10 +280,10 @@ func (b *Base) OrderSourceName() *string {
 		emptyStr := ""
 		return &emptyStr
 	}
-	return source.name
+	return source.Name()
 }
 
-func (b *Base) OrderSource() (*OrderSource, error) {
+func (b *Base) OrderSource() (*Source, error) {
 	sourceId := b.Index() >> 48
 	if !IsSpecialSourceId(sourceId) {
 		sourceId = b.Index() >> 32
@@ -298,9 +298,9 @@ func (b *Base) OrderSource() (*OrderSource, error) {
 	return value, nil
 }
 
-func (b *Base) SetOrderSource(value *OrderSource) {
+func (b *Base) SetOrderSource(value *Source) {
 	var shift int64
-	if IsSpecialSourceId(value.identifier) {
+	if IsSpecialSourceId(int64(value.Id())) {
 		shift = 48
 	} else {
 		shift = 32
@@ -311,7 +311,7 @@ func (b *Base) SetOrderSource(value *OrderSource) {
 	} else {
 		mask = ^(int64(-1) << 32)
 	}
-	_ = b.SetIndex((value.identifier << shift) | (b.Index() & mask))
+	_ = b.SetIndex((int64(value.Id()) << shift) | (b.Index() & mask))
 }
 
 func (b *Base) baseFieldsToString() string {
@@ -331,9 +331,9 @@ func (b *Base) baseFieldsToString() string {
 		", size=" + formatutil.FormatFloat64(b.Size()) +
 		", executedSize=" + formatutil.FormatFloat64(b.ExecutedSize()) +
 		", count=" + formatutil.FormatInt64(b.Count()) +
-		", exchange=" + formatutil.FormatChar(rune(b.ExchangeCode())) +
-		", side=" + formatutil.FormatInt64(int64(b.Side())) +
-		", scope=" + formatutil.FormatInt64(int64(b.Scope())) +
+		", exchange=" + formatutil.FormatChar(b.ExchangeCode()) +
+		", side=" + b.Side().String() +
+		", scope=" + b.Scope().String() +
 		", tradeId=" + formatutil.FormatInt64(b.TradeId()) +
 		", tradePrice=" + formatutil.FormatFloat64(b.TradePrice()) +
 		", tradeSize=" + formatutil.FormatFloat64(b.TradeSize())

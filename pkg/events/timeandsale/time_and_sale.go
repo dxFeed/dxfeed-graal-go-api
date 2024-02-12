@@ -293,7 +293,7 @@ func (t *TimeAndSale) String() string {
 		", ask=" + formatutil.FormatFloat64(t.AskPrice()) +
 		", ESC=" + formatutil.FormatString(t.ExchangeSaleConditions()) +
 		", TTE=" + formatutil.FormatChar(t.TradeThroughExempt()) +
-		", side=" + formatutil.FormatInt64(int64(t.AggressorSide())) +
+		", side=" + t.AggressorSide().String() +
 		", spread=" + formatutil.FormatBool(t.IsSpreadLeg()) +
 		", ETH=" + formatutil.FormatBool(t.IsExtendedTradingHours()) +
 		", validTick=" + formatutil.FormatBool(t.IsValidTick()) +

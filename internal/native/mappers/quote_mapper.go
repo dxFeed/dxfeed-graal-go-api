@@ -20,7 +20,7 @@ func (m QuoteMapper) CEvent(event interface{}) unsafe.Pointer {
 	q.market_event.event_type.clazz = C.DXFG_EVENT_QUOTE
 	q.market_event.event_symbol = C.CString(*quoteEvent.EventSymbol())
 	q.market_event.event_time = C.int64_t(quoteEvent.EventTime())
-	q.time_millis_sequence = C.int32_t(quoteEvent.GetTimeMillisSequence())
+	q.time_millis_sequence = C.int32_t(quoteEvent.TimeMillisSequence())
 	q.time_nano_part = C.int32_t(quoteEvent.TimeNanoPart())
 	q.bid_time = C.int64_t(quoteEvent.BidTime())
 	q.bid_exchange_code = C.int16_t(quoteEvent.BidExchangeCode())

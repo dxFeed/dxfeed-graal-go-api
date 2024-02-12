@@ -1,8 +1,27 @@
 package order
 
-import "github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
+import (
+	"fmt"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
+)
 
 type Scope int32
+
+func (s Scope) String() string {
+	switch s {
+	case ScopeComposite:
+		return "Composite"
+	case ScopeRegional:
+		return "Regional"
+	case ScopeAggregate:
+		return "Aggregate"
+	case ScopeOrder:
+		return "Order"
+	default:
+		return fmt.Sprintf("Scope: Wrong value %d", s)
+
+	}
+}
 
 const (
 	ScopeComposite = iota
