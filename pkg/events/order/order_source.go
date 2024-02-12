@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-type OrderSource struct {
+type Source struct {
 	events.IndexedEventSource
 	pubFlags  int64
 	isBuiltin bool
@@ -28,11 +28,11 @@ var (
 	sourcesByName sync.Map
 )
 
-func newOrderSourceWithIDName(identifier int64, name *string) *OrderSource {
-	return &OrderSource{IndexedEventSource: *events.NewIndexedEventSource(identifier, *name), pubFlags: 0, isBuiltin: false}
+func newOrderSourceWithIDName(identifier int64, name *string) *Source {
+	return &Source{IndexedEventSource: *events.NewIndexedEventSource(identifier, *name), pubFlags: 0, isBuiltin: false}
 }
 
-func newOrderSourceWithIDNameFlags(identifier int64, name string, pubflags int64) *OrderSource {
+func newOrderSourceWithIDNameFlags(identifier int64, name string, pubflags int64) *Source {
 	err := checkIdAndName(identifier, name)
 	if err != nil {
 		panic(err)
@@ -42,7 +42,7 @@ func newOrderSourceWithIDNameFlags(identifier int64, name string, pubflags int64
 		(pubflags&(pubOrder|pubAnalyticOrder|pubSpreadOrder)) == 0 {
 		panic("unpublishable full order book order")
 	}
-	value := &OrderSource{IndexedEventSource: *events.NewIndexedEventSource(identifier, name), pubFlags: pubflags, isBuiltin: true}
+	value := &Source{IndexedEventSource: *events.NewIndexedEventSource(identifier, name), pubFlags: pubflags, isBuiltin: true}
 	_, loadedById := sourcesById.LoadOrStore(identifier, value)
 	if loadedById {
 		panic(fmt.Sprintf("duplicate id %d", identifier))
@@ -99,7 +99,7 @@ func orderSourceDecodeName(identifier int64) (*string, error) {
 	return &resultString, nil
 }
 
-func newOrderSourceName(name string, pubflags int64) *OrderSource {
+func newOrderSourceName(name string, pubflags int64) *Source {
 	id, err := orderSourceComposeId(name)
 	if err != nil {
 		return nil
@@ -133,10 +133,10 @@ func IsSpecialSourceId(value int64) bool {
 	return value >= 1 && value <= 6
 }
 
-func ValueOfIdentifier(identifier int64) (*OrderSource, error) {
+func ValueOfIdentifier(identifier int64) (*Source, error) {
 	value, ok := sourcesById.Load(identifier)
 	if ok {
-		return value.(*OrderSource), nil
+		return value.(*Source), nil
 	} else {
 		name, err := orderSourceDecodeName(identifier)
 		if err != nil {
@@ -148,10 +148,10 @@ func ValueOfIdentifier(identifier int64) (*OrderSource, error) {
 
 }
 
-func ValueOfName(name string) (*OrderSource, error) {
+func ValueOfName(name string) (*Source, error) {
 	value, ok := sourcesByName.Load(name)
 	if ok {
-		return value.(*OrderSource), nil
+		return value.(*Source), nil
 	} else {
 		identifier, err := orderSourceComposeId(name)
 		if err != nil {
@@ -160,4 +160,8 @@ func ValueOfName(name string) (*OrderSource, error) {
 		source := newOrderSourceWithIDName(identifier, &name)
 		return source, nil
 	}
+}
+
+func (source Source) Type() events.EventSourceType {
+	return events.OrderSourceType
 }

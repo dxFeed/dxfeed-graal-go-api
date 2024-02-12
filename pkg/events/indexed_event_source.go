@@ -1,8 +1,16 @@
 package events
 
+type EventSourceType int32
+
+const (
+	IndexedEventSourceType = iota
+	OrderSourceType
+)
+
 type IndexedEventSourceInterface interface {
 	Name() *string
 	Id() int64
+	Type() EventSourceType
 }
 
 type IndexedEventSource struct {
@@ -22,6 +30,10 @@ func (source IndexedEventSource) Name() *string {
 
 func (source IndexedEventSource) Id() int64 {
 	return source.id
+}
+
+func (source IndexedEventSource) Type() EventSourceType {
+	return IndexedEventSourceType
 }
 
 func DefaultIndexedEventSource() *IndexedEventSource {

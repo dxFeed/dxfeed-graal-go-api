@@ -61,7 +61,7 @@ func main() {
 			}
 		}
 	}))
-	indexedSymbol := Osub.NewIndexedEventSubscriptionSymbolWithOrderSource("AAPL", order.AgregateAsk())
+	indexedSymbol := Osub.NewIndexedEventSubscriptionSymbol("AAPL", order.AgregateAsk())
 	err = subscription.AddSymbol(indexedSymbol)
 	if err != nil {
 		panic(err)

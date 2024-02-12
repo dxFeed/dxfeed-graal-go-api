@@ -283,7 +283,7 @@ func (b *Base) OrderSourceName() *string {
 	return source.Name()
 }
 
-func (b *Base) OrderSource() (*OrderSource, error) {
+func (b *Base) OrderSource() (*Source, error) {
 	sourceId := b.Index() >> 48
 	if !IsSpecialSourceId(sourceId) {
 		sourceId = b.Index() >> 32
@@ -298,7 +298,7 @@ func (b *Base) OrderSource() (*OrderSource, error) {
 	return value, nil
 }
 
-func (b *Base) SetOrderSource(value *OrderSource) {
+func (b *Base) SetOrderSource(value *Source) {
 	var shift int64
 	if IsSpecialSourceId(int64(value.Id())) {
 		shift = 48

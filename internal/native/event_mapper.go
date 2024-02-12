@@ -10,7 +10,6 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"unsafe"
 )
 
@@ -91,13 +90,13 @@ func (m *eventMapper) cIndexedEventSubscriptionSymbol(str any, source events.Ind
 	nativeSource := &dxfg_indexed_event_source_t{}
 	nativeSource.id = C.int32_t(source.Id())
 	nativeSource.name = C.CString(*source.Name())
-	switch value := source.(type) {
-	case *events.IndexedEventSource:
-		nativeSource.t = 0
-	case *order.OrderSource:
-		nativeSource.t = 1
+	switch source.Type() {
+	case events.IndexedEventSourceType:
+		nativeSource.t = C.INDEXED_EVENT_SOURCE
+	case events.OrderSourceType:
+		nativeSource.t = C.ORDER_SOURCE
 	default:
-		panic(fmt.Sprintf("Undefined source %T", value))
+		panic(fmt.Sprintf("Undefined source %d", source.Type()))
 	}
 	ss.source = nativeSource
 	return ss

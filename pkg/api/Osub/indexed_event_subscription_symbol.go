@@ -2,7 +2,6 @@ package Osub
 
 import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 )
 
 type IndexedEventSubscriptionSymbol struct {
@@ -10,11 +9,7 @@ type IndexedEventSubscriptionSymbol struct {
 	source events.IndexedEventSourceInterface
 }
 
-func NewIndexedEventSubscriptionSymbolWithOrderSource(symbol any, source *order.OrderSource) *IndexedEventSubscriptionSymbol {
-	return &IndexedEventSubscriptionSymbol{symbol, source}
-}
-
-func NewIndexedEventSubscriptionSymbolWithIndexedSymbol(symbol any, source *events.IndexedEventSource) *IndexedEventSubscriptionSymbol {
+func NewIndexedEventSubscriptionSymbol(symbol any, source events.IndexedEventSourceInterface) *IndexedEventSubscriptionSymbol {
 	return &IndexedEventSubscriptionSymbol{symbol, source}
 }
 
