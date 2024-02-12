@@ -50,6 +50,8 @@ our [customer portal](https://jira.in.devexperts.com/servicedesk/customer/portal
 
 Features planned with **high priority**:
 
+* refactroing public API
+* deployment and publication artifacts in JFrog (to simplify the integration of the package into client applications)
 * add all market events
 * provide more tools and samples
 * generate documentation
