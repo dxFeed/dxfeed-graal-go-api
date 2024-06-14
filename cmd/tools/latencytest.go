@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/formatutil"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
 	"github.com/montanaflynn/stats"
 	"math"
 	"os"
+	"slices"
+	"strings"
 	"sync"
 	"time"
 	"unsafe"
@@ -36,24 +40,31 @@ func (c LatencyTest) Run(args []string) {
 					For Token-Based Authorization, use the following format: "<address>:<port>[login=entitle:<token>]".
 		types (pos. 1)    Required. Comma-separated list of dxfeed event types (e.g. Quote, TimeAndSale).
 		symbols (pos. 2)  Required. Comma-separated list of symbol names to get events for (e.g. "IBM, AAPL, MSFT").
+		--ignore-exchanges Ignoring next exchanges.
 		--force-stream    Enforces a streaming contract for subscription. The StreamFeed role is used instead of Feed.`)
+
 		os.Exit(0)
 	}
 	address := arguments[0]
 	types := parser.ParseEventTypes(arguments[1])
 	symbols := parser.ParseSymbols(arguments[2])
-
-	err := latency(address, types, symbols, dxarguments.forceStream())
+	dxarguments.forceStream()
+	err := latency(address, types, symbols, dxarguments.forceStream(), dxarguments.ignoreExchanges())
 	if err != nil {
 		fmt.Printf("Error during dump: %v", err)
 	}
 }
 
-func latency(address string, types []eventcodes.EventCode, symbols []any, forceStream bool) error {
+func latency(address string, types []eventcodes.EventCode, symbols []any, forceStream bool, ignoreExchanges *string) error {
 	role := api.Feed
 	if forceStream {
 		role = api.StreamFeed
 	}
+	var ignoredExchanges []string
+	if ignoreExchanges != nil {
+		ignoredExchanges = strings.Split(*ignoreExchanges, ",")
+	}
+
 	endpoint, err := api.CreateEndpoint(role)
 	if err != nil {
 		return fmt.Errorf("CreateEndpoint: %we", err)
@@ -76,10 +87,14 @@ func latency(address string, types []eventcodes.EventCode, symbols []any, forceS
 		d.addEventCounter(len(eventsList))
 		for _, event := range eventsList {
 			switch v := event.(type) {
+			case *quote.Quote
 			case *timeandsale.TimeAndSale:
 				{
 					hash += uintptr(unsafe.Pointer(&v))
 					v.EventSymbol()
+					if len(ignoredExchanges) > 0 && slices.Contains(ignoredExchanges, formatutil.FormatChar(rune(v.ExchangeCode()))) {
+						continue
+					}
 					if v.IsNew() {
 						d.addSymbols(v.EventSymbol())
 						delta := float64(currentTime - v.Time())
