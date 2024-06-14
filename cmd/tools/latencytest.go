@@ -87,7 +87,19 @@ func latency(address string, types []eventcodes.EventCode, symbols []any, forceS
 		d.addEventCounter(len(eventsList))
 		for _, event := range eventsList {
 			switch v := event.(type) {
-			case *quote.Quote
+			case *quote.Quote:
+				{
+					hash += uintptr(unsafe.Pointer(&v))
+					v.EventSymbol()
+					if len(ignoredExchanges) > 0 && (slices.Contains(ignoredExchanges, formatutil.FormatChar(v.AskExchangeCode())) ||
+						slices.Contains(ignoredExchanges, formatutil.FormatChar(v.BidExchangeCode()))) {
+						continue
+					}
+
+					d.addSymbols(v.EventSymbol())
+					delta := float64(currentTime - v.Time())
+					d.addDeltas(delta)
+				}
 			case *timeandsale.TimeAndSale:
 				{
 					hash += uintptr(unsafe.Pointer(&v))
