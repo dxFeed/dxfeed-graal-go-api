@@ -372,6 +372,8 @@ from [Release](https://github.com/dxFeed/dxfeed-graal-go-api/releases)
 * [PerfTest](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/tools/perftest.go)
   connects to the specified address(es) and calculates performance counters (events per second, memory usage, CPU usage,
   etc.)
+* [LatencyTest](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/tools/latencytest.go)
+connects to the specified address(es) and calculates latency
 
 To run tools on macOS, it may be necessary to unquarantine them:
 
