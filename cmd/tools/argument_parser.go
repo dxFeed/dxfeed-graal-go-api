@@ -50,6 +50,18 @@ func (a DXArguments) forceStream() bool {
 	return false
 }
 
+func (a DXArguments) ignoreExchanges() *string {
+	for index, arg := range a.args {
+		if arg == "--ignore-exchanges" {
+			if index+1 >= len(a.args) {
+				panic("Check value after --ignore-exchanges parameter")
+			}
+			return &a.args[index+1]
+		}
+	}
+	return nil
+}
+
 func (a DXArguments) properties() map[string]string {
 	properties := map[string]string{}
 	for index, arg := range a.args {
