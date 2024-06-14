@@ -157,8 +157,8 @@ func (d *latency_diag) PrintDiag(interval int) {
 	minValue, _ := stats.Min(d.deltas)
 	maxValue, _ := stats.Max(d.deltas)
 	percentile, _ := stats.Percentile(d.deltas, 99)
-	strDev, _ := stats.StdDevP(d.deltas)
-	strError := strDev / math.Sqrt(float64(len(d.deltas)))
+	stdDev, _ := stats.StdDevP(d.deltas)
+	stdErr := stdDev / math.Sqrt(float64(len(d.deltas)))
 
 	eventPerSec := float64(d.eventCounter) / 2.0
 	listenerCallsPerSec := float64(d.listenerCounter) / 2.0
@@ -182,8 +182,8 @@ func (d *latency_diag) PrintDiag(interval int) {
 	fmt.Printf("Max total                      : %s ms\n", format(d.maxTotal))
 	fmt.Printf("99th percentile                : %s ms\n", format(percentile))
 	fmt.Printf("Mean                           : %s ms\n", format(average))
-	fmt.Printf("StdDev                         : %s ms\n", format(strDev))
-	fmt.Printf("Error                          : %s ms\n", format(strError))
+	fmt.Printf("StdDev                         : %s ms\n", format(stdDev))
+	fmt.Printf("Error                          : %s ms\n", format(stdErr))
 	fmt.Printf("Sample size (N)                : %d events\n", len(d.deltas))
 
 	fmt.Printf("Measurement interval           : %d seconds\n", interval)
