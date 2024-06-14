@@ -171,9 +171,9 @@ func (d *latency_diag) PrintDiag(interval int) {
 	d.runningTime += interval
 
 	fmt.Println("----------------------------------------------")
-	fmt.Printf("Rate of events (avg)           : %f (events/s)\n", eventPerSec)
-	fmt.Printf("Rate of listener calls         : %f (calls/s)\n", listenerCallsPerSec)
-	fmt.Printf("Number of events in call (avg) : %f (events)\n", eventPerSec/listenerCallsPerSec)
+	fmt.Printf("Rate of events (avg)           : %s (events/s)\n", format(eventPerSec))
+	fmt.Printf("Rate of listener calls         : %s (calls/s)\n", format(listenerCallsPerSec))
+	fmt.Printf("Number of events in call (avg) : %s (events)\n", format(eventPerSec/listenerCallsPerSec))
 
 	fmt.Printf("Rate of unique symbols         : %d symbols/interval\n", len(d.symbols))
 	fmt.Printf("Min current                    : %s ms\n", format(minValue))
