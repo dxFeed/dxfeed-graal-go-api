@@ -32,8 +32,9 @@ func createTool(args []string) Tool {
 
 func tools() map[string]Tool {
 	return map[string]Tool{
-		"connect":  Connect{},
-		"dump":     Dump{},
-		"perftest": PerfTest{},
+		"connect":     Connect{},
+		"dump":        Dump{},
+		"perftest":    PerfTest{},
+		"latencytest": LatencyTest{},
 	}
 }
