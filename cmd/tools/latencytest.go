@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
 	"github.com/montanaflynn/stats"
@@ -77,8 +76,6 @@ func latency(address string, types []eventcodes.EventCode, symbols []any, forceS
 		d.addEventCounter(len(eventsList))
 		for _, event := range eventsList {
 			switch v := event.(type) {
-			case *quote.Quote:
-				fmt.Printf("%s\n", v.String())
 			case *timeandsale.TimeAndSale:
 				{
 					hash += uintptr(unsafe.Pointer(&v))
