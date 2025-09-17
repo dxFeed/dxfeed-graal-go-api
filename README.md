@@ -165,9 +165,9 @@ Is supported in the Rosetta 2 x64 emulator.
 ```bash
 sudo apt-get update
 sudo apt-get install build-essential
-go get github.com/dxFeed/dxFeed-graal-go-api
+go install github.com/dxfeed/dxfeed-graal-go-api@latest
 cd ~/go/pkg/mod/github.com/dxfeed/dxfeed-graal-go-api@<version>
-go run .
+sudo go run .
 ```
 
 ## Usage
