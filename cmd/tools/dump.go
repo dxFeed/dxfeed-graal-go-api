@@ -35,7 +35,7 @@ func (c Dump) Run(args []string) {
 		Where:
 		<address>  is a URL to Schedule API defaults file
 		<types>    is comma-separated list of dxfeed event types ({eventTypeNames}).
-		It supports only Quote, TimeAndSale, Profile.
+		It supports only Quote, Summary, Greeks, TimeAndSale, Profile.
 		If <types> is not specified, creates a subscription for all available event types.
 		<symbol>   is comma-separated list of symbol names to get events for (e.g. ""IBM,AAPL,MSFT"").		
 		Usage:
