@@ -9,6 +9,8 @@ import "C"
 func AvailableMappers() map[int32]MapperInterface {
 	eventMappers := map[int32]MapperInterface{
 		C.DXFG_EVENT_QUOTE:          QuoteMapper{},
+		C.DXFG_EVENT_SUMMARY:        SummaryMapper{},
+		C.DXFG_EVENT_GREEKS:         GreeksMapper{},
 		C.DXFG_EVENT_TIME_AND_SALE:  TimeAndSaleMapper{},
 		C.DXFG_EVENT_PROFILE:        ProfileMapper{},
 		C.DXFG_EVENT_ORDER:          OrderMapper{},

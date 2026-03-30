@@ -20,6 +20,8 @@ func ParseSymbols(value string) []any {
 func ParseEventTypes(value string) []eventcodes.EventCode {
 	codes := map[string]eventcodes.EventCode{
 		"quote":         eventcodes.Quote,
+		"summary":       eventcodes.Summary,
+		"greeks":        eventcodes.Greeks,
 		"timeandsale":   eventcodes.TimeAndSale,
 		"profile":       eventcodes.Profile,
 		"order":         eventcodes.Order,
