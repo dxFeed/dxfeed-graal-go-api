@@ -16,7 +16,7 @@ jobs:
             OS_NAME: win-x64
           - os: ubuntu-latest
             OS_NAME: linux-x64
-          - os: macos-latest
+          - os: macos-15
             OS_NAME: osx-x64
 
     steps:
@@ -58,7 +58,7 @@ jobs:
             OS_NAME: win-x64
           - os: ubuntu-latest
             OS_NAME: linux-x64
-          - os: macos-latest
+          - os: macos-15
             OS_NAME: osx-x64
     needs: build_and_test
     if: (startsWith(github.event.ref, 'refs/tags/'))
