@@ -5,7 +5,7 @@
 
 This package provides access to [dxFeed market data](https://dxfeed.com/market-data/).
 The library is built as a language-specific wrapper over
-the [dxFeed Graal Native](https://dxfeed.jfrog.io/artifactory/maven-open/com/dxfeed/graal-native-api/) library,
+the [dxFeed Graal Native](https://github.com/dxFeed/dxfeed-graal-native-sdk) library,
 which was compiled with [GraalVM Native Image](https://www.graalvm.org/latest/reference-manual/native-image/)
 and [dxFeed Java API](https://docs.dxfeed.com/dxfeed/api/overview-summary.html) (our flagman API).
 
@@ -63,7 +63,7 @@ Features planned with **high priority**:
 We use [GraalVM Native Image](https://www.graalvm.org/latest/reference-manual/native-image/) technology and specially
 written code that *wraps* Java methods into native ones
 to get dynamically linked libraries for different platforms (Linux, macOS, and Windows) based on
-the [latest Java API package](https://dxfeed.jfrog.io/artifactory/maven-open/com/devexperts/qd/dxfeed-api/).
+the [latest Java API package](https://dxfeed.com/api/java-api/).
 
 Then, the resulting dynamic link library (dxFeed Graal-native) is used through
 C [ABI](https://en.wikipedia.org/wiki/Application_binary_interface) (application binary interface),
@@ -159,6 +159,15 @@ Is supported in the Rosetta 2 x64 emulator.
 [clang]:https://opensource.apple.com/projects/llvm-clang/
 
 ## Installation
+
+> :warning: **Use version `0.2.1` or later.**
+> The `go run .` step downloads the native SDK at install time. In `0.2.0` and
+> earlier it was fetched from the dxFeed jFrog Artifactory repository, which has
+> been retired, installing those versions fails with `bad status: 404`.
+> Since `0.2.1` the SDK is downloaded from
+> [dxfeed-graal-native-sdk releases](https://github.com/dxFeed/dxfeed-graal-native-sdk/releases).
+> Older versions cannot be fixed retroactively, because published tags are
+> immutable in the Go module proxy — upgrade instead.
 
 ### Linux
 

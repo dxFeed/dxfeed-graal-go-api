@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	baseUrl := "https://dxfeed.jfrog.io/artifactory/maven/com/dxfeed/graal-native-sdk/%s/graal-native-sdk-%s-%s-%s.zip"
+	baseUrl := "https://github.com/dxFeed/dxfeed-graal-native-sdk/releases/download/v%s/graal-native-sdk-%s-%s-%s.zip"
 	version := "1.1.6"
 	archStr := ""
 	osStr := ""
