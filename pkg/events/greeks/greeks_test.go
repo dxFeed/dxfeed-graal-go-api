@@ -36,7 +36,7 @@ func TestGreeksLocalHub(t *testing.T) {
 	want.SetEventTime(1_700_000_000_000)
 	want.SetEventFlags(0x15)
 	mustNoErr(t, want.SetSequence(17))
-	want.SetTime(1_700_000_123_456)
+	want.SetTime(1_700_000_123_999)
 	want.SetPrice(12.34)
 	want.SetVolatility(0.28)
 	want.SetDelta(0.55)

@@ -232,7 +232,7 @@ func (b *Base) Time() int64 {
 
 func (b *Base) SetTime(value int64) {
 	b.index = (timeutil.GetSecondsFromTime(value) << 32) |
-		int64(timeutil.GetMillisFromTime(value)<<22) |
+		(int64(timeutil.GetMillisFromTime(value)) << 22) |
 		b.Sequence()
 }
 

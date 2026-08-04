@@ -183,7 +183,7 @@ func (q *Candle) Time() int64 {
 
 func (q *Candle) SetTime(value int64) {
 	q.index = (timeutil.GetSecondsFromTime(value) << 32) |
-		int64(timeutil.GetMillisFromTime(value)<<22) |
+		(int64(timeutil.GetMillisFromTime(value)) << 22) |
 		q.Sequence()
 }
 
