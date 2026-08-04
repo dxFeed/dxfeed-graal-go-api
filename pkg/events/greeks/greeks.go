@@ -99,7 +99,7 @@ func (g *Greeks) Time() int64 {
 
 func (g *Greeks) SetTime(value int64) {
 	g.index = (timeutil.GetSecondsFromTime(value) << 32) |
-		int64(timeutil.GetMillisFromTime(value)<<22) |
+		(int64(timeutil.GetMillisFromTime(value)) << 22) |
 		int64(g.Sequence())
 }
 

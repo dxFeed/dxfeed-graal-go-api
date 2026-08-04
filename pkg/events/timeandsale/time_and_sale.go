@@ -185,7 +185,7 @@ func (t *TimeAndSale) Time() int64 {
 
 func (t *TimeAndSale) SetTime(value int64) {
 	t.index = (timeutil.GetSecondsFromTime(value) << 32) |
-		int64(timeutil.GetMillisFromTime(value)<<22) |
+		(int64(timeutil.GetMillisFromTime(value)) << 22) |
 		t.Sequence()
 }
 

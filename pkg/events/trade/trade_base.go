@@ -172,8 +172,8 @@ func (t *TradeBase) Time() int64 {
 
 func (t *TradeBase) SetTime(value int64) {
 	t.timeSequence = timeutil.GetSecondsFromTime(value)<<32 |
-		int64(timeutil.GetMillisFromTime(value)<<22) |
-		value
+		(int64(timeutil.GetMillisFromTime(value)) << 22) |
+		t.Sequence()
 }
 
 func (t *TradeBase) TimeNanos() int64 {
