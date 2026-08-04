@@ -472,7 +472,7 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   is a snapshot of the theoretical option price computation that is periodically performed
   by [dxPrice](http://www.devexperts.com/en/products/price.html) model-free computation
 
-- [ ] [Underlying](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/option/Underlying.html)
+- [X] [Underlying](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/option/Underlying.html)
   is a snapshot of computed values available for an option underlying symbol based on the market’s option prices
 
 - [ ] [OptionSale](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/OptionSale.html)

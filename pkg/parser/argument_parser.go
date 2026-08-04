@@ -22,6 +22,7 @@ func ParseEventTypes(value string) []eventcodes.EventCode {
 		"quote":         eventcodes.Quote,
 		"summary":       eventcodes.Summary,
 		"greeks":        eventcodes.Greeks,
+		"underlying":    eventcodes.Underlying,
 		"timeandsale":   eventcodes.TimeAndSale,
 		"profile":       eventcodes.Profile,
 		"order":         eventcodes.Order,
