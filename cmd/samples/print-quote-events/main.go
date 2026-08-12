@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"math"
+	"time"
+
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
-	"math"
-	"time"
 )
 
 type PrintEvents func(events []interface{})
@@ -29,7 +30,7 @@ func main() {
 	api.SetSystemProperty("scheme", "ext:opt:sysprops,resource:dxlink.xml")
 
 	// For token-based authorization, use the following address format:
-	// "dxlink:wss://demo.dxfeed.com/dxlink-ws[login=dxlink:token]"
+	// "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws[login=dxlink:token]"
 	endpoint, err := api.NewEndpoint(api.Feed)
 	if err != nil {
 		panic(err)
@@ -41,7 +42,7 @@ func main() {
 		fmt.Printf("Connection state changed from %s to %s\n", old, new)
 	}))
 
-	err = endpoint.Connect("dxlink:wss://demo.dxfeed.com/dxlink-ws")
+	err = endpoint.Connect("dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws")
 	if err != nil {
 		panic(err)
 	}

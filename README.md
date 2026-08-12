@@ -295,7 +295,7 @@ func main() {
 	api.SetSystemProperty("scheme", "ext:opt:sysprops,resource:dxlink.xml")
 
 	// For token-based authorization, use the following address format:
-	// "dxlink:wss://demo.dxfeed.com/dxlink-ws[login=dxlink:token]"
+	// "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws[login=dxlink:token]"
 	endpoint, err := api.NewEndpoint(api.Feed)
 	if err != nil {
 		panic(err)
@@ -304,7 +304,7 @@ func main() {
 		_ = endpoint.Close()
 	}(endpoint)
 
-	err = endpoint.Connect("dxlink:wss://demo.dxfeed.com/dxlink-ws")
+	err = endpoint.Connect("dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws")
 	if err != nil {
 		panic(err)
 	}
@@ -349,21 +349,21 @@ I 231130 124929.821 [main] QD - Using scheme com.dxfeed.api.impl.DXFeedScheme sl
 I 231130 124929.824 [main] MARS - Started time synchronization tracker using multicast 239.192.51.45:5145 with sWipb
 I 231130 124929.828 [main] MARS - Started JVM self-monitoring
 I 231130 124929.828 [main] QD - monitoring with collectors [Ticker, Stream, History]
-I 231130 124929.829 [main] QD - monitoring DXEndpoint with dxfeed.address=dxlink:wss://demo.dxfeed.com/dxlink-ws
-I 231130 124929.831 [main] DxLinkClientWebSocket-Distributor - Starting DxLinkClientWebSocketConnector to wss://demo.dxfeed.com/dxlink-ws
+I 231130 124929.829 [main] QD - monitoring DXEndpoint with dxfeed.address=dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws
+I 231130 124929.831 [main] DxLinkClientWebSocket-Distributor - Starting DxLinkClientWebSocketConnector to wss://demo.dxfeed.com/market-data/dxlink-ws
 SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
 SLF4J: Defaulting to no-operation (NOP) logger implementation
 SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
-I 231130 124929.831 [wss://demo.dxfeed.com/dxlink-ws-Writer] DxLinkClientWebSocket-Distributor - Connecting to wss://demo.dxfeed.com/dxlink-ws
-I 231130 124930.153 [wss://demo.dxfeed.com/dxlink-ws-Writer] DxLinkClientWebSocket-Distributor - Connected to wss://demo.dxfeed.com/dxlink-ws
-D 231130 124931.269 [oioEventLoopGroup-2-1] QD - Distributor received protocol descriptor [type=dxlink, version=0.1-0.18-20231017-133150, keepaliveTimeout=120, acceptKeepaliveTimeout=5] sending [] from wss://demo.dxfeed.com/dxlink-ws
-D 231130 124931.271 [oioEventLoopGroup-2-1] QD - Distributor received protocol descriptor [type=dxlink, version=0.1-0.18-20231017-133150, keepaliveTimeout=120, acceptKeepaliveTimeout=5, authentication=] sending [] from wss://demo.dxfeed.com/dxlink-ws
+I 231130 124929.831 [wss://demo.dxfeed.com/market-data-Writer] DxLinkClientWebSocket-Distributor - Connecting to wss://demo.dxfeed.com/market-data/dxlink-ws
+I 231130 124930.153 [wss://demo.dxfeed.com/market-data-Writer] DxLinkClientWebSocket-Distributor - Connected to wss://demo.dxfeed.com/market-data/dxlink-ws
+D 231130 124931.269 [oioEventLoopGroup-2-1] QD - Distributor received protocol descriptor [type=dxlink, version=0.1-0.18-20231017-133150, keepaliveTimeout=120, acceptKeepaliveTimeout=5] sending [] from wss://demo.dxfeed.com/market-data/dxlink-ws
+D 231130 124931.271 [oioEventLoopGroup-2-1] QD - Distributor received protocol descriptor [type=dxlink, version=0.1-0.18-20231017-133150, keepaliveTimeout=120, acceptKeepaliveTimeout=5, authentication=] sending [] from wss://demo.dxfeed.com/market-data/dxlink-ws
 Quote{AAPL, eventTime=0, time=20231130-123421.000, timeNanoPart=0, sequence=0, bidTime=20231130-123421.000, bidExchange=Q, bidPrice=189.47, bidSize=4.0, askTime=20231130-123421.000, askExchange=P, askPrice=189.53, askSize=10.0}
 ```
 
 </details>
 
-To familiarize with the dxLink protocol, please click [here](https://demo.dxfeed.com/dxlink-ws/debug/#/protocol).
+To familiarize with the dxLink protocol, please click [here](https://demo.dxfeed.com/market-data/dxlink-ws/debug/#/protocol).
 
 ## Tools
 

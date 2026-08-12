@@ -36,6 +36,7 @@ type InstrumentProfile struct {
 	settlementStyle       *string
 	priceIncrements       *string
 	tradingHours          *string
+	customFields          map[string]string
 }
 
 func (p *InstrumentProfile) InstrumentType() *string {
@@ -286,6 +287,14 @@ func (p *InstrumentProfile) SetTradingHours(tradingHours *string) {
 	p.tradingHours = tradingHours
 }
 
+func (p *InstrumentProfile) CustomFields() map[string]string {
+	return p.customFields
+}
+
+func (p *InstrumentProfile) SetCustomFields(customFields map[string]string) {
+	p.customFields = customFields
+}
+
 func NewInstrumentProfile() *InstrumentProfile {
 	emptyValue := ""
 	emptyString := &emptyValue
@@ -322,6 +331,7 @@ func NewInstrumentProfile() *InstrumentProfile {
 		settlementStyle:       emptyString,
 		priceIncrements:       emptyString,
 		tradingHours:          emptyString,
+		customFields:          make(map[string]string),
 	}
 }
 

@@ -6,8 +6,9 @@ package native
 */
 import "C"
 import (
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"unsafe"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 )
 
 type profileMapper struct {
@@ -25,18 +26,119 @@ func convertString(value *C.char) *string {
 		return &result
 	}
 }
-func (m *profileMapper) goProfiles(profileList *C.dxfg_instrument_profile_list) []*events.InstrumentProfile {
-	if profileList == nil || profileList.elements == nil || int(profileList.size) == 0 {
-		return nil
+
+func getCustomField(
+	thread *isolateThread,
+	customFields *C.dxfg_instrument_profile_custom_fields_t,
+	name *C.char,
+) (string, bool, error) {
+	var value *C.char
+
+	result := C.dxfg_InstrumentProfileCustomFields_getField(
+		thread.ptr,
+		customFields,
+		name,
+		&value,
+	)
+
+	if value != nil {
+		defer C.dxfg_String_release(thread.ptr, value)
+	}
+
+	if result != dxfgExecuteSuccessfully {
+		return "", false, getJavaThreadErrorIfExist()
+	}
+
+	if value == nil {
+		return "", false, nil
+	}
+
+	return C.GoString(value), true, nil
+}
+
+func mapCustomFields(
+	thread *isolateThread,
+	customFields *C.dxfg_instrument_profile_custom_fields_t,
+) (map[string]string, error) {
+	resultMap := make(map[string]string)
+
+	if customFields == nil {
+		return resultMap, nil
+	}
+
+	var fieldNames *C.dxfg_string_list
+
+	result := C.dxfg_InstrumentProfileCustomFields_getNonEmptyFieldNames(
+		thread.ptr,
+		customFields,
+		&fieldNames,
+	)
+
+	if fieldNames != nil {
+		defer C.dxfg_CList_String_release(thread.ptr, fieldNames)
+	}
+
+	if result != dxfgExecuteSuccessfully {
+		return nil, getJavaThreadErrorIfExist()
+	}
+
+	if fieldNames == nil {
+		return resultMap, nil
+	}
+
+	names := unsafe.Slice(
+		fieldNames.elements,
+		int(fieldNames.size),
+	)
+
+	for _, nativeName := range names {
+		if nativeName == nil {
+			continue
+		}
+
+		value, exists, err := getCustomField(
+			thread,
+			customFields,
+			nativeName,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if exists {
+			resultMap[C.GoString(nativeName)] = value
+		}
+	}
+
+	return resultMap, nil
+}
+
+func (m *profileMapper) goProfiles2(
+	thread *isolateThread,
+	profileList *C.dxfg_instrument_profile2_list_t,
+) ([]*events.InstrumentProfile, error) {
+	if profileList == nil ||
+		profileList.elements == nil ||
+		profileList.size == 0 {
+		return nil, nil
 	}
 
 	size := int(profileList.size)
-	list := make([]*events.InstrumentProfile, size)
-	elementsSlice := unsafe.Slice(profileList.elements, C.size_t(profileList.size))
+	result := make([]*events.InstrumentProfile, size)
 
-	for i, event := range elementsSlice {
-		nativeEvent := (*C.dxfg_instrument_profile_t)(unsafe.Pointer(event))
+	profiles := unsafe.Slice(
+		profileList.elements,
+		size,
+	)
+
+	for i, nativeProfile := range profiles {
+		if nativeProfile == nil {
+			continue
+		}
+
+		nativeEvent := (*C.dxfg_instrument_profile2_t)(unsafe.Pointer(nativeProfile))
 		profile := events.NewInstrumentProfile()
+
 		profile.SetSymbol(convertString(nativeEvent.symbol))
 		profile.SetInstrumentType(convertString(nativeEvent._type))
 		profile.SetDescription(convertString(nativeEvent.description))
@@ -70,8 +172,19 @@ func (m *profileMapper) goProfiles(profileList *C.dxfg_instrument_profile_list) 
 		profile.SetLastTrade(int64(nativeEvent.last_trade))
 		profile.SetStrike(float64(nativeEvent.strike))
 
-		list[i] = profile
+		customFields, err := mapCustomFields(
+			thread,
+			nativeEvent.instrument_profile_custom_fields,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		profile.SetCustomFields(customFields)
+
+		result[i] = profile
 	}
 
-	return list
+	return result, nil
 }
