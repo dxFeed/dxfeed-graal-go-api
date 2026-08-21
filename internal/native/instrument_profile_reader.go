@@ -6,7 +6,6 @@ package native
 */
 import "C"
 import (
-	"fmt"
 	"unsafe"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
@@ -80,39 +79,26 @@ func (r *InstrumentProfileReader) ReadFromFile(address string) ([]*events.Instru
 
 		var nativeProfiles *C.dxfg_instrument_profile2_list_t
 
-		result := C.dxfg_InstrumentProfileReader_readFromFile7(
-			thread.ptr,
-			r.ptr(),
-			addressPtr,
-			&nativeProfiles,
-		)
+		err := checkResultCall(func() C.int32_t {
+			return C.dxfg_InstrumentProfileReader_readFromFile7(thread.ptr,
+				r.ptr(),
+				addressPtr,
+				&nativeProfiles)
+		})
 
 		if nativeProfiles != nil {
 			defer C.dxfg_instrument_profile2_list_free(thread.ptr, nativeProfiles)
 		}
 
-		if result != dxfgExecuteSuccessfully {
-			if err := getJavaThreadErrorIfExist(); err != nil {
-				return err
-			}
-
-			return fmt.Errorf(
-				"dxfg_InstrumentProfileReader_readFromFile7 failed with code %d",
-				int32(result),
-			)
-		}
-
-		profiles, err := newProfileMapper().goProfiles2(
-			thread,
-			nativeProfiles,
-		)
 		if err != nil {
 			return err
 		}
 
-		resultList = profiles
-
-		return nil
+		resultList, err = newProfileMapper().goProfiles2(
+			thread,
+			nativeProfiles,
+		)
+		return err
 	})
 
 	return resultList, err
@@ -136,41 +122,28 @@ func (r *InstrumentProfileReader) ReadFromFileWithPassword(
 
 		var nativeProfiles *C.dxfg_instrument_profile2_list_t
 
-		result := C.dxfg_InstrumentProfileReader_readFromFile8(
-			thread.ptr,
-			r.ptr(),
-			addressPtr,
-			userPtr,
-			passwordPtr,
-			&nativeProfiles,
-		)
+		err := checkResultCall(func() C.int32_t {
+			return C.dxfg_InstrumentProfileReader_readFromFile8(thread.ptr,
+				r.ptr(),
+				addressPtr,
+				userPtr,
+				passwordPtr,
+				&nativeProfiles)
+		})
 
 		if nativeProfiles != nil {
 			defer C.dxfg_instrument_profile2_list_free(thread.ptr, nativeProfiles)
 		}
 
-		if result != dxfgExecuteSuccessfully {
-			if err := getJavaThreadErrorIfExist(); err != nil {
-				return err
-			}
-
-			return fmt.Errorf(
-				"dxfg_InstrumentProfileReader_readFromFile8 failed with code %d",
-				int32(result),
-			)
-		}
-
-		profiles, err := newProfileMapper().goProfiles2(
-			thread,
-			nativeProfiles,
-		)
 		if err != nil {
 			return err
 		}
 
-		resultList = profiles
-
-		return nil
+		resultList, err = newProfileMapper().goProfiles2(
+			thread,
+			nativeProfiles,
+		)
+		return err
 	})
 
 	return resultList, err

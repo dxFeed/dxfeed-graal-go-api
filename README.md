@@ -354,8 +354,8 @@ I 231130 124929.831 [main] DxLinkClientWebSocket-Distributor - Starting DxLinkCl
 SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
 SLF4J: Defaulting to no-operation (NOP) logger implementation
 SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
-I 231130 124929.831 [wss://demo.dxfeed.com/market-data-Writer] DxLinkClientWebSocket-Distributor - Connecting to wss://demo.dxfeed.com/market-data/dxlink-ws
-I 231130 124930.153 [wss://demo.dxfeed.com/market-data-Writer] DxLinkClientWebSocket-Distributor - Connected to wss://demo.dxfeed.com/market-data/dxlink-ws
+I 231130 124929.831 [wss://demo.dxfeed.com/market-data/dxlink-ws-Writer] DxLinkClientWebSocket-Distributor - Connecting to wss://demo.dxfeed.com/market-data/dxlink-ws
+I 231130 124930.153 [wss://demo.dxfeed.com/market-data/dxlink-ws-Writer] DxLinkClientWebSocket-Distributor - Connected to wss://demo.dxfeed.com/market-data/dxlink-ws
 D 231130 124931.269 [oioEventLoopGroup-2-1] QD - Distributor received protocol descriptor [type=dxlink, version=0.1-0.18-20231017-133150, keepaliveTimeout=120, acceptKeepaliveTimeout=5] sending [] from wss://demo.dxfeed.com/market-data/dxlink-ws
 D 231130 124931.271 [oioEventLoopGroup-2-1] QD - Distributor received protocol descriptor [type=dxlink, version=0.1-0.18-20231017-133150, keepaliveTimeout=120, acceptKeepaliveTimeout=5, authentication=] sending [] from wss://demo.dxfeed.com/market-data/dxlink-ws
 Quote{AAPL, eventTime=0, time=20231130-123421.000, timeNanoPart=0, sequence=0, bidTime=20231130-123421.000, bidExchange=Q, bidPrice=189.47, bidSize=4.0, askTime=20231130-123421.000, askExchange=P, askPrice=189.53, askSize=10.0}

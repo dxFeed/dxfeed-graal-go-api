@@ -15,6 +15,17 @@ func checkCall(call func()) error {
 	return getJavaThreadErrorIfExist()
 }
 
+func checkResultCall(call func() C.int32_t) error {
+	result := call()
+	if result == dxfgExecuteSuccessfully {
+		return nil
+	}
+	if err := getJavaThreadErrorIfExist(); err != nil {
+		return err
+	}
+	return fmt.Errorf("native: call failed with code %d without a pending java exception", int32(result))
+}
+
 func checkIsolateCall(call func() C.int) error {
 	e := call()
 	if !errors.Is((IsolateError)(e), NoError) {

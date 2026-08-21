@@ -35,7 +35,6 @@ func main() {
 	api.SetSystemProperty("scheme", "ext:opt:sysprops,resource:dxlink.xml")
 
 	ipfFile := "https://demo:demo@tools.dxfeed.com/ipf?TYPE=STOCK&compression=zip"
-	//ipfFile := "C:\\w3\\securities.ipf.zip"
 	fmt.Printf("Reading instruments from %s\n", ipfFile)
 	ipfReader, err := ipf.NewInstrumentProfileReader()
 	if err != nil {

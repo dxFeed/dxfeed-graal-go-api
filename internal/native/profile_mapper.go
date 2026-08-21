@@ -34,19 +34,18 @@ func getCustomField(
 ) (string, bool, error) {
 	var value *C.char
 
-	result := C.dxfg_InstrumentProfileCustomFields_getField(
-		thread.ptr,
-		customFields,
-		name,
-		&value,
-	)
+	err := checkResultCall(func() C.int32_t {
+		return C.dxfg_InstrumentProfileCustomFields_getField(thread.ptr,
+			customFields,
+			name,
+			&value)
+	})
 
 	if value != nil {
 		defer C.dxfg_String_release(thread.ptr, value)
 	}
-
-	if result != dxfgExecuteSuccessfully {
-		return "", false, getJavaThreadErrorIfExist()
+	if err != nil {
+		return "", false, err
 	}
 
 	if value == nil {
@@ -68,18 +67,18 @@ func mapCustomFields(
 
 	var fieldNames *C.dxfg_string_list
 
-	result := C.dxfg_InstrumentProfileCustomFields_getNonEmptyFieldNames(
-		thread.ptr,
-		customFields,
-		&fieldNames,
-	)
+	err := checkResultCall(func() C.int32_t {
+		return C.dxfg_InstrumentProfileCustomFields_getNonEmptyFieldNames(thread.ptr,
+			customFields,
+			&fieldNames)
+	})
 
 	if fieldNames != nil {
 		defer C.dxfg_CList_String_release(thread.ptr, fieldNames)
 	}
 
-	if result != dxfgExecuteSuccessfully {
-		return nil, getJavaThreadErrorIfExist()
+	if err != nil {
+		return nil, err
 	}
 
 	if fieldNames == nil {
@@ -124,14 +123,14 @@ func (m *profileMapper) goProfiles2(
 	}
 
 	size := int(profileList.size)
-	result := make([]*events.InstrumentProfile, size)
+	result := make([]*events.InstrumentProfile, 0, size)
 
 	profiles := unsafe.Slice(
 		profileList.elements,
 		size,
 	)
 
-	for i, nativeProfile := range profiles {
+	for _, nativeProfile := range profiles {
 		if nativeProfile == nil {
 			continue
 		}
@@ -183,7 +182,7 @@ func (m *profileMapper) goProfiles2(
 
 		profile.SetCustomFields(customFields)
 
-		result[i] = profile
+		result = append(result, profile)
 	}
 
 	return result, nil
