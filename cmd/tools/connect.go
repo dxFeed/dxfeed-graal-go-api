@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
+	"math"
+	"os"
+	"time"
+
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
-	"math"
-	"os"
-	"time"
 )
 
 type Connect struct{}
@@ -39,7 +40,7 @@ func (c Connect) Run(args []string) {
 					  for Candle event specify symbol with aggregation like in ""AAPL{{=d}}""
 			--force-stream    Enforces a streaming contract for subscription. The StreamFeed role is used instead of Feed.
 		
-		Sample: connect "dxlink:wss://demo.dxfeed.com/dxlink-ws" Quote AAPL -p dxfeed.experimental.dxlink.enable=true
+		Sample: connect "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws" Quote AAPL -p dxfeed.experimental.dxlink.enable=true
 		Sample: connect demo.dxfeed.com:7300 Quote AAPL`)
 		os.Exit(0)
 	}

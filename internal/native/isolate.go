@@ -10,6 +10,10 @@ import (
 	"sync"
 )
 
+const (
+	dxfgExecuteSuccessfully = 0
+)
+
 type isolate struct {
 	ptr *C.graal_isolate_t
 }

@@ -6,8 +6,9 @@ package native
 */
 import "C"
 import (
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"unsafe"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 )
 
 type InstrumentProfileReader struct {
@@ -73,39 +74,78 @@ func (r *InstrumentProfileReader) ReadFromFile(address string) ([]*events.Instru
 	var resultList []*events.InstrumentProfile
 
 	err := executeInIsolateThread(func(thread *isolateThread) error {
-		return checkCall(func() {
-			addressPtr := C.CString(address)
-			defer C.free(unsafe.Pointer(addressPtr))
-			ptr := C.dxfg_InstrumentProfileReader_readFromFile(thread.ptr,
+		addressPtr := C.CString(address)
+		defer C.free(unsafe.Pointer(addressPtr))
+
+		var nativeProfiles *C.dxfg_instrument_profile2_list_t
+
+		err := checkResultCall(func() C.int32_t {
+			return C.dxfg_InstrumentProfileReader_readFromFile7(thread.ptr,
 				r.ptr(),
-				addressPtr)
-			resultList = newProfileMapper().goProfiles(ptr)
-			C.dxfg_CList_InstrumentProfile_release(thread.ptr, ptr)
+				addressPtr,
+				&nativeProfiles)
 		})
+
+		if nativeProfiles != nil {
+			defer C.dxfg_instrument_profile2_list_free(thread.ptr, nativeProfiles)
+		}
+
+		if err != nil {
+			return err
+		}
+
+		resultList, err = newProfileMapper().goProfiles2(
+			thread,
+			nativeProfiles,
+		)
+		return err
 	})
+
 	return resultList, err
 }
 
-func (r *InstrumentProfileReader) ReadFromFileWithPassword(address string, user string, password string) ([]*events.InstrumentProfile, error) {
+func (r *InstrumentProfileReader) ReadFromFileWithPassword(
+	address string,
+	user string,
+	password string,
+) ([]*events.InstrumentProfile, error) {
 	var resultList []*events.InstrumentProfile
 
 	err := executeInIsolateThread(func(thread *isolateThread) error {
-		return checkCall(func() {
-			addressPtr := C.CString(address)
-			userPtr := C.CString(user)
-			passwordPtr := C.CString(password)
-			defer C.free(unsafe.Pointer(addressPtr))
-			defer C.free(unsafe.Pointer(userPtr))
-			defer C.free(unsafe.Pointer(passwordPtr))
-			ptr := C.dxfg_InstrumentProfileReader_readFromFile2(thread.ptr,
+		addressPtr := C.CString(address)
+		userPtr := C.CString(user)
+		passwordPtr := C.CString(password)
+
+		defer C.free(unsafe.Pointer(addressPtr))
+		defer C.free(unsafe.Pointer(userPtr))
+		defer C.free(unsafe.Pointer(passwordPtr))
+
+		var nativeProfiles *C.dxfg_instrument_profile2_list_t
+
+		err := checkResultCall(func() C.int32_t {
+			return C.dxfg_InstrumentProfileReader_readFromFile8(thread.ptr,
 				r.ptr(),
 				addressPtr,
 				userPtr,
-				passwordPtr)
-			resultList = newProfileMapper().goProfiles(ptr)
-			C.dxfg_CList_InstrumentProfile_release(thread.ptr, ptr)
+				passwordPtr,
+				&nativeProfiles)
 		})
+
+		if nativeProfiles != nil {
+			defer C.dxfg_instrument_profile2_list_free(thread.ptr, nativeProfiles)
+		}
+
+		if err != nil {
+			return err
+		}
+
+		resultList, err = newProfileMapper().goProfiles2(
+			thread,
+			nativeProfiles,
+		)
+		return err
 	})
+
 	return resultList, err
 }
 
