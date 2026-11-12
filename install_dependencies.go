@@ -13,7 +13,7 @@ import (
 
 func main() {
 	baseUrl := "https://github.com/dxFeed/dxfeed-graal-native-sdk/releases/download/v%s/graal-native-sdk-%s-%s-%s.zip"
-	version := "3.2.13"
+	version := "3.16.0"
 	archStr := ""
 	osStr := ""
 	switch goos := runtime.GOOS; goos {
