@@ -145,8 +145,8 @@ Only x64 versions are supported.
 
 | OS             | Version | Architectures |
 |----------------|---------|---------------|
-| [macOS][macOS] | 10.13+  | x64           |
-| [macOS][macOS] | 11+     | Arm64         |
+| [macOS][macOS] | 11+     | x64           |
+| [macOS][macOS] | 14+     | Arm64         |
 
 Is supported in the Rosetta 2 x64 emulator.
 
