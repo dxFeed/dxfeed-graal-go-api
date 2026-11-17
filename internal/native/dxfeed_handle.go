@@ -5,7 +5,12 @@ package native
 #include <stdlib.h>
 */
 import "C"
-import "unsafe"
+import (
+	"fmt"
+	"unsafe"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
+)
 
 type DXFeedHandle struct {
 	handle Handler
@@ -16,6 +21,12 @@ func NewDXFeedHandle(ptr *C.dxfg_feed_t) *DXFeedHandle {
 }
 
 func (f *DXFeedHandle) CreateSubscription(eventTypes ...int32) (*DXFeedSubscription, error) {
+	available := mappers.AvailableMappers()
+	for _, eventType := range eventTypes {
+		if available[eventType] == nil {
+			return nil, fmt.Errorf("cannot subscribe: event code %d is not supported yet", eventType)
+		}
+	}
 	var ptr *C.dxfg_subscription_t
 	err := executeInIsolateThread(func(thread *isolateThread) error {
 		list := createEventClazzList(eventTypes...)
