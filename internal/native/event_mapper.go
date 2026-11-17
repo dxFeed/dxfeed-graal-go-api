@@ -26,24 +26,28 @@ func (m *eventMapper) goEvents(eventsList *C.dxfg_event_type_list) []interface{}
 		return nil
 	}
 
-	size := int(eventsList.size)
-	list := make([]interface{}, size)
+	list := make([]interface{}, 0, int(eventsList.size))
 	elementsSlice := unsafe.Slice(eventsList.elements, C.size_t(eventsList.size))
 
-	for i, event := range elementsSlice {
-		list[i] = m.goEvent(event)
+	for _, event := range elementsSlice {
+		if goEvent := m.goEvent(event); goEvent != nil {
+			list = append(list, goEvent)
+		}
 	}
 
 	return list
 }
 
+// goEvent returns nil for an event class that has no Go mapper yet; such events are skipped.
 func (m *eventMapper) goEvent(event *C.dxfg_event_type_t) interface{} {
-	mapper := m.mappers[int32(event.clazz)]
-	if mapper != nil {
-		return mapper.GoEvent(unsafe.Pointer(event))
-	} else {
-		panic(fmt.Sprintf("unknown event eventcodes %v", event.clazz))
+	if event == nil {
+		return nil
 	}
+	mapper := m.mappers[int32(event.clazz)]
+	if mapper == nil {
+		return nil
+	}
+	return mapper.GoEvent(unsafe.Pointer(event))
 }
 
 // TODO add recursive release for symbols

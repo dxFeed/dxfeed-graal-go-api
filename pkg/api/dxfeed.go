@@ -15,5 +15,8 @@ func (f *DXFeed) CreateSubscription(eventType ...eventcodes.EventCode) (*DXFeedS
 		data[i] = eventType[i].NativeCode()
 	}
 	sub, err := f.feed.CreateSubscription(data...)
-	return &DXFeedSubscription{sub: sub}, err
+	if err != nil {
+		return nil, err
+	}
+	return &DXFeedSubscription{sub: sub}, nil
 }

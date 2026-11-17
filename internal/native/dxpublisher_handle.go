@@ -6,7 +6,11 @@ package native
 */
 import "C"
 import (
+	"fmt"
 	"unsafe"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
+	goevents "github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 )
 
 type DXPublisherHandle struct {
@@ -25,6 +29,16 @@ func (p *DXPublisherHandle) Free() error {
 }
 
 func (p *DXPublisherHandle) Publish(events []interface{}) error {
+	available := mappers.AvailableMappers()
+	for _, event := range events {
+		e, ok := event.(goevents.EventType)
+		if !ok {
+			return fmt.Errorf("cannot publish %T: not an event type", event)
+		}
+		if available[e.Type().NativeCode()] == nil {
+			return fmt.Errorf("cannot publish %T: event code %d is not supported yet", event, e.Type())
+		}
+	}
 	err := executeInIsolateThread(func(thread *isolateThread) error {
 		l := NewListMapper[C.dxfg_event_type_list, interface{}](events)
 		_ = C.dxfg_DXPublisher_publishEvents(thread.ptr, p.ptr(), (*C.dxfg_event_type_list)(unsafe.Pointer(l)))

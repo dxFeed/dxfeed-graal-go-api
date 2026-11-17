@@ -50,7 +50,11 @@ func ConvertString(value *C.char) *string {
 
 //export OnEventReceived
 func OnEventReceived(thread *C.graal_isolatethread_t, eventsList *C.dxfg_event_type_list, userData unsafe.Pointer) {
-	Restore(userData).(common.EventListener).Update(newEventMapper().goEvents(eventsList))
+	events := newEventMapper().goEvents(eventsList)
+	if len(events) == 0 {
+		return
+	}
+	Restore(userData).(common.EventListener).Update(events)
 }
 
 func (s DXFeedSubscription) AttachListener(listener common.EventListener) error {
