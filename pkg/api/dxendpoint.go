@@ -31,6 +31,11 @@ func (e *DXEndpoint) UpdateState(old common.ConnectionState, new common.Connecti
 
 func NewEndpoint(role common.Role) (*DXEndpoint, error) {
 	handle, err := native.NewDXEndpointHandle(role)
+	return newEndpoint(role, handle, err)
+}
+
+// newEndpoint wraps a native endpoint and attaches the state listener; every constructor goes through it.
+func newEndpoint(role common.Role, handle *native.DXEndpointHandle, err error) (*DXEndpoint, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -53,15 +58,7 @@ func CreateEndpoint(role common.Role) (*DXEndpoint, error) {
 
 func NewEndpointWithProperties(role common.Role, properties map[string]string) (*DXEndpoint, error) {
 	handle, err := native.NewDXEndpointHandleWithProperties(role, properties)
-	if err != nil {
-		return nil, err
-	}
-
-	e := &DXEndpoint{
-		role:           role,
-		endpointHandle: handle,
-	}
-	return e, nil
+	return newEndpoint(role, handle, err)
 }
 
 func (e *DXEndpoint) Connect(address string) error {

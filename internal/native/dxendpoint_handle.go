@@ -41,9 +41,18 @@ func NewDXEndpointHandleWithProperties(role common.Role, properties map[string]s
 	err := executeInIsolateThread(func(thread *isolateThread) error {
 		return checkCall(func() {
 			builder := C.dxfg_DXEndpoint_newBuilder(thread.ptr)
+			if builder == nil {
+				return
+			}
+			defer C.dxfg_JavaObjectHandler_release(thread.ptr, (*C.dxfg_java_object_handler)(unsafe.Pointer(builder)))
 			C.dxfg_DXEndpoint_Builder_withRole(thread.ptr, builder, (C.dxfg_endpoint_role_t)(role))
 			for key, value := range properties {
-				C.dxfg_DXEndpoint_Builder_withProperty(thread.ptr, builder, C.CString(key), C.CString(value))
+				// The SDK copies both strings during the call, so they are freed right after it.
+				keyPtr := C.CString(key)
+				valuePtr := C.CString(value)
+				C.dxfg_DXEndpoint_Builder_withProperty(thread.ptr, builder, keyPtr, valuePtr)
+				C.free(unsafe.Pointer(keyPtr))
+				C.free(unsafe.Pointer(valuePtr))
 			}
 
 			ptr = C.dxfg_DXEndpoint_Builder_build(thread.ptr, builder)
