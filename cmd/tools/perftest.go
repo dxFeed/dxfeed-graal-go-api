@@ -58,16 +58,19 @@ func perf(address string, types []eventcodes.EventCode, symbols []any, forceStre
 	}
 	endpoint, err := api.CreateEndpoint(role)
 	if err != nil {
-		return fmt.Errorf("CreateEndpoint: %we", err)
+		return fmt.Errorf("CreateEndpoint: %w", err)
 	}
 	err = endpoint.Connect(address)
+	if err != nil {
+		return fmt.Errorf("Connect: %w", err)
+	}
 	feed, err := endpoint.GetFeed()
 	if err != nil {
-		return fmt.Errorf("GetFeed: %we", err)
+		return fmt.Errorf("GetFeed: %w", err)
 	}
 	sub, err := feed.CreateSubscription(types...)
 	if err != nil {
-		return fmt.Errorf("CreateSubscription: %we", err)
+		return fmt.Errorf("CreateSubscription: %w", err)
 	}
 	d := &diag{}
 
@@ -88,12 +91,12 @@ func perf(address string, types []eventcodes.EventCode, symbols []any, forceStre
 		d.mu.Unlock()
 	}))
 	if err != nil {
-		return fmt.Errorf("AddListener: %we", err)
+		return fmt.Errorf("AddListener: %w", err)
 	}
 	for _, symbol := range symbols {
 		err = sub.AddSymbol(symbol)
 		if err != nil {
-			return fmt.Errorf("AddSymbol: %we", err)
+			return fmt.Errorf("AddSymbol: %w", err)
 
 		}
 	}

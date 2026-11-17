@@ -73,7 +73,7 @@ func (s DXFeedSubscription) AddSymbol(symbol any) error {
 			C.dxfg_DXFeedSubscription_addSymbol(thread.ptr, s.ptr, cSymbol)
 			return nil
 		} else {
-			return fmt.Errorf("Unsupported symbol %T!\n", symbol)
+			return fmt.Errorf("unsupported symbol %T", symbol)
 		}
 	})
 	return err
@@ -100,7 +100,7 @@ func (s DXFeedSubscription) RemoveSymbol(symbol any) error {
 			C.dxfg_DXFeedSubscription_removeSymbol(thread.ptr, s.ptr, cSymbol)
 			return nil
 		} else {
-			return fmt.Errorf("Unsupported symbol %T!\n", symbol)
+			return fmt.Errorf("unsupported symbol %T", symbol)
 		}
 	})
 	return err

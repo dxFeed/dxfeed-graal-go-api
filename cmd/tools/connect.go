@@ -74,7 +74,7 @@ func connect(
 	endpoint, err := api.NewEndpointWithProperties(role, properties)
 
 	if err != nil {
-		return fmt.Errorf("CreateEndpoint: %we", err)
+		return fmt.Errorf("CreateEndpoint: %w", err)
 	}
 
 	defer func(endpoint *api.DXEndpoint) {
@@ -84,17 +84,19 @@ func connect(
 	err = endpoint.Connect(address)
 
 	if err != nil {
-		return fmt.Errorf("Connect to %s: %we", address, err)
+		return fmt.Errorf("Connect to %s: %w", address, err)
 	}
 
 	feed, err := endpoint.GetFeed()
 
 	if err != nil {
-		return fmt.Errorf("GetFeed: %we", err)
+		return fmt.Errorf("GetFeed: %w", err)
 	}
 
 	subscription, err := feed.CreateSubscription(types...)
-
+	if err != nil {
+		return fmt.Errorf("CreateSubscription: %w", err)
+	}
 	defer subscription.Close()
 	if !isQuite {
 		err = subscription.AddListener(PrintEvents(func(eventsList []interface{}) {
@@ -108,18 +110,15 @@ func connect(
 			}
 		}))
 		if err != nil {
-			return fmt.Errorf("AddListener: %we", err)
+			return fmt.Errorf("AddListener: %w", err)
 		}
 	}
 
-	if err != nil {
-		return fmt.Errorf("CreateSubscription: %we", err)
-	}
 	for _, symbol := range symbols {
 		if fromTime != nil {
-			parseTime, err := parser.ParseTime(*fromTime)
-			if err != nil {
-				return err
+			parseTime, parseErr := parser.ParseTime(*fromTime)
+			if parseErr != nil {
+				return parseErr
 			}
 			timeSeriesSubscriptionSymbol := Osub.NewTimeSeriesSubscriptionSymbol(symbol, parseTime)
 			err = subscription.AddSymbol(timeSeriesSubscriptionSymbol)
@@ -127,7 +126,7 @@ func connect(
 			err = subscription.AddSymbol(symbol)
 		}
 		if err != nil {
-			return fmt.Errorf("AddSymbol: %we", err)
+			return fmt.Errorf("AddSymbol: %w", err)
 		}
 
 	}

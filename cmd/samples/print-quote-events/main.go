@@ -66,6 +66,9 @@ func main() {
 			}
 		}
 	}))
+	if err != nil {
+		panic(err)
+	}
 
 	err = subscription.AddSymbol("AAPL")
 	if err != nil {

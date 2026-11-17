@@ -101,6 +101,9 @@ func main() {
 			}
 		}
 	}))
+	if err != nil {
+		panic(err)
+	}
 
 	err = subscription.AddSymbols(symbols...)
 	if err != nil {
