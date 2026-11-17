@@ -8,7 +8,8 @@ import (
 )
 
 func TestIsolateCreation(t *testing.T) {
-	if getOrCreateIsolate().ptr != getOrCreateIsolate().ptr {
+	first, second := getOrCreateIsolate(), getOrCreateIsolate()
+	if first.ptr != second.ptr {
 		t.Errorf("Multiple calls to getOrCreateIsolate returned different isolates")
 	}
 }

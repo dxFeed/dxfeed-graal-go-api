@@ -13,7 +13,7 @@ and [dxFeed Java API](https://docs.dxfeed.com/dxfeed/api/overview-summary.html) 
 
 ![Build](https://github.com/dxFeed/dxfeed-graal-go-api/actions/workflows/build.yml/badge.svg)
 ![Platform](https://img.shields.io/badge/platform-win--x64%20%7C%20linux--x64%20%7C%20osx--x64%20%7C%20osx--arm64-lightgrey)
-[![Go](https://img.shields.io/badge/go_version-1.20-blueviolet)](https://dotnet.microsoft.com/en-us/)
+[![Go](https://img.shields.io/badge/go_version-1.21-blueviolet)](https://dotnet.microsoft.com/en-us/)
 [![License](https://img.shields.io/badge/license-MPL--2.0-orange)](https://github.com/dxFeed/dxfeed-graal-net-api/blob/master/LICENSE)
 [![Release](https://img.shields.io/github/v/release/dxFeed/dxfeed-graal-go-api)](https://github.com/dxFeed/dxfeed-graal-net-api/releases/latest)
 

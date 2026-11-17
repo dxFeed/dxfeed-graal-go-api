@@ -8,26 +8,20 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  build_and_test:
-    name: Build & Test on ${{ matrix.OS_NAME }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            OS_NAME: win-x64
-          - os: ubuntu-latest
-            OS_NAME: linux-x64
-          - os: macos-15
-            OS_NAME: osx-aarch64
+  checks:
+    name: Format, static checks, race tests
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: false
@@ -37,6 +31,64 @@ jobs:
           go run .
           go get .
 
+      - name: Format
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Files not formatted with gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Staticcheck
+        run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.2 ./...
+
+      - name: Race tests
+        run: go test -race ./...
+
+  build_and_test:
+    name: Build & Test on ${{ matrix.platform.OS_NAME }}, Go ${{ matrix.go }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # min: the version in go.mod; stable: the latest release.
+        go: [ min, stable ]
+        platform:
+          - os: windows-latest
+            OS_NAME: win-x64
+          - os: ubuntu-latest
+            OS_NAME: linux-x64
+          - os: ubuntu-24.04-arm
+            OS_NAME: linux-aarch64
+          - os: macos-15
+            OS_NAME: osx-aarch64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: ${{ matrix.go == 'stable' && 'stable' || '' }}
+          go-version-file: ${{ matrix.go == 'min' && 'go.mod' || '' }}
+          cache: false
+
+      - name: Install dependencies
+        run: |
+          go run .
+          go get .
+
+      # Windows finds the SDK library through PATH; Linux and macOS binaries carry an rpath to it.
+      - name: Add native library to PATH
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Add-Content -Path $env:GITHUB_PATH -Value "$env:GITHUB_WORKSPACE\internal\native\graal"
+
       - name: Build
         run: go build -v ./...
 
@@ -44,19 +96,13 @@ jobs:
         run: go vet ./...
 
       - name: Test
-        if: matrix.os != 'windows-latest'
         run: go test -v ./...
-
-      # Temporary solution
-      - name: Test on windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          copy internal/native/graal/*DxFeedGraalNativeSdk.* C:\Windows\System32
-          go test -v ./...
 
   release:
     name: Release
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       matrix:
         include:
@@ -64,17 +110,19 @@ jobs:
             OS_NAME: win-x64
           - os: ubuntu-latest
             OS_NAME: linux-x64
+          - os: ubuntu-24.04-arm
+            OS_NAME: linux-aarch64
           - os: macos-15
             OS_NAME: osx-aarch64
-    needs: build_and_test
+    needs: [ checks, build_and_test ]
     if: (startsWith(github.event.ref, 'refs/tags/'))
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: false
@@ -89,7 +137,7 @@ jobs:
         shell: bash
 
       - name: Zip Tools
-        uses: thedoctor0/zip-release@0.7.6
+        uses: thedoctor0/zip-release@b57d897cb5d60cb78b51a507f63fa184cfe35554 # 0.7.6
         with:
           type: 'zip'
           filename: tools-${{ matrix.OS_NAME }}-${{ github.ref_name }}.zip
@@ -97,7 +145,7 @@ jobs:
           path: "."
 
       - name: Upload Tools
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
           generate_release_notes: true
           files: |
