@@ -18,16 +18,15 @@ import (
 type DXFeedSubscription struct {
 	sub             *native.DXFeedSubscription
 	listeners       listenerRegistry[common.EventListener, *native.EventListener]
-	changeListeners listenerRegistry[osub.ObservableSubscriptionChangeListener, *native.ChangeListener]
+	changeListeners changeListenerRegistry
 	closed          atomic.Bool
 }
 
 func newDXFeedSubscription(sub *native.DXFeedSubscription) *DXFeedSubscription {
 	return &DXFeedSubscription{
-		sub:       sub,
-		listeners: listenerRegistry[common.EventListener, *native.EventListener]{kind: "event listener"},
-		changeListeners: listenerRegistry[osub.ObservableSubscriptionChangeListener, *native.ChangeListener]{
-			kind: "subscription change listener"},
+		sub:             sub,
+		listeners:       listenerRegistry[common.EventListener, *native.EventListener]{kind: "event listener"},
+		changeListeners: newChangeListenerRegistry(),
 	}
 }
 

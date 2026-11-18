@@ -35,9 +35,8 @@ func (p *DXPublisher) Subscription(eventType eventcodes.EventCode) (*ObservableS
 		return nil, err
 	}
 	sub := &ObservableSubscription{
-		sub: handle,
-		listeners: listenerRegistry[osub.ObservableSubscriptionChangeListener, *native.ChangeListener]{
-			kind: "subscription change listener"},
+		sub:       handle,
+		listeners: newChangeListenerRegistry(),
 	}
 	if p.subscriptions == nil {
 		p.subscriptions = make(map[eventcodes.EventCode]*ObservableSubscription)
@@ -51,7 +50,7 @@ func (p *DXPublisher) Subscription(eventType eventcodes.EventCode) (*ObservableS
 // subscription to all symbols and *osub.TimeSeriesSubscriptionSymbol for a time series subscription.
 type ObservableSubscription struct {
 	sub       *native.ObservableSubscriptionHandle
-	listeners listenerRegistry[osub.ObservableSubscriptionChangeListener, *native.ChangeListener]
+	listeners changeListenerRegistry
 }
 
 // IsClosed reports whether the subscription is closed: it is closed with the endpoint, and a closed subscription
@@ -77,7 +76,8 @@ func (s *ObservableSubscription) ContainsEventType(eventType eventcodes.EventCod
 // AddChangeListener adds a listener of the changes of the subscribed symbols; see
 // osub.ObservableSubscriptionChangeListener. If symbols are subscribed, the listener gets them in SymbolsAdded before
 // AddChangeListener returns. Adding a listener to a closed subscription does nothing. Remove the listener with
-// RemoveChangeListener to release it, also after the subscription is closed.
+// RemoveChangeListener to release it, also after the subscription is closed. After the endpoint is closed,
+// AddChangeListener, EventTypes and ContainsEventType return an error and IsClosed returns true.
 func (s *ObservableSubscription) AddChangeListener(listener osub.ObservableSubscriptionChangeListener) error {
 	return s.listeners.add(listener, func() (*native.ChangeListener, error) {
 		return attachChangeListener(listener, s.sub.AddChangeListener)

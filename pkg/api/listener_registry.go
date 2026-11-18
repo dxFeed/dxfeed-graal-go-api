@@ -3,6 +3,9 @@ package api
 import (
 	"log"
 	"sync"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 )
 
 // listenerRegistry keeps the listeners added to a subscription with their native listeners of type N. An entry is in
@@ -13,6 +16,13 @@ type listenerRegistry[L comparable, N any] struct {
 	mu      sync.Mutex
 	entries []*registryEntry[L, N]
 	closed  bool
+}
+
+// changeListenerRegistry keeps the change listeners of a subscription.
+type changeListenerRegistry = listenerRegistry[osub.ObservableSubscriptionChangeListener, *native.ChangeListener]
+
+func newChangeListenerRegistry() changeListenerRegistry {
+	return changeListenerRegistry{kind: "subscription change listener"}
 }
 
 type registryEntry[L comparable, N any] struct {

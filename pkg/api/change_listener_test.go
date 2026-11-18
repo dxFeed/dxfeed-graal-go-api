@@ -308,3 +308,37 @@ func (l *symbolsListener) SymbolsAdded(symbols []osub.Symbol) {
 func (l *symbolsListener) SymbolsRemoved([]osub.Symbol) {}
 
 func (l *symbolsListener) SubscriptionClosed() {}
+
+// TestPublisherSubscriptionAfterEndpointClose checks that the subscription of a publisher reports itself closed after
+// the endpoint is closed, and that its listener can still be removed, and that GetPublisher returns one publisher.
+func TestPublisherSubscriptionAfterEndpointClose(t *testing.T) {
+	endpoint, err := NewEndpoint(LocalHub)
+	if err != nil {
+		t.Fatalf("NewEndpoint: %v", err)
+	}
+	publisher, err := endpoint.GetPublisher()
+	if err != nil {
+		t.Fatalf("GetPublisher: %v", err)
+	}
+	if again, err := endpoint.GetPublisher(); err != nil || again != publisher {
+		t.Errorf("a second GetPublisher() = %p, %v; want the same %p", again, err, publisher)
+	}
+	observed, err := publisher.Subscription(eventcodes.Quote)
+	if err != nil {
+		t.Fatalf("Subscription: %v", err)
+	}
+	listener := &changeRecorder{}
+	if err := observed.AddChangeListener(listener); err != nil {
+		t.Fatalf("AddChangeListener: %v", err)
+	}
+	if err := endpoint.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	if closed, err := observed.IsClosed(); err != nil || !closed {
+		t.Errorf("IsClosed() after Close = %v, %v; want true", closed, err)
+	}
+	if _, err := observed.EventTypes(); err == nil {
+		t.Error("EventTypes() after Close: no error")
+	}
+	observed.RemoveChangeListener(listener)
+}
