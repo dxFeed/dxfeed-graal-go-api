@@ -1,0 +1,164 @@
+name: "Release"
+
+on:
+  push:
+    tags: [ 'v*.*.*' ]
+  # A manual run checks and builds a version already in ReleaseNotes.md without publishing it.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version from ReleaseNotes.md, for example v0.4.0'
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/build.yml
+
+  notes:
+    name: Release notes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: 'stable'
+          cache: false
+
+      - name: Check the version
+        run: |
+          latest=$(grep -m 1 '^## ' ReleaseNotes.md | cut -c 4-)
+          if [ "$latest" != "$VERSION" ]; then
+            echo "::error::$VERSION is not the latest version in ReleaseNotes.md ($latest); run the release command first"
+            exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = push ] && ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::tag $VERSION is not on main"
+            exit 1
+          fi
+
+      # Explicit bash runs with pipefail, so a failing command is not hidden by tee.
+      - name: Release notes
+        shell: bash
+        run: go run ./internal/cmd/release notes "$VERSION" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  tools:
+    name: Tools for ${{ matrix.OS_NAME }}
+    needs: [ build, notes ]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            OS_NAME: win-x64
+          - os: ubuntu-latest
+            OS_NAME: linux-x64
+          - os: ubuntu-24.04-arm
+            OS_NAME: linux-aarch64
+          - os: macos-15
+            OS_NAME: osx-aarch64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: 'stable'
+          cache: false
+
+      - name: Install dependencies
+        run: |
+          go run .
+          go get .
+
+      - name: Build Tools
+        run: make build
+        shell: bash
+
+      - name: Zip Tools
+        uses: thedoctor0/zip-release@b57d897cb5d60cb78b51a507f63fa184cfe35554 # 0.7.6
+        with:
+          type: 'zip'
+          filename: tools-${{ matrix.OS_NAME }}-${{ env.VERSION }}.zip
+          directory: 'bin/'
+          path: "."
+
+      - name: Upload Tools
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tools-${{ matrix.OS_NAME }}
+          path: bin/tools-${{ matrix.OS_NAME }}-${{ env.VERSION }}.zip
+          if-no-files-found: error
+
+  # One job publishes the release, so the archives of all platforms land in one release at once.
+  publish:
+    name: Publish
+    needs: [ notes, tools ]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: 'stable'
+          cache: false
+
+      - name: Download Tools
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: tools-*
+          path: dist
+          merge-multiple: true
+
+      # A re-run updates the release that an earlier attempt created instead of failing on it.
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          go run ./internal/cmd/release notes "$VERSION" > "$RUNNER_TEMP/notes.md"
+          if gh release view "$VERSION" > /dev/null 2>&1; then
+            gh release upload "$VERSION" --clobber dist/*.zip
+            gh release edit "$VERSION" --title "$VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+          else
+            gh release create "$VERSION" --verify-tag --title "$VERSION" --notes-file "$RUNNER_TEMP/notes.md" dist/*.zip
+          fi
+
+  # A separate job, so a re-run after a proxy failure does not repeat the publication.
+  proxy:
+    name: Go module proxy
+    needs: [ publish ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: 'stable'
+          cache: false
+
+      # The proxy fetches a version on its first request; asking for it makes the version visible to go get at once.
+      - name: Announce the version to the Go module proxy
+        working-directory: ${{ runner.temp }}
+        env:
+          GOPROXY: https://proxy.golang.org
+        run: go list -m "github.com/${GITHUB_REPOSITORY,,}@$VERSION"
