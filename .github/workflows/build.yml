@@ -5,9 +5,17 @@ on:
   # Version tags are built by release.yml, which calls this workflow.
   push:
     branches: [ main ]
+    # A release commit changes only the notes; release.yml builds and tests it.
+    paths-ignore: [ 'ReleaseNotes.md', 'release-notes/**' ]
   pull_request:
   workflow_dispatch:
+  # release.yml passes the version, so the Go stable jobs also build the tools archives.
   workflow_call:
+    inputs:
+      tools_version:
+        description: 'Version in the tools archive names; empty to skip the archives'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -15,7 +23,7 @@ permissions:
 jobs:
   checks:
     name: Format, static checks, race tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -64,7 +72,7 @@ jobs:
         platform:
           - os: windows-latest
             OS_NAME: win-x64
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             OS_NAME: linux-x64
           - os: ubuntu-24.04-arm
             OS_NAME: linux-aarch64
@@ -107,3 +115,26 @@ jobs:
 
       - name: Test
         run: go test -v ./...
+
+      # The archives are built in the tested job, so a release waits for each runner once.
+      - name: Build Tools
+        if: inputs.tools_version != '' && matrix.go == 'stable'
+        run: make build
+        shell: bash
+
+      - name: Zip Tools
+        if: inputs.tools_version != '' && matrix.go == 'stable'
+        uses: thedoctor0/zip-release@b57d897cb5d60cb78b51a507f63fa184cfe35554 # 0.7.6
+        with:
+          type: 'zip'
+          filename: tools-${{ matrix.platform.OS_NAME }}-${{ inputs.tools_version }}.zip
+          directory: 'bin/'
+          path: "."
+
+      - name: Upload Tools
+        if: inputs.tools_version != '' && matrix.go == 'stable'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tools-${{ matrix.platform.OS_NAME }}
+          path: bin/tools-${{ matrix.platform.OS_NAME }}-${{ inputs.tools_version }}.zip
+          if-no-files-found: error
