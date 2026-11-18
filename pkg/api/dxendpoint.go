@@ -4,11 +4,14 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 )
 
 // Roles of an endpoint, as in the dxFeed Java API DXEndpoint.Role.
@@ -82,8 +85,7 @@ func newEndpoint(role common.Role, handle *native.DXEndpointHandle, err error) (
 
 // NewEndpointWithProperties creates an endpoint with the given role and properties, such as "dxfeed.address".
 func NewEndpointWithProperties(role common.Role, properties map[string]string) (*DXEndpoint, error) {
-	handle, err := native.NewDXEndpointHandleWithProperties(role, properties)
-	return newEndpoint(role, handle, err)
+	return NewEndpointBuilder().WithRole(role).WithProperties(properties).Build()
 }
 
 // Connect connects the endpoint to the address, for example "demo.dxfeed.com:7300", and returns at once; the
@@ -96,6 +98,123 @@ func (e *DXEndpoint) Connect(address string) error {
 // pending data.
 func (e *DXEndpoint) Close() error {
 	return e.endpointHandle.Close()
+}
+
+// Role returns the role of the endpoint.
+func (e *DXEndpoint) Role() common.Role {
+	return e.role
+}
+
+// State returns the state of the connection of the endpoint; Closed after Close.
+func (e *DXEndpoint) State() (common.ConnectionState, error) {
+	return e.endpointHandle.State()
+}
+
+// IsClosed reports whether the endpoint is closed.
+func (e *DXEndpoint) IsClosed() bool {
+	state, err := e.endpointHandle.State()
+	return err == nil && state == common.Closed
+}
+
+// User sets the user name for the services that require credentials; call it before Connect, together with Password.
+func (e *DXEndpoint) User(user string) error {
+	return e.endpointHandle.User(user)
+}
+
+// Password sets the password for the services that require credentials; call it before Connect, together with User.
+func (e *DXEndpoint) Password(password string) error {
+	return e.endpointHandle.Password(password)
+}
+
+// Reconnect drops the connections of the endpoint and connects again to the same address, switching to another
+// address of a multi-address connection. It does nothing if the endpoint is not connected with Connect or is
+// disconnected with Disconnect.
+func (e *DXEndpoint) Reconnect() error {
+	return e.endpointHandle.Reconnect()
+}
+
+// Disconnect drops the connections of the endpoint; the state becomes NotConnected at once. The endpoint stays usable:
+// Connect connects it again.
+func (e *DXEndpoint) Disconnect() error {
+	return e.endpointHandle.Disconnect()
+}
+
+// DisconnectAndClear drops the connections of the endpoint, as Disconnect, and clears the data that it stores, such
+// as the last events of the feed.
+func (e *DXEndpoint) DisconnectAndClear() error {
+	return e.endpointHandle.DisconnectAndClear()
+}
+
+// EventTypes returns the event types that the endpoint supports. The list may hold types that the Go API cannot map to
+// events yet: subscribing to them delivers nothing.
+func (e *DXEndpoint) EventTypes() ([]eventcodes.EventCode, error) {
+	clazzes, err := e.endpointHandle.EventTypes()
+	if err != nil {
+		return nil, err
+	}
+	codes := make([]eventcodes.EventCode, 0, len(clazzes))
+	for _, clazz := range clazzes {
+		codes = append(codes, eventcodes.EventCode(clazz))
+	}
+	return codes, nil
+}
+
+// maxAggregationPeriod is the longest aggregation period the SDK accepts.
+const maxAggregationPeriod = 24 * time.Hour
+
+// SetRequestedAggregationPeriod asks the servers to deliver the events of the endpoint conflated over the given period;
+// zero asks for real-time delivery. The SDK keeps whole milliseconds: a shorter period is rounded up to 1 ms. The
+// servers keep the period within their own bounds: see AggregationPeriodInfo. The period must be between 0 and 24
+// hours. The property "dxfeed.requestedAggregationPeriod" and the address option "[requestedAggregationPeriod=5s]" do
+// the same at creation.
+func (e *DXEndpoint) SetRequestedAggregationPeriod(period time.Duration) error {
+	if period < 0 || period > maxAggregationPeriod {
+		return fmt.Errorf("dxfeed: aggregation period %v is out of range [0, %v]", period, maxAggregationPeriod)
+	}
+	millis := period.Milliseconds()
+	if millis == 0 && period > 0 {
+		millis = 1
+	}
+	return e.endpointHandle.SetRequestedAggregationPeriodMillis(millis)
+}
+
+// ClearRequestedAggregationPeriod withdraws the requested aggregation period: the servers use their default one.
+func (e *DXEndpoint) ClearRequestedAggregationPeriod() error {
+	return e.endpointHandle.SetRequestedAggregationPeriodMillis(-1)
+}
+
+// RequestedAggregationPeriod returns the aggregation period that the endpoint requests from the servers; ok is false
+// when it requests none.
+func (e *DXEndpoint) RequestedAggregationPeriod() (period time.Duration, ok bool, err error) {
+	millis, err := e.endpointHandle.RequestedAggregationPeriodMillis()
+	if err != nil || millis < 0 {
+		return 0, false, err
+	}
+	return time.Duration(millis) * time.Millisecond, true, nil
+}
+
+// AggregationPeriodInfo is the aggregation period that the servers apply over all connections of an endpoint.
+type AggregationPeriodInfo struct {
+	// Known is false until a server reports the period on connection, and always for an endpoint without such a
+	// server, such as a local hub or a publisher; Min and Max are zero then.
+	Known bool
+	// Min is the shortest period that the servers apply.
+	Min time.Duration
+	// Max is the longest period that the servers apply.
+	Max time.Duration
+}
+
+// AggregationPeriodInfo returns the aggregation period that the servers apply.
+func (e *DXEndpoint) AggregationPeriodInfo() (AggregationPeriodInfo, error) {
+	lo, hi, err := e.endpointHandle.AggregationPeriodInfo()
+	if err != nil || lo < 0 || hi < 0 {
+		return AggregationPeriodInfo{}, err
+	}
+	return AggregationPeriodInfo{
+		Known: true,
+		Min:   time.Duration(lo) * time.Millisecond,
+		Max:   time.Duration(hi) * time.Millisecond,
+	}, nil
 }
 
 // GetFeed returns the feed of the endpoint to create subscriptions.
