@@ -178,7 +178,8 @@ func TestSpecialInputs(t *testing.T) {
 	if _, err := zero.WithMillis().Parse("0"); err == nil {
 		t.Error("a format derived from the zero Format parses")
 	}
-	if f.WithMillis() != f.WithMillis() {
+	first, second := f.WithMillis(), f.WithMillis()
+	if first != second {
 		t.Error("the derived formats are not reused")
 	}
 }
