@@ -15,8 +15,9 @@ import (
 // DXFeed.CreateSubscription.
 //
 // A symbol is an osub.Symbol: osub.String for a symbol such as "AAPL" (osub.Strings converts several strings at once),
-// *osub.WildcardSymbol for all symbols, *osub.TimeSeriesSubscriptionSymbol for time series events from a time, and
-// *osub.IndexedEventSubscriptionSymbol for indexed events of one source.
+// *osub.CandleSymbol for the candles of a candle.CandleSymbol, *osub.WildcardSymbol for all symbols,
+// *osub.TimeSeriesSubscriptionSymbol for time series events from a time, and *osub.IndexedEventSubscriptionSymbol for
+// indexed events of one source.
 type DXFeedSubscription struct {
 	sub       *native.DXFeedSubscription
 	mu        sync.Mutex

@@ -10,7 +10,8 @@ type TimeSeriesSubscriptionSymbol struct {
 }
 
 // NewTimeSeriesSubscriptionSymbol returns a symbol for the events of symbol from fromTime, in milliseconds since the
-// Unix epoch. The symbol is a string or an osub.String, such as "AAPL{=d}" for daily candles.
+// Unix epoch. The symbol is a string or an osub.String, such as "AAPL{=d}" for daily candles, or a candle symbol: an
+// *osub.CandleSymbol or a *candle.CandleSymbol.
 func NewTimeSeriesSubscriptionSymbol(symbol any, fromTime int64) *TimeSeriesSubscriptionSymbol {
 	return &TimeSeriesSubscriptionSymbol{symbol, fromTime, *events.DefaultIndexedEventSource()}
 }

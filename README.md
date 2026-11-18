@@ -413,6 +413,8 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   is a simple demonstration of how to watch the connectors and the connection errors of an endpoint and to reconnect it
 - [x] [Auth](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/auth/main.go)
   is a simple demonstration of how to connect with an authorization token and renew it periodically
+- [x] [PrintCandles](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/print-candles/main.go)
+  is a simple demonstration of how to subscribe to the candles of a `CandleSymbol` from a time
 - [ ] WriteTapeFile is a simple demonstration of how to write events to a tape file
 - [x] [DxFeedIpfConnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/feed-ipf-connect/main.go)
   is a simple demonstration of how to get Instrument Profiles and subscribe to their symbols
@@ -540,7 +542,7 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [x] [WildcardSymbol.ALL](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/osub/WildcardSymbol.html)
   represents a  *wildcard* subscription to all events of the specific event type
 
-- [ ] [CandleSymbol](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/candle/CandleSymbol.html)
+- [x] [CandleSymbol](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/candle/CandleSymbol.html)
   is a symbol used with [DXFeedSubscription](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeedSubscription.html)
   class to subscribe for [Candle](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/candle/Candle.html) events
   (the Go type exists, but a subscription does not accept it yet; subscribe with `osub.String("AAPL{=d}")`)
