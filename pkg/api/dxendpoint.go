@@ -160,15 +160,45 @@ func (e *DXEndpoint) EventTypes() ([]eventcodes.EventCode, error) {
 	if err != nil {
 		return nil, err
 	}
-	codes := make([]eventcodes.EventCode, 0, len(clazzes))
-	for _, clazz := range clazzes {
+	return eventCodes(clazzes), nil
+}
+
+// eventCodes maps the native event class identifiers to the event codes.
+func eventCodes(classes []int32) []eventcodes.EventCode {
+	codes := make([]eventcodes.EventCode, 0, len(classes))
+	for _, clazz := range classes {
 		codes = append(codes, eventcodes.EventCode(clazz))
 	}
-	return codes, nil
+	return codes
 }
 
 // maxAggregationPeriod is the longest aggregation period the SDK accepts.
 const maxAggregationPeriod = 24 * time.Hour
+
+// aggregationPeriodMillis validates the aggregation period and converts it to whole milliseconds, rounding a shorter
+// non-zero period up to 1 ms.
+func aggregationPeriodMillis(period time.Duration) (int64, error) {
+	if period < 0 || period > maxAggregationPeriod {
+		return 0, fmt.Errorf("dxfeed: aggregation period %v is out of range [0, %v]", period, maxAggregationPeriod)
+	}
+	millis := period.Milliseconds()
+	if millis == 0 && period > 0 {
+		millis = 1
+	}
+	return millis, nil
+}
+
+// newAggregationPeriodInfo converts the bounds in milliseconds that the SDK reports; a negative bound means unknown.
+func newAggregationPeriodInfo(lo, hi int64) AggregationPeriodInfo {
+	if lo < 0 || hi < 0 {
+		return AggregationPeriodInfo{}
+	}
+	return AggregationPeriodInfo{
+		Known: true,
+		Min:   time.Duration(lo) * time.Millisecond,
+		Max:   time.Duration(hi) * time.Millisecond,
+	}
+}
 
 // SetRequestedAggregationPeriod asks the servers to deliver the events of the endpoint conflated over the given period;
 // zero asks for real-time delivery. The SDK keeps whole milliseconds: a shorter period is rounded up to 1 ms. The
@@ -176,12 +206,9 @@ const maxAggregationPeriod = 24 * time.Hour
 // hours. The property "dxfeed.requestedAggregationPeriod" and the address option "[requestedAggregationPeriod=5s]" do
 // the same at creation.
 func (e *DXEndpoint) SetRequestedAggregationPeriod(period time.Duration) error {
-	if period < 0 || period > maxAggregationPeriod {
-		return fmt.Errorf("dxfeed: aggregation period %v is out of range [0, %v]", period, maxAggregationPeriod)
-	}
-	millis := period.Milliseconds()
-	if millis == 0 && period > 0 {
-		millis = 1
+	millis, err := aggregationPeriodMillis(period)
+	if err != nil {
+		return err
 	}
 	return e.endpointHandle.SetRequestedAggregationPeriodMillis(millis)
 }
@@ -201,28 +228,27 @@ func (e *DXEndpoint) RequestedAggregationPeriod() (period time.Duration, ok bool
 	return time.Duration(millis) * time.Millisecond, true, nil
 }
 
-// AggregationPeriodInfo is the aggregation period that the servers apply over all connections of an endpoint.
+// AggregationPeriodInfo is an aggregation period that is applied to events: by the servers over all connections of an
+// endpoint (DXEndpoint.AggregationPeriodInfo), or to the events delivered to a subscription
+// (DXFeedSubscription.AggregationPeriodInfo).
 type AggregationPeriodInfo struct {
-	// Known is false until a server reports the period on connection, and always for an endpoint without such a
-	// server, such as a local hub or a publisher; Min and Max are zero then.
+	// Known is false while the period is unknown; Min and Max are zero then. For an endpoint, it is false until a
+	// server reports the period on connection, and always for an endpoint without such a server, such as a local hub
+	// or a publisher. For a subscription, it is false until the first events are delivered.
 	Known bool
-	// Min is the shortest period that the servers apply.
+	// Min is the shortest period applied.
 	Min time.Duration
-	// Max is the longest period that the servers apply.
+	// Max is the longest period applied.
 	Max time.Duration
 }
 
 // AggregationPeriodInfo returns the aggregation period that the servers apply.
 func (e *DXEndpoint) AggregationPeriodInfo() (AggregationPeriodInfo, error) {
 	lo, hi, err := e.endpointHandle.AggregationPeriodInfo()
-	if err != nil || lo < 0 || hi < 0 {
+	if err != nil {
 		return AggregationPeriodInfo{}, err
 	}
-	return AggregationPeriodInfo{
-		Known: true,
-		Min:   time.Duration(lo) * time.Millisecond,
-		Max:   time.Duration(hi) * time.Millisecond,
-	}, nil
+	return newAggregationPeriodInfo(lo, hi), nil
 }
 
 // GetFeed returns the feed of the endpoint to create subscriptions.
