@@ -30,9 +30,13 @@ func (pr PrintState) UpdateState(old common.ConnectionState, new common.Connecti
 // An sample that demonstrates a subscription using InstrumentProfile.
 func main() {
 	// The experimental property must be enabled.
-	api.SetSystemProperty("dxfeed.experimental.dxlink.enable", "true")
+	if err := api.SetSystemProperty("dxfeed.experimental.dxlink.enable", "true"); err != nil {
+		panic(err)
+	}
 	// Set scheme for dxLink.
-	api.SetSystemProperty("scheme", "ext:opt:sysprops,resource:dxlink.xml")
+	if err := api.SetSystemProperty("scheme", "ext:opt:sysprops,resource:dxlink.xml"); err != nil {
+		panic(err)
+	}
 
 	ipfFile := "https://demo:demo@tools.dxfeed.com/ipf?TYPE=STOCK&compression=zip"
 	fmt.Printf("Reading instruments from %s\n", ipfFile)
@@ -85,7 +89,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer subscription.Close()
+	defer func() { _ = subscription.Close() }()
 
 	err = subscription.AddListener(PrintEvents(func(events []interface{}) {
 		for _, event := range events {

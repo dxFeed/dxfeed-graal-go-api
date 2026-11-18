@@ -1,10 +1,13 @@
 package ipf
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 )
 
 func TestReadFromFile(t *testing.T) {
@@ -54,7 +57,12 @@ func TestReadFromFile(t *testing.T) {
 		t.Fatalf("ResolveSourceURL = %v, %v", url, err)
 	}
 
-	if _, err := reader.ReadFromFile(filepath.Join(t.TempDir(), "missing.ipf")); err == nil {
-		t.Fatal("reading a missing file returned no error")
+	_, err = reader.ReadFromFile(filepath.Join(t.TempDir(), "missing.ipf"))
+	var javaErr common.JavaError
+	if !errors.As(err, &javaErr) {
+		t.Fatalf("error of reading a missing file %v (%T) is not a common.JavaError", err, err)
+	}
+	if javaErr.ClassName == "" || javaErr.StackTrace == "" {
+		t.Fatalf("JavaError without class name or stack trace: %#v", javaErr)
 	}
 }

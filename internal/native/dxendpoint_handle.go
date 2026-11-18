@@ -148,7 +148,10 @@ func (e *DXEndpointHandle) GetPublisher() (*DXPublisherHandle, error) {
 
 //export OnStateChanged
 func OnStateChanged(thread *C.graal_isolatethread_t, old C.dxfg_v4_endpoint_state_t, new C.dxfg_v4_endpoint_state_t, userData unsafe.Pointer) {
-	Restore(userData).(common.ConnectionStateListener).UpdateState(common.ConnectionState(old), common.ConnectionState(new))
+	defer recoverCallback("connection state listener")
+	if listener, ok := Restore(userData).(common.ConnectionStateListener); ok {
+		listener.UpdateState(common.ConnectionState(old), common.ConnectionState(new))
+	}
 }
 
 func (e *DXEndpointHandle) AttachListener(listener common.ConnectionStateListener) error {

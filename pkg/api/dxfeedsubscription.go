@@ -39,12 +39,14 @@ func (s *DXFeedSubscription) RemoveSymbols(symbols ...any) error {
 	return s.sub.RemoveSymbols(symbols...)
 }
 
-func (s *DXFeedSubscription) Clear() {
-	s.sub.Clear()
+// Clear removes all symbols from the subscription.
+func (s *DXFeedSubscription) Clear() error {
+	return s.sub.Clear()
 }
 
-func (s *DXFeedSubscription) Close() {
-	s.sub.Close()
+// Close closes the subscription; it stops receiving events.
+func (s *DXFeedSubscription) Close() error {
+	return s.sub.Close()
 }
 
 func removeFromSlice(list []common.EventListener, observerToRemove common.EventListener) []common.EventListener {

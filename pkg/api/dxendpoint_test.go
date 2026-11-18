@@ -1,6 +1,8 @@
 package api
 
 import (
+	"log"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -62,5 +64,44 @@ func TestEndpointStateListener(t *testing.T) {
 				t.Fatalf("no transition to Connecting within 5 s, recorded: %v", recorder.recorded())
 			}
 		})
+	}
+}
+
+type panickingStateListener struct{}
+
+func (panickingStateListener) UpdateState(common.ConnectionState, common.ConnectionState) {
+	panic("state listener failure")
+}
+
+// TestStateListenerPanicIsRecovered checks that a panic of a connection state listener is logged and does not end the
+// process.
+func TestStateListenerPanicIsRecovered(t *testing.T) {
+	logged := &syncBuffer{}
+	defer log.SetOutput(log.Writer())
+	log.SetOutput(logged)
+
+	endpoint, err := NewEndpoint(Feed)
+	if err != nil {
+		t.Fatalf("create endpoint: %v", err)
+	}
+	defer func() { _ = endpoint.Close() }()
+	recorder := newStateRecorder()
+	endpoint.AddListener(recorder)
+	// The panicking listener comes after the recorder, so the recorder still sees the transition.
+	endpoint.AddListener(panickingStateListener{})
+	if err := endpoint.Connect("127.0.0.1:1"); err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+	select {
+	case <-recorder.seen:
+	case <-time.After(5 * time.Second):
+		t.Fatalf("no transition to Connecting within 5 s, recorded: %v", recorder.recorded())
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for !strings.Contains(logged.String(), "state listener failure") {
+		if time.Now().After(deadline) {
+			t.Fatalf("the panic was not logged; log: %q", logged.String())
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }

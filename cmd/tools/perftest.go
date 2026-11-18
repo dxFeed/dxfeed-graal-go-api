@@ -43,9 +43,13 @@ func (c PerfTest) Run(args []string) {
 	}
 	address := arguments[0]
 	types := parser.ParseEventTypes(arguments[1])
-	symbols := parser.ParseSymbols(arguments[2])
+	symbols, err := parser.ParseSymbols(arguments[2])
+	if err != nil {
+		fmt.Printf("Error parsing symbols: %v\n", err)
+		os.Exit(1)
+	}
 
-	err := perf(address, types, symbols, dxarguments.forceStream())
+	err = perf(address, types, symbols, dxarguments.forceStream())
 	if err != nil {
 		fmt.Printf("Error during dump: %v", err)
 	}

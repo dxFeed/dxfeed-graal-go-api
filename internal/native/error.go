@@ -8,6 +8,8 @@ import "C"
 import (
 	"errors"
 	"fmt"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 )
 
 // checkStatus turns the status of a dxfg_v4 call into an error. A failed call leaves a Java exception on the isolate
@@ -29,7 +31,7 @@ func takeJavaException(thread *C.graal_isolatethread_t) error {
 		return nil
 	}
 	defer C.dxfg_v4_Exception_release(thread, ptr)
-	return JavaError{
+	return common.JavaError{
 		ClassName:  C.GoString(ptr.class_name),
 		Message:    C.GoString(ptr.message),
 		StackTrace: C.GoString(ptr.print_stack_trace),
@@ -164,14 +166,4 @@ func (e IsolateError) String() string {
 	default:
 		return "Unknown error."
 	}
-}
-
-type JavaError struct {
-	ClassName  string
-	Message    string
-	StackTrace string
-}
-
-func (e JavaError) Error() string {
-	return fmt.Sprintf("java: exception of eventcodes '%s'. %s \n %s", e.ClassName, e.Message, e.StackTrace)
 }

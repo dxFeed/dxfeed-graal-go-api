@@ -48,10 +48,14 @@ func (c Dump) Run(args []string) {
 		os.Exit(0)
 	}
 	inputFile := arguments[0]
-	symbols := parser.ParseSymbols(arguments[2])
+	symbols, err := parser.ParseSymbols(arguments[2])
+	if err != nil {
+		fmt.Printf("Error parsing symbols: %v\n", err)
+		os.Exit(1)
+	}
 	types := parser.ParseEventTypes(arguments[1])
 
-	err := dump(inputFile, tape, symbols, types, properties, isQuite)
+	err = dump(inputFile, tape, symbols, types, properties, isQuite)
 	if err != nil {
 		fmt.Printf("Error during dump: %v", err)
 	}
@@ -66,7 +70,9 @@ func dump(
 	isQuite bool,
 ) error {
 	for key, value := range properties {
-		api.SetSystemProperty(key, value)
+		if err := api.SetSystemProperty(key, value); err != nil {
+			return fmt.Errorf("SetSystemProperty %s: %w", key, err)
+		}
 	}
 	var listeners []common.EventListener
 
@@ -100,7 +106,7 @@ func dump(
 	if err != nil {
 		return fmt.Errorf("CreateSubscription: %w", err)
 	}
-	defer subscription.Close()
+	defer func() { _ = subscription.Close() }()
 	count := 0
 	var outputEndpoint *api.DXEndpoint
 

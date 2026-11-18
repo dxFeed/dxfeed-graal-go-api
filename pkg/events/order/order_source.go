@@ -32,6 +32,8 @@ func newOrderSourceWithIDName(identifier int64, name *string) *Source {
 	return &Source{IndexedEventSource: *events.NewIndexedEventSource(identifier, *name), pubFlags: 0, isBuiltin: false}
 }
 
+// newOrderSourceWithIDNameFlags registers a built-in source of this package's table at package initialization. It panics
+// on an invalid or duplicate entry of that table, a defect of the package that no user input can reach.
 func newOrderSourceWithIDNameFlags(identifier int64, name string, pubflags int64) *Source {
 	err := checkIdAndName(identifier, name)
 	if err != nil {
