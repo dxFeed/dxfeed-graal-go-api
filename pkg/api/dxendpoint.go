@@ -193,14 +193,17 @@ func (e *DXEndpoint) RequestedAggregationPeriod() (period time.Duration, ok bool
 	return time.Duration(millis) * time.Millisecond, true, nil
 }
 
-// AggregationPeriodInfo is the aggregation period that the servers apply over all connections of an endpoint.
+// AggregationPeriodInfo is an aggregation period that is applied to events: by the servers over all connections of an
+// endpoint (DXEndpoint.AggregationPeriodInfo), or to the events delivered to a subscription
+// (DXFeedSubscription.AggregationPeriodInfo).
 type AggregationPeriodInfo struct {
-	// Known is false until a server reports the period on connection, and always for an endpoint without such a
-	// server, such as a local hub or a publisher; Min and Max are zero then.
+	// Known is false while the period is unknown; Min and Max are zero then. For an endpoint, it is false until a
+	// server reports the period on connection, and always for an endpoint without such a server, such as a local hub
+	// or a publisher. For a subscription, it is false until the first events are delivered.
 	Known bool
-	// Min is the shortest period that the servers apply.
+	// Min is the shortest period applied.
 	Min time.Duration
-	// Max is the longest period that the servers apply.
+	// Max is the longest period applied.
 	Max time.Duration
 }
 
