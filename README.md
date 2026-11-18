@@ -12,10 +12,10 @@ and [dxFeed Java API](https://docs.dxfeed.com/dxfeed/api/overview-summary.html) 
 :warning: It’s a **beta** version and still under active development.
 
 ![Build](https://github.com/dxFeed/dxfeed-graal-go-api/actions/workflows/build.yml/badge.svg)
-![Platform](https://img.shields.io/badge/platform-win--x64%20%7C%20linux--x64%20%7C%20osx--x64%20%7C%20osx--arm64-lightgrey)
-[![Go](https://img.shields.io/badge/go_version-1.21-blueviolet)](https://dotnet.microsoft.com/en-us/)
-[![License](https://img.shields.io/badge/license-MPL--2.0-orange)](https://github.com/dxFeed/dxfeed-graal-net-api/blob/master/LICENSE)
-[![Release](https://img.shields.io/github/v/release/dxFeed/dxfeed-graal-go-api)](https://github.com/dxFeed/dxfeed-graal-net-api/releases/latest)
+![Platform](https://img.shields.io/badge/platform-win--x64%20%7C%20linux--x64%20%7C%20linux--arm64%20%7C%20osx--x64%20%7C%20osx--arm64-lightgrey)
+[![Go](https://img.shields.io/badge/go_version-1.21-blueviolet)](https://go.dev/dl/)
+[![License](https://img.shields.io/badge/license-MPL--2.0-orange)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/dxFeed/dxfeed-graal-go-api)](https://github.com/dxFeed/dxfeed-graal-go-api/releases/latest)
 
 ## Table of Contents
 
@@ -32,6 +32,7 @@ and [dxFeed Java API](https://docs.dxfeed.com/dxfeed/api/overview-summary.html) 
 - [Tools](#tools)
 - [Samples](#samples)
 - [Current State](#current-state)
+- [Contributing](#contributing)
 
 ## Overview
 
@@ -43,18 +44,18 @@ leverage all the benefits of native app development, resulting in maximum perfor
 We are working diligently to ensure that this new repository meets all of our standards for performance, security, and
 scalability. We will be providing regular updates throughout the development process.
 
-If you have any questions, please contact us via
-our [customer portal](https://jira.in.devexperts.com/servicedesk/customer/portal/1/create/122).
+If you have a question about the API or found a bug, please open an
+[issue](https://github.com/dxFeed/dxfeed-graal-go-api/issues). Questions about dxFeed data, subscriptions or accounts go
+to your dxFeed support contact.
 
 ### Future Development
 
 Features planned with **high priority**:
 
-* refactroing public API
-* deployment and publication artifacts in JFrog (to simplify the integration of the package into client applications)
-* add all market events
-* provide more tools and samples
-* generate documentation
+* a stable public API that returns errors instead of panicking
+* simpler delivery of the native library to applications
+* all market events of the Graal Native SDK
+* more tools and samples, on par with the dxFeed C++ API
 
 ---
 
@@ -112,7 +113,7 @@ Only x64 versions are supported.
 
 #### Requirements
 
-* [MinGW][mingw]
+* 64-bit [MinGW-w64][mingw] GCC (cgo does not work with MSVC), see [HOW_TO_DEVELOP.md](HOW_TO_DEVELOP.md#windows)
 
 [Windows-client]: https://www.microsoft.com/windows/
 
@@ -124,7 +125,7 @@ Only x64 versions are supported.
 
 ### Linux
 
-Only x64 versions are supported.
+x64 and arm64 (aarch64) are supported.
 
 #### Requirements
 
@@ -400,8 +401,12 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [x] [PrintQuoteEvents](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/print-quote-events/main.go)
   is a simple demonstration of how to subscribe to the `Quote` event, using a `DxFeed` instance singleton
   and `dxfeed.properties` file
+- [x] [PrintIndexedEvents](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/print-indexed-events/main.go)
+  is a simple demonstration of how to subscribe to `Order` events of one source with
+  an `IndexedEventSubscriptionSymbol` and to track the connection state
 - [ ] WriteTapeFile is a simple demonstration of how to write events to a tape file
-- [ ] DxFeedIpfConnect is a simple demonstration of how to get Instrument Profiles
+- [x] [DxFeedIpfConnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/feed-ipf-connect/main.go)
+  is a simple demonstration of how to get Instrument Profiles and subscribe to their symbols
 - [ ] DXFeedLiveIpfSample is a simple demonstration of how to get live updates for Instrument Profiles
 - [ ] DxFeedPublishProfiles is a simple demonstration of how to publish market events
 - [ ] ScheduleSample is a simple demonstration of how to get various scheduling information for instruments
@@ -511,6 +516,7 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [ ] [CandleSymbol](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/candle/CandleSymbol.html)
   is a symbol used with [DXFeedSubscription](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeedSubscription.html)
   class to subscribe for [Candle](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/candle/Candle.html) events
+  (the Go type exists, but a subscription does not accept it yet; subscribe with the candle symbol string)
 
 ### Subscriptions & Models
 
@@ -596,3 +602,8 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [ ] [OnDemandService](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ondemand/OnDemandService.html)
   provides on-demand historical tick data replay controls
   ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/ondemand/OnDemandSample.java))
+
+## Contributing
+
+Bug reports, questions and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md), and
+[HOW_TO_DEVELOP.md](HOW_TO_DEVELOP.md) for building the API and running the tests.
