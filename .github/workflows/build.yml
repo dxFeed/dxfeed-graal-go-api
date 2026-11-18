@@ -43,6 +43,9 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+      - name: Release note fragments
+        run: go run ./internal/cmd/release check
+
       - name: Staticcheck
         run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.2 ./...
 
