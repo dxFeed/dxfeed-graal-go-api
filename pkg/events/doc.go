@@ -1,0 +1,20 @@
+// Package events holds what the event types have in common: the [EventType] interface, the indexed events
+// ([IndexedEvent], [IndexedEventSource] and the [EventFlag] values), and the instrument profile ([InstrumentProfile])
+// of package ipf. The event types themselves are in the packages under events, one package per event type or family:
+// quote, trade, summary, profile, order, timeandsale, candle, greeks, theoprice, underlying, series, misc; their codes
+// for a subscription are in package eventcodes.
+//
+// # Kinds of events
+//
+//   - Lasting events (Quote, Trade, TradeETH, Summary, Profile and others) are the last state of a symbol: a new
+//     subscription gets the last known value at once, then the updates.
+//   - Indexed events (Order, AnalyticOrder, SpreadOrder, Series, and the time series events below) have several values
+//     per symbol, told apart by an index and a source. The [EventFlag] values of a batch mark a transaction
+//     ([TxPending]) and a snapshot ([IsSnapshotBegin], [IsSnapshotEnd], [IsSnapshotSnip]), and remove an event
+//     ([IsRemove]).
+//   - Time series events (Candle, TimeAndSale, Greeks, TheoPrice, Underlying) are indexed by time; a subscription with
+//     a time series symbol gets their history from a given time.
+//
+// The events are pointers to the types of these packages, such as *quote.Quote; [EventType.Type] gives the code of
+// the type.
+package events

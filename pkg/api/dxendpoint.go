@@ -1,5 +1,3 @@
-// Package api connects to dxFeed: an endpoint (DXEndpoint) gives a feed to subscribe to market events and a publisher
-// to publish them. It wraps the dxFeed Graal Native SDK.
 package api
 
 import (

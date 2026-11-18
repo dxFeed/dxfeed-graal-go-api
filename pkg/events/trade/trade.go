@@ -1,4 +1,3 @@
-// Package trade provides the Trade and TradeETH events with the latest trade price, size and daily statistics.
 package trade
 
 import (

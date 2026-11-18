@@ -1,4 +1,3 @@
-// Package profile provides the Profile event with security instrument information such as trading status and short sale restriction.
 package profile
 
 import (

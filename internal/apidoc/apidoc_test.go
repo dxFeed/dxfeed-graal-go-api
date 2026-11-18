@@ -11,11 +11,13 @@ import (
 	"testing"
 )
 
-// TestExportedIdentifiersAreDocumented fails for an exported identifier of pkg/ without a doc comment, and for a
-// package without a package comment.
+// TestExportedIdentifiersAreDocumented fails for an exported identifier of pkg/ without a doc comment, for a package
+// without a package comment, and for a package of several files whose package comment is not in doc.go alone (go doc
+// joins the comments of all the files).
 func TestExportedIdentifiersAreDocumented(t *testing.T) {
 	fset := token.NewFileSet()
-	packageDoc := map[string]bool{}
+	files := map[string]int{}
+	docFiles := map[string][]string{}
 	err := filepath.Walk(filepath.Join("..", "..", "pkg"), func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 			return err
@@ -25,7 +27,10 @@ func TestExportedIdentifiersAreDocumented(t *testing.T) {
 			return err
 		}
 		dir := filepath.Dir(path)
-		packageDoc[dir] = packageDoc[dir] || file.Doc != nil
+		files[dir]++
+		if file.Doc != nil {
+			docFiles[dir] = append(docFiles[dir], filepath.Base(path))
+		}
 		for _, decl := range file.Decls {
 			switch d := decl.(type) {
 			case *ast.FuncDecl:
@@ -54,12 +59,16 @@ func TestExportedIdentifiersAreDocumented(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(packageDoc) == 0 {
+	if len(files) == 0 {
 		t.Fatal("no packages found")
 	}
-	for dir, documented := range packageDoc {
-		if !documented {
+	for dir, n := range files {
+		docs := docFiles[dir]
+		switch {
+		case len(docs) == 0:
 			t.Errorf("%s: the package has no package comment", dir)
+		case n > 1 && (len(docs) != 1 || docs[0] != "doc.go"):
+			t.Errorf("%s: the package comment must be in doc.go only, found in %v", dir, docs)
 		}
 	}
 }
