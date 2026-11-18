@@ -49,3 +49,21 @@ func destroyEventClazzList(l *eventClazzList) {
 
 	C.free(unsafe.Pointer(l.elements))
 }
+
+// takeEventClazzList copies a list of event classes that the SDK returned and releases the list.
+func takeEventClazzList(thread *isolateThread, list *C.dxfg_v4_event_clazz_list) []int32 {
+	if list == nil {
+		return nil
+	}
+	defer C.dxfg_v4_event_clazz_list_release(thread.ptr, list)
+	if list.size <= 0 || list.elements == nil {
+		return nil
+	}
+	result := make([]int32, 0, int(list.size))
+	for _, element := range unsafe.Slice(list.elements, int(list.size)) {
+		if element != nil {
+			result = append(result, int32(*element))
+		}
+	}
+	return result
+}

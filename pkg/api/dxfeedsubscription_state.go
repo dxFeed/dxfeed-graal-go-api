@@ -43,11 +43,7 @@ func (s *DXFeedSubscription) EventTypes() ([]eventcodes.EventCode, error) {
 	if err != nil {
 		return nil, err
 	}
-	codes := make([]eventcodes.EventCode, 0, len(classes))
-	for _, clazz := range classes {
-		codes = append(codes, eventcodes.EventCode(clazz))
-	}
-	return codes, nil
+	return eventCodes(classes), nil
 }
 
 // ContainsEventType reports whether the subscription has the event type.
@@ -69,12 +65,9 @@ func (s *DXFeedSubscription) AggregationPeriod() (period time.Duration, ok bool,
 // the maximum of this one and the aggregation period of the endpoint. The SDK keeps whole milliseconds: a shorter
 // period is rounded up to 1 ms. The period must be between 0 and 24 hours.
 func (s *DXFeedSubscription) SetAggregationPeriod(period time.Duration) error {
-	if period < 0 || period > maxAggregationPeriod {
-		return fmt.Errorf("dxfeed: aggregation period %v is out of range [0, %v]", period, maxAggregationPeriod)
-	}
-	millis := period.Milliseconds()
-	if millis == 0 && period > 0 {
-		millis = 1
+	millis, err := aggregationPeriodMillis(period)
+	if err != nil {
+		return err
 	}
 	return s.sub.SetAggregationPeriodMillis(millis)
 }
@@ -87,14 +80,10 @@ func (s *DXFeedSubscription) ClearAggregationPeriod() error {
 // AggregationPeriodInfo returns the aggregation period that was applied to the events delivered to the subscription.
 func (s *DXFeedSubscription) AggregationPeriodInfo() (AggregationPeriodInfo, error) {
 	lo, hi, err := s.sub.AggregationPeriodInfo()
-	if err != nil || lo < 0 || hi < 0 {
+	if err != nil {
 		return AggregationPeriodInfo{}, err
 	}
-	return AggregationPeriodInfo{
-		Known: true,
-		Min:   time.Duration(lo) * time.Millisecond,
-		Max:   time.Duration(hi) * time.Millisecond,
-	}, nil
+	return newAggregationPeriodInfo(lo, hi), nil
 }
 
 // EventsBatchLimit returns the maximum number of events in one notification of the event listeners; see

@@ -181,15 +181,7 @@ func (e *DXEndpointHandle) EventTypes() ([]int32, error) {
 		if err := checkStatus(thread, C.dxfg_v4_DXEndpoint_getEventTypes(thread.ptr, e.ptr(), &list)); err != nil {
 			return err
 		}
-		defer C.dxfg_v4_event_clazz_list_release(thread.ptr, list)
-		if list == nil || list.size <= 0 || list.elements == nil {
-			return nil
-		}
-		for _, element := range unsafe.Slice(list.elements, int(list.size)) {
-			if element != nil {
-				result = append(result, int32(*element))
-			}
-		}
+		result = takeEventClazzList(thread, list)
 		return nil
 	})
 	return result, err

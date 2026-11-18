@@ -76,25 +76,30 @@ func goIndexedEventSource(s *C.dxfg_v4_indexed_event_source_t) (events.IndexedEv
 	}
 }
 
-// takeSymbolList copies a list of symbols that the SDK returned and releases the list.
+// goSymbols copies the symbols of a list that the SDK returned into Go memory; it neither frees nor keeps the list.
+// The result is nil when any symbol fails to convert.
+func goSymbols(list *C.dxfg_v4_symbol_list) ([]osub.Symbol, error) {
+	if list == nil || list.size <= 0 || list.elements == nil {
+		return nil, nil
+	}
+	symbols := make([]osub.Symbol, 0, int(list.size))
+	for _, s := range unsafe.Slice(list.elements, int(list.size)) {
+		symbol, err := goSymbol(s)
+		if err != nil {
+			return nil, err
+		}
+		symbols = append(symbols, symbol)
+	}
+	return symbols, nil
+}
+
+// takeSymbolList copies a list of symbols that the SDK returned and releases the list, also when a symbol fails to
+// convert.
 func takeSymbolList(thread *isolateThread, list *C.dxfg_v4_symbol_list) ([]osub.Symbol, error) {
 	if list == nil {
 		return nil, nil
 	}
-	var symbols []osub.Symbol
-	var err error
-	if list.size > 0 && list.elements != nil {
-		symbols = make([]osub.Symbol, 0, int(list.size))
-		for _, s := range unsafe.Slice(list.elements, int(list.size)) {
-			symbol, convErr := goSymbol(s)
-			if convErr != nil {
-				err = convErr
-				symbols = nil
-				break
-			}
-			symbols = append(symbols, symbol)
-		}
-	}
+	symbols, err := goSymbols(list)
 	if releaseErr := checkStatus(thread, C.dxfg_v4_symbol_list_release(thread.ptr, list)); err == nil {
 		err = releaseErr
 	}
