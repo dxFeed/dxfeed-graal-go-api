@@ -47,10 +47,10 @@ func (a AnalyticOrderMapper) GoEvent(native unsafe.Pointer) interface{} {
 func (a AnalyticOrderMapper) CEvent(event interface{}) unsafe.Pointer {
 	orderEvent := event.(*order.AnalyticOrder)
 
-	q := (*C.dxfg_v4_analytic_order_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_analytic_order_t{}))))
+	q := (*C.dxfg_v4_analytic_order_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_analytic_order_t{})))
 	q.order_base.order_base.market_event.event_type.clazz = C.DXFG_EVENT_ANALYTIC_ORDER
 
-	q.order_base.order_base.market_event.event_symbol = C.CString(*orderEvent.EventSymbol())
+	q.order_base.order_base.market_event.event_symbol = cString(*orderEvent.EventSymbol())
 	q.order_base.order_base.market_event.event_time = C.int64_t(orderEvent.EventTime())
 
 	q.order_base.order_base.event_flags = C.int32_t(orderEvent.EventFlags())
@@ -70,7 +70,7 @@ func (a AnalyticOrderMapper) CEvent(event interface{}) unsafe.Pointer {
 	q.order_base.order_base.trade_size = C.double(orderEvent.TradeSize())
 
 	if orderEvent.MarketMaker() != nil {
-		q.order_base.market_maker = C.CString(*orderEvent.MarketMaker())
+		q.order_base.market_maker = cString(*orderEvent.MarketMaker())
 	}
 	q.iceberg_peak_size = C.double(orderEvent.IcebergPeakSize())
 	q.iceberg_hidden_size = C.double(orderEvent.IcebergHiddenSize())
@@ -78,4 +78,12 @@ func (a AnalyticOrderMapper) CEvent(event interface{}) unsafe.Pointer {
 	q.iceberg_flags = C.int32_t(orderEvent.IcebergFlags())
 
 	return unsafe.Pointer(q)
+}
+
+// FreeCEvent frees an event made by CEvent.
+func (AnalyticOrderMapper) FreeCEvent(event unsafe.Pointer) {
+	n := (*C.dxfg_v4_analytic_order_t)(event)
+	cFree(unsafe.Pointer(n.order_base.order_base.market_event.event_symbol))
+	cFree(unsafe.Pointer(n.order_base.market_maker))
+	cFree(event)
 }

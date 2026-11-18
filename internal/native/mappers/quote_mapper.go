@@ -16,9 +16,9 @@ type QuoteMapper struct {
 func (m QuoteMapper) CEvent(event interface{}) unsafe.Pointer {
 	quoteEvent := event.(*quote.Quote)
 
-	q := (*C.dxfg_v4_quote_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_quote_t{}))))
+	q := (*C.dxfg_v4_quote_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_quote_t{})))
 	q.market_event.event_type.clazz = C.DXFG_EVENT_QUOTE
-	q.market_event.event_symbol = C.CString(*quoteEvent.EventSymbol())
+	q.market_event.event_symbol = cString(*quoteEvent.EventSymbol())
 	q.market_event.event_time = C.int64_t(quoteEvent.EventTime())
 	q.time_millis_sequence = C.int32_t(quoteEvent.TimeMillisSequence())
 	q.time_nano_part = C.int32_t(quoteEvent.TimeNanoPart())
@@ -49,4 +49,11 @@ func (m QuoteMapper) GoEvent(native unsafe.Pointer) interface{} {
 	q.SetAskPrice(float64(quoteNative.ask_price))
 	q.SetAskSize(float64(quoteNative.ask_size))
 	return q
+}
+
+// FreeCEvent frees an event made by CEvent.
+func (QuoteMapper) FreeCEvent(event unsafe.Pointer) {
+	n := (*C.dxfg_v4_quote_t)(event)
+	cFree(unsafe.Pointer(n.market_event.event_symbol))
+	cFree(event)
 }
