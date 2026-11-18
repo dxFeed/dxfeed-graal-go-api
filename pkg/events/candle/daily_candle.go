@@ -3,6 +3,9 @@ package candle
 import "github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 
 // DailyCandle is a Candle of a daily period: it has every field of Candle and the event code DailyCandle.
+//
+// A feed delivers daily candles as Candle events: subscribe to eventcodes.Candle with a daily candle symbol, such as
+// "AAPL{=d}". A DailyCandle can be published; subscribers of Candle receive it as a Candle.
 type DailyCandle struct {
 	Candle
 }

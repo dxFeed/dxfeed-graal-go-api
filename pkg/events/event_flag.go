@@ -5,8 +5,8 @@ import "strconv"
 // EventFlag is a bit of the transactional event flags that indexed events carry; see IndexedEvent.
 //
 // The flags mark transactions (TxPending), removals (RemoveEvent) and snapshots (SnapshotBegin, SnapshotEnd,
-// SnapshotSnip) in the stream of indexed events of one symbol and source. SnapshotMode and RemoveSymbol are used only
-// inside the native layer and are never set on events that a subscription delivers.
+// SnapshotSnip) in the stream of indexed events of one symbol and source. SnapshotMode and RemoveSymbol are meant for
+// the internal use of the native layer and of event models; applications normally do not set them.
 type EventFlag int32
 
 const (

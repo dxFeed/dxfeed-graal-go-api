@@ -23,18 +23,24 @@ func ParseSymbols(value string) ([]osub.Symbol, error) {
 
 func ParseEventTypes(value string) []eventcodes.EventCode {
 	codes := map[string]eventcodes.EventCode{
-		"quote":         eventcodes.Quote,
-		"summary":       eventcodes.Summary,
-		"greeks":        eventcodes.Greeks,
-		"underlying":    eventcodes.Underlying,
-		"timeandsale":   eventcodes.TimeAndSale,
-		"profile":       eventcodes.Profile,
-		"order":         eventcodes.Order,
-		"spreadorder":   eventcodes.SpreadOrder,
-		"candle":        eventcodes.Candle,
-		"trade":         eventcodes.Trade,
-		"tradeeth":      eventcodes.TradeETH,
-		"analyticorder": eventcodes.AnalyticOrder,
+		"quote":             eventcodes.Quote,
+		"summary":           eventcodes.Summary,
+		"greeks":            eventcodes.Greeks,
+		"underlying":        eventcodes.Underlying,
+		"timeandsale":       eventcodes.TimeAndSale,
+		"profile":           eventcodes.Profile,
+		"order":             eventcodes.Order,
+		"spreadorder":       eventcodes.SpreadOrder,
+		"candle":            eventcodes.Candle,
+		"trade":             eventcodes.Trade,
+		"tradeeth":          eventcodes.TradeETH,
+		"analyticorder":     eventcodes.AnalyticOrder,
+		"series":            eventcodes.Series,
+		"theoprice":         eventcodes.TheoPrice,
+		"message":           eventcodes.Message,
+		"textmessage":       eventcodes.TextMessage,
+		"configuration":     eventcodes.Configuration,
+		"textconfiguration": eventcodes.TextConfiguration,
 	}
 	var values []eventcodes.EventCode
 	if value == "all" {

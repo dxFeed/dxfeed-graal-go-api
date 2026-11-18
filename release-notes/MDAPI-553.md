@@ -4,3 +4,4 @@
     `IsSnapshotEndOrSnip`, `IsPending` and `IsRemove` helpers.
   * New events: `series.Series`, `theoprice.TheoPrice`, `candle.DailyCandle`, and `misc.Message`,
     `misc.TextMessage`, `misc.Configuration`, `misc.TextConfiguration`.
+  * `TimeAndSale.String` prints the buyer and the seller instead of the addresses of their strings.

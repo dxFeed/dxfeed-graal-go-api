@@ -1,6 +1,7 @@
 package mappers_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
@@ -75,6 +76,21 @@ func TestFreeCEventFreesAllAllocations(t *testing.T) {
 	for code := range available {
 		if !covered[code] {
 			t.Errorf("no event for the mapper of native code %d", code)
+		}
+	}
+}
+
+// TestMapperRoundTrip maps every event to C memory and back and checks that no field is lost; this covers the GoEvent
+// side of the mappers whose events a local hub delivers as another type, such as DailyCandle.
+func TestMapperRoundTrip(t *testing.T) {
+	available := mappers.AvailableMappers()
+	for _, event := range eventsWithAllStrings() {
+		mapper := available[event.Type().NativeCode()]
+		native := mapper.CEvent(event)
+		got := mapper.GoEvent(native)
+		mapper.FreeCEvent(native)
+		if fmt.Sprint(got) != fmt.Sprint(event) {
+			t.Errorf("%T changed in the round trip:\n got %v\nwant %v", event, got, event)
 		}
 	}
 }
