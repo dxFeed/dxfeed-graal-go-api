@@ -40,6 +40,7 @@ func TestCheckFragment(t *testing.T) {
 		name, text, err string
 	}{
 		{"valid", "* **\\[MDAPI-7]\\[GO]** Fixed.\r\n  More text.\r\n  * Nested.\r\n", ""},
+		{"breaking", "* **\\[MDAPI-7]\\[GO]\\[BREAKING]** Changed.\n  * **\\[BREAKING]** Update.\n", ""},
 		{"empty", "\n", "empty"},
 		{"no key", "* Fixed.\n", "line 1"},
 		{"other ticket", "* **\\[MDAPI-8]\\[GO]** Fixed.\n", "names MDAPI-8"},

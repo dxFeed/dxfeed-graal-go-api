@@ -19,7 +19,7 @@ const (
 
 var (
 	fragmentName = regexp.MustCompile(`^MDAPI-([1-9]\d*)\.md$`)
-	topItem      = regexp.MustCompile(`^\* \*\*\\\[MDAPI-(\d+)]\\\[GO]\*\* \S`)
+	topItem      = regexp.MustCompile(`^\* \*\*\\\[MDAPI-(\d+)]\\\[GO](?:\\\[BREAKING])?\*\* \S`)
 	versionRe    = regexp.MustCompile(`^v?(\d+)\.(\d+)\.(\d+)$`)
 )
 
@@ -78,7 +78,8 @@ func checkFragment(key int, data string) (string, error) {
 	lines := strings.Split(text, "\n")
 	m := topItem.FindStringSubmatch(lines[0])
 	if m == nil {
-		return "", fmt.Errorf(`line 1 must start with "* **\[MDAPI-%d]\[GO]** "`, key)
+		return "", fmt.Errorf(`line 1 must start with "* **\[MDAPI-%d]\[GO]** " or "* **\[MDAPI-%d]\[GO]\[BREAKING]** "`,
+			key, key)
 	}
 	if m[1] != strconv.Itoa(key) {
 		return "", fmt.Errorf("line 1 names MDAPI-%s, the file name MDAPI-%d", m[1], key)

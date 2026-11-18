@@ -1,7 +1,8 @@
 package mappers
 
 /*
-#include "../graal/dxfg_api.h"
+#cgo CFLAGS: -I${SRCDIR}/../include
+#include "dxfg_api.h"
 #include <stdlib.h>
 */
 import "C"

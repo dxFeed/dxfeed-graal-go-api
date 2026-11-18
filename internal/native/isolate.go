@@ -1,13 +1,16 @@
 package native
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/graal
+#cgo CFLAGS: -I${SRCDIR}/include
 #include "dxfg_api.h"
 */
 import "C"
 import (
+	"fmt"
 	"runtime"
 	"sync"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/sdk"
 )
 
 const (
@@ -21,19 +24,45 @@ type isolate struct {
 var (
 	isolateOnce     sync.Once
 	isolateInstance *isolate
+	// isolateErr is the failure of the isolate creation or of the SDK version check; every later call reports it again.
+	isolateErr error
 )
 
 func getOrCreateIsolate() *isolate {
 	isolateOnce.Do(func() {
-		isolateInstance = &isolate{}
-		err := checkIsolateCall(func() C.int {
-			return C.graal_create_isolate(nil, &isolateInstance.ptr, nil)
+		// The thread that creates the isolate is attached to it; keep the goroutine on it for the version check.
+		runtime.LockOSThread()
+		defer runtime.UnlockOSThread()
+		instance := &isolate{}
+		var thread *C.graal_isolatethread_t
+		isolateErr = checkIsolateCall(func() C.int {
+			return C.graal_create_isolate(nil, &instance.ptr, &thread)
 		})
-		if err != nil {
-			panic(err)
+		if isolateErr == nil {
+			isolateErr = checkSdkVersion(thread)
 		}
+		isolateInstance = instance
 	})
+	if isolateErr != nil {
+		panic(isolateErr)
+	}
 	return isolateInstance
+}
+
+// checkSdkVersion compares the release of the loaded native library with the one whose headers the API is built with.
+// It runs on the thread that created the isolate, before getOrCreateIsolate returns, so it calls the SDK directly.
+// A library older than 3.13.0 lacks dxfg_v4_system_get_version, so linking or loading it fails before this check.
+func checkSdkVersion(thread *C.graal_isolatethread_t) error {
+	var version *C.char
+	if C.dxfg_v4_system_get_version(thread, &version) != dxfgExecuteSuccessfully {
+		if ex := C.dxfg_get_and_clear_thread_exception_t(thread); ex != nil {
+			C.dxfg_Exception_release(thread, ex)
+		}
+		return fmt.Errorf("native: cannot read the version of the dxFeed Graal Native SDK library; this API needs %s",
+			sdk.Version)
+	}
+	defer C.dxfg_v4_String_release(thread, version)
+	return sdk.CheckVersion(C.GoString(version))
 }
 
 type isolateThread struct {
