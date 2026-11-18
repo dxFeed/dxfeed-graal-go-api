@@ -381,6 +381,8 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   is a simple demonstration of how to connect with an authorization token and renew it periodically
 - [x] [PrintCandles](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/print-candles/main.go)
   is a simple demonstration of how to subscribe to the candles of a `CandleSymbol` from a time
+- [x] [OnDemandReplay](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/ondemand-replay/main.go)
+  is a simple demonstration of how to replay historical data with `OnDemandService`
 - [ ] WriteTapeFile is a simple demonstration of how to write events to a tape file
 - [x] [DxFeedIpfConnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/feed-ipf-connect/main.go)
   is a simple demonstration of how to get Instrument Profiles and subscribe to their symbols
@@ -412,7 +414,7 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   is a local hub without the ability to establish network connections. Events published via `Publisher` are delivered to
   local `Feed` only
 
-- [ ] [ON_DEMAND_FEED](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXEndpoint.Role.html#ON_DEMAND_FEED)
+- [x] [ON_DEMAND_FEED](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXEndpoint.Role.html#ON_DEMAND_FEED)
   is similar to `Feed`, but it is designed to be used
   with  [OnDemandService](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ondemand/OnDemandService.html) for historical
   data replay only
@@ -594,9 +596,9 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 
 ### Services
 
-- [ ] [OnDemandService](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ondemand/OnDemandService.html)
+- [x] [OnDemandService](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ondemand/OnDemandService.html)
   provides on-demand historical tick data replay controls
-  ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/ondemand/OnDemandSample.java))
+  ([sample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/ondemand-replay/main.go))
 
 ## Contributing
 

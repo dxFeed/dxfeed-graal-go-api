@@ -53,6 +53,11 @@ type DXEndpoint struct {
 	connectorListeners      []MessageConnectorListener
 	nativeConnectorListener *native.MessageConnectorListener
 	connectorsClosed        bool
+
+	// onDemand is created by the first OnDemandService call and released by Close.
+	onDemandMu     sync.Mutex
+	onDemand       *OnDemandService
+	onDemandClosed bool
 }
 
 // UpdateState is called by the SDK when the connection state changes and notifies the state listeners; applications
@@ -104,7 +109,7 @@ func (e *DXEndpoint) Connect(address string) error {
 // Close closes the endpoint and its connections and releases its native resources at once, without waiting for
 // pending data.
 func (e *DXEndpoint) Close() error {
-	return errors.Join(e.closeConnectorListener(), e.endpointHandle.Close())
+	return errors.Join(e.closeOnDemandService(), e.closeConnectorListener(), e.endpointHandle.Close())
 }
 
 // Role returns the role of the endpoint.
@@ -285,7 +290,7 @@ func (e *DXEndpoint) AwaitNotConnected(ctx context.Context) error {
 func (e *DXEndpoint) CloseAndAwaitTermination(ctx context.Context) error {
 	// The native listener is released on the caller's goroutine: the release waits for a running callback unless it is
 	// made from the callback's own thread, and a listener that closes the endpoint is such a callback.
-	listenerErr := e.closeConnectorListener()
+	listenerErr := errors.Join(e.closeOnDemandService(), e.closeConnectorListener())
 	return errors.Join(listenerErr, runWithContext(ctx, e.endpointHandle.CloseAndAwaitTermination))
 }
 
