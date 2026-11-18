@@ -71,8 +71,11 @@ func parseVersion(s string) ([3]int, error) {
 		parts[2] = parts[2][:i]
 	}
 	for i, p := range parts {
+		if p == "" || strings.Trim(p, "0123456789") != "" {
+			return v, fmt.Errorf("not a major.minor.patch version")
+		}
 		n, err := strconv.Atoi(p)
-		if err != nil || n < 0 {
+		if err != nil {
 			return v, fmt.Errorf("not a major.minor.patch version")
 		}
 		v[i] = n

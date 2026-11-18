@@ -24,27 +24,34 @@ type isolate struct {
 var (
 	isolateOnce     sync.Once
 	isolateInstance *isolate
+	// isolateErr is the failure of the isolate creation or of the SDK version check; every later call reports it again.
+	isolateErr error
 )
 
 func getOrCreateIsolate() *isolate {
 	isolateOnce.Do(func() {
-		isolateInstance = &isolate{}
+		// The thread that creates the isolate is attached to it; keep the goroutine on it for the version check.
+		runtime.LockOSThread()
+		defer runtime.UnlockOSThread()
+		instance := &isolate{}
 		var thread *C.graal_isolatethread_t
-		err := checkIsolateCall(func() C.int {
-			return C.graal_create_isolate(nil, &isolateInstance.ptr, &thread)
+		isolateErr = checkIsolateCall(func() C.int {
+			return C.graal_create_isolate(nil, &instance.ptr, &thread)
 		})
-		if err != nil {
-			panic(err)
+		if isolateErr == nil {
+			isolateErr = checkSdkVersion(thread)
 		}
-		if err := checkSdkVersion(thread); err != nil {
-			panic(err)
-		}
+		isolateInstance = instance
 	})
+	if isolateErr != nil {
+		panic(isolateErr)
+	}
 	return isolateInstance
 }
 
 // checkSdkVersion compares the release of the loaded native library with the one whose headers the API is built with.
 // It runs on the thread that created the isolate, before getOrCreateIsolate returns, so it calls the SDK directly.
+// A library older than 3.13.0 lacks dxfg_v4_system_get_version, so linking or loading it fails before this check.
 func checkSdkVersion(thread *C.graal_isolatethread_t) error {
 	var version *C.char
 	if C.dxfg_v4_system_get_version(thread, &version) != dxfgExecuteSuccessfully {

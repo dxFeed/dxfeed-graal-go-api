@@ -23,6 +23,7 @@ func TestCheckVersion(t *testing.T) {
 		{"3.16", false},
 		{"a.b.c", false},
 		{"3.-16.0", false},
+		{"+" + major + ".+" + minor + ".+0", false},
 	}
 	for _, tt := range tests {
 		err := CheckVersion(tt.version)
