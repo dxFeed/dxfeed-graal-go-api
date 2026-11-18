@@ -20,14 +20,16 @@ import (
 type DXFeedSubscription struct {
 	sub       *native.DXFeedSubscription
 	mu        sync.Mutex
-	listeners []attachedListener
+	listeners []*attachedListener
 	closed    atomic.Bool
 }
 
-// attachedListener pairs a listener added with AddListener with its native listener.
+// attachedListener pairs a listener added with AddListener with its native listener. The entry is in the list before
+// the native listener is attached, so a listener may remove itself from its first Update; native is nil until then.
 type attachedListener struct {
 	listener common.EventListener
 	native   *native.EventListener
+	removed  bool
 }
 
 // IsClosed reports whether Close succeeded.
@@ -38,34 +40,67 @@ func (s *DXFeedSubscription) IsClosed() bool {
 // AddListener adds a listener that receives the events of the subscription. The listener is called from an SDK thread;
 // a panic in it is logged and does not end the process.
 func (s *DXFeedSubscription) AddListener(listener common.EventListener) error {
+	entry := &attachedListener{listener: listener}
+	s.mu.Lock()
+	if s.closed.Load() {
+		// A closed subscription delivers no events.
+		s.mu.Unlock()
+		return nil
+	}
+	s.listeners = append(s.listeners, entry)
+	s.mu.Unlock()
+
 	nativeListener, err := s.sub.AttachListener(listener)
+	s.mu.Lock()
 	if err != nil {
+		s.removeEntry(entry)
+		s.mu.Unlock()
 		return err
 	}
-	s.mu.Lock()
-	s.listeners = append(s.listeners, attachedListener{listener: listener, native: nativeListener})
+	if !entry.removed {
+		entry.native = nativeListener
+		s.mu.Unlock()
+		return nil
+	}
 	s.mu.Unlock()
+	// RemoveListener or Close came while the native listener was being attached.
+	if err := s.sub.DetachListener(nativeListener); err != nil {
+		log.Printf("dxfeed: remove event listener: %v", err)
+	}
 	return nil
 }
 
-// RemoveListener removes a listener added with AddListener; the listener is not called after RemoveListener returns.
+// RemoveListener removes a listener added with AddListener; the listener is not called after RemoveListener returns
+// (if AddListener of that listener is still running, after AddListener returns). It may be called from the listener.
 // A listener added several times is removed once. A failure of the SDK is logged.
 func (s *DXFeedSubscription) RemoveListener(listener common.EventListener) {
 	s.mu.Lock()
 	var removed *native.EventListener
-	for i, l := range s.listeners {
+	for _, l := range s.listeners {
 		if l.listener == listener {
 			removed = l.native
-			s.listeners = append(s.listeners[:i:i], s.listeners[i+1:]...)
+			s.removeEntry(l)
 			break
 		}
 	}
 	s.mu.Unlock()
 	if removed == nil {
+		// Not added, or AddListener is still attaching it and detaches it when done.
 		return
 	}
 	if err := s.sub.DetachListener(removed); err != nil {
 		log.Printf("dxfeed: remove event listener: %v", err)
+	}
+}
+
+// removeEntry marks the entry removed and takes it out of the list; s.mu must be held.
+func (s *DXFeedSubscription) removeEntry(entry *attachedListener) {
+	entry.removed = true
+	for i, l := range s.listeners {
+		if l == entry {
+			s.listeners = append(s.listeners[:i:i], s.listeners[i+1:]...)
+			return
+		}
 	}
 }
 
@@ -103,10 +138,15 @@ func (s *DXFeedSubscription) Close() error {
 	s.mu.Lock()
 	listeners := s.listeners
 	s.listeners = nil
+	for _, l := range listeners {
+		l.removed = true
+	}
 	s.mu.Unlock()
 	var err error
 	for _, l := range listeners {
-		err = errors.Join(err, l.native.Release())
+		if l.native != nil {
+			err = errors.Join(err, l.native.Release())
+		}
 	}
 	return err
 }
