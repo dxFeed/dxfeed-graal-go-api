@@ -5,3 +5,7 @@
     `RequestedAggregationPeriod` and `AggregationPeriodInfo`.
   * Executors of the notifications: `api.NewFixedThreadPoolExecutor` and `api.NewInPlaceExecutor`, whose
     `ProcessAllPendingTasks` delivers the events on the calling goroutine.
+  * The message connectors and the connection errors: `Connectors` returns a snapshot of each connector,
+    `LastConnectionError` the newest failed connect or dropped connection as an `*api.ConnectionError`, and
+    `AddMessageConnectorListener` reports the state changes of the connectors. The
+    `endpoint-reconnect` sample shows them.
