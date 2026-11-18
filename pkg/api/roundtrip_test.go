@@ -2,8 +2,10 @@ package api
 
 import (
 	"fmt"
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,15 +13,21 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/greeks"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/misc"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/series"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/side"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/summary"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/theoprice"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/trade"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/underlying"
 )
+
+// roundTripTime is the time set on the events of the round trip test: a whole second, so that no part is lost.
+var roundTripTime = time.Date(2026, 1, 2, 10, 0, 0, 0, time.UTC).UnixMilli()
 
 // eventCollector passes the received events to a channel.
 type eventCollector struct {
@@ -123,6 +131,86 @@ func TestPublishSubscribeRoundTrip(t *testing.T) {
 			e.SetIcebergExecutedSize(math.NaN())
 			return e
 		}},
+		{eventcodes.DailyCandle, func(symbol string) events.EventType {
+			e := candle.NewDailyCandle(symbol + "{=d}")
+			e.SetTime(roundTripTime)
+			e.SetCount(2)
+			e.SetOpen(20.5)
+			e.SetHigh(21.5)
+			e.SetLow(19.5)
+			e.SetClose(20.75)
+			e.SetVolume(9)
+			e.SetVwap(20.25)
+			e.SetBidVolume(4)
+			e.SetAskVolume(5)
+			e.SetImpVolatility(0.3)
+			e.SetOpenInterest(11)
+			return e
+		}},
+		{eventcodes.Series, func(symbol string) events.EventType {
+			e := series.NewSeries(symbol)
+			e.SetEventFlags(events.TxPending.Flag())
+			e.SetIndex(7)
+			e.SetTime(roundTripTime)
+			_ = e.SetSequence(3)
+			e.SetExpiration(20600)
+			e.SetVolatility(0.25)
+			e.SetCallVolume(100)
+			e.SetPutVolume(50)
+			e.SetPutCallRatio(0.5)
+			e.SetForwardPrice(101.5)
+			e.SetDividend(0.01)
+			e.SetInterest(0.02)
+			return e
+		}},
+		{eventcodes.TheoPrice, func(symbol string) events.EventType {
+			e := theoprice.NewTheoPrice(symbol)
+			e.SetTime(roundTripTime)
+			_ = e.SetSequence(4)
+			e.SetPrice(2.5)
+			e.SetUnderlyingPrice(100.5)
+			e.SetDelta(0.4)
+			e.SetGamma(0.05)
+			e.SetDividend(0.01)
+			e.SetInterest(0.02)
+			return e
+		}},
+		{eventcodes.Message, func(symbol string) events.EventType {
+			e := misc.NewMessage(symbol)
+			e.SetAttachment(&description)
+			return e
+		}},
+		{eventcodes.TextMessage, func(symbol string) events.EventType {
+			e := misc.NewTextMessage(symbol)
+			e.SetTime(roundTripTime)
+			_ = e.SetSequence(5)
+			e.SetText(&description)
+			return e
+		}},
+		{eventcodes.Configuration, func(symbol string) events.EventType {
+			e := misc.NewConfiguration(symbol)
+			e.SetVersion(6)
+			e.SetAttachment(&description)
+			return e
+		}},
+		{eventcodes.TextConfiguration, func(symbol string) events.EventType {
+			e := misc.NewTextConfiguration(symbol)
+			e.SetTime(roundTripTime)
+			_ = e.SetSequence(7)
+			e.SetVersion(8)
+			e.SetText(&description)
+			return e
+		}},
+	}
+
+	covered := map[int32]bool{}
+	for _, c := range cases {
+		covered[c.code.NativeCode()] = true
+	}
+	for code := range mappers.AvailableMappers() {
+		if !covered[code] {
+			t.Errorf("no round trip case for the mapper of native code %d", code)
+		}
 	}
 
 	feed, publisher := newLocalHub(t)
@@ -131,7 +219,13 @@ func TestPublishSubscribeRoundTrip(t *testing.T) {
 		symbol := fmt.Sprintf("ROUND/TRIP/%d", c.code)
 		event := c.event(symbol)
 		t.Run(fmt.Sprintf("%T", event), func(t *testing.T) {
-			sub, err := feed.CreateSubscription(c.code)
+			code, subSymbol, want := c.code, symbol, fmt.Sprint(event)
+			if c.code == eventcodes.DailyCandle {
+				// The hub delivers a published DailyCandle as a Candle with the same fields.
+				code, subSymbol = eventcodes.Candle, symbol+"{=d}"
+				want = strings.Replace(want, "DailyCandle{", "Candle{", 1)
+			}
+			sub, err := feed.CreateSubscription(code)
 			if err != nil {
 				t.Fatalf("create subscription: %v", err)
 			}
@@ -140,13 +234,12 @@ func TestPublishSubscribeRoundTrip(t *testing.T) {
 			if err := sub.AddListener(collector); err != nil {
 				t.Fatalf("add listener: %v", err)
 			}
-			if err := sub.AddSymbol(osub.String(symbol)); err != nil {
+			if err := sub.AddSymbol(osub.String(subSymbol)); err != nil {
 				t.Fatalf("add symbol: %v", err)
 			}
 			if err := publisher.Publish([]interface{}{event}); err != nil {
 				t.Fatalf("publish: %v", err)
 			}
-			want := fmt.Sprint(event)
 			select {
 			case got := <-collector.events:
 				if fmt.Sprint(got) != want {
