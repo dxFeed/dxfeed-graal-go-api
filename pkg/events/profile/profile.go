@@ -55,7 +55,7 @@ func (p *Profile) SetShortSaleRestriction(shortSaleRestriction ShortSaleRestrict
 
 // IsShortSaleRestricted reports whether short sale of the security instrument is restricted.
 func (p *Profile) IsShortSaleRestricted() bool {
-	return p.TradingStatus() == ActiveShortSaleRestriction
+	return p.ShortSaleRestriction() == ActiveShortSaleRestriction
 }
 
 // TradingStatus returns the current trading status of the security instrument.
