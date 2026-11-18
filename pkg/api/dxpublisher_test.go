@@ -8,7 +8,7 @@ import (
 
 type unsupportedEvent struct{}
 
-func (unsupportedEvent) Type() eventcodes.EventCode { return eventcodes.Series }
+func (unsupportedEvent) Type() eventcodes.EventCode { return eventcodes.OrderBase }
 
 func TestPublishUnsupportedEventReturnsError(t *testing.T) {
 	endpoint, err := NewEndpoint(Publisher)
@@ -35,7 +35,7 @@ func TestSubscribeUnsupportedEventReturnsError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sub, err := feed.CreateSubscription(eventcodes.Quote, eventcodes.Series)
+	sub, err := feed.CreateSubscription(eventcodes.Quote, eventcodes.OrderBase)
 	if err == nil {
 		t.Fatal("subscribing to an event without a native mapper must return an error")
 	}

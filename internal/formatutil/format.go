@@ -27,7 +27,7 @@ func FormatNullableString(format string, s *string, defaultValue string) string 
 	if s == nil {
 		return defaultValue
 	}
-	return fmt.Sprintf(format, s)
+	return fmt.Sprintf(format, *s)
 }
 
 func FormatTime(timeMillis int64) string {

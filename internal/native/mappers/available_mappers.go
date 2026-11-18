@@ -21,6 +21,14 @@ func AvailableMappers() map[int32]MapperInterface {
 		C.DXFG_EVENT_TRADE:          TradeMapper{},
 		C.DXFG_EVENT_TRADE_ETH:      TradeETHMapper{},
 		C.DXFG_EVENT_ANALYTIC_ORDER: AnalyticOrderMapper{},
+		C.DXFG_EVENT_DAILY_CANDLE:   DailyCandleMapper{},
+		C.DXFG_EVENT_SERIES:         SeriesMapper{},
+		C.DXFG_EVENT_THEO_PRICE:     TheoPriceMapper{},
+		C.DXFG_EVENT_MESSAGE:        MessageMapper{},
+		C.DXFG_EVENT_TEXT_MESSAGE:   TextMessageMapper{},
+		C.DXFG_EVENT_CONFIGURATION:  ConfigurationMapper{},
+
+		C.DXFG_EVENT_TEXT_CONFIGURATION: TextConfigurationMapper{},
 	}
 	return eventMappers
 }

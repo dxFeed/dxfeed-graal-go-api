@@ -226,7 +226,12 @@ func (q *Candle) SetTime(value int64) {
 
 // String returns a textual representation of the candle.
 func (c *Candle) String() string {
-	return "Candle{" + c.EventSymbol().String() +
+	return "Candle{" + c.fieldsString() + "}"
+}
+
+// fieldsString returns the fields of the candle for String, without the type name and braces.
+func (c *Candle) fieldsString() string {
+	return c.EventSymbol().String() +
 		", eventTime=" + formatutil.FormatTime(c.EventTime()) +
 		", eventFlags=" + formatutil.HexFormat(int64(c.EventFlags())) +
 		", time=" + formatutil.FormatTime(c.Time()) +
@@ -241,8 +246,7 @@ func (c *Candle) String() string {
 		", bidVolume=" + formatutil.FormatFloat64(c.BidVolume()) +
 		", askVolume=" + formatutil.FormatFloat64(c.AskVolume()) +
 		", impVolatility=" + formatutil.FormatFloat64(c.ImpVolatility()) +
-		", openInterest=" + formatutil.FormatFloat64(c.OpenInterest()) +
-		"}"
+		", openInterest=" + formatutil.FormatFloat64(c.OpenInterest())
 }
 
 // Type returns the event code of the candle event.

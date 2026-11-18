@@ -5,7 +5,10 @@ import (
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/greeks"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/misc"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/series"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/theoprice"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/trade"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/underlying"
@@ -98,4 +101,30 @@ func TestTradeSetTime(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertTimeRoundTrip(t, e, maxSequence, e.Sequence)
+}
+
+// sequenceEvent is implemented by the events whose sequence setter validates the range.
+type sequenceEvent interface {
+	timeSequenceEvent
+	Sequence() int32
+	SetSequence(int32) error
+}
+
+func TestTimeSequenceEventsSetTime(t *testing.T) {
+	for _, e := range []sequenceEvent{series.NewSeries("S"), theoprice.NewTheoPrice("S"), misc.NewTextMessage("S"),
+		misc.NewTextConfiguration("S")} {
+		if err := e.SetSequence(maxSequence); err != nil {
+			t.Fatalf("%T: %v", e, err)
+		}
+		assertTimeRoundTrip(t, e, maxSequence, func() int64 { return int64(e.Sequence()) })
+		if err := e.SetSequence(maxSequence + 1); err == nil {
+			t.Errorf("%T: SetSequence(MaxSequence+1) returned no error", e)
+		}
+		if err := e.SetSequence(-1); err == nil {
+			t.Errorf("%T: SetSequence(-1) returned no error", e)
+		}
+		if got := e.Sequence(); got != maxSequence {
+			t.Errorf("%T: a rejected SetSequence changed the sequence to %d", e, got)
+		}
+	}
 }

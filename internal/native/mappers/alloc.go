@@ -21,6 +21,14 @@ func cString(s string) *C.char {
 	return C.CString(s)
 }
 
+// cStringOrNil returns nil for a nil string and a C copy of the string otherwise.
+func cStringOrNil(s *string) *C.char {
+	if s == nil {
+		return nil
+	}
+	return cString(*s)
+}
+
 func cCalloc(size uintptr) unsafe.Pointer {
 	liveAllocations.Add(1)
 	return C.calloc(1, C.size_t(size))

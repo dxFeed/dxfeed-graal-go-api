@@ -1,16 +1,20 @@
 package mappers_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/greeks"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/misc"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/series"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/summary"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/theoprice"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/trade"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/underlying"
@@ -32,10 +36,19 @@ func eventsWithAllStrings() []events.EventType {
 	ts.SetExchangeSaleConditions(str("conditions"))
 	ts.SetBuyer(str("buyer"))
 	ts.SetSeller(str("seller"))
+	msg := misc.NewMessage("MESSAGE")
+	msg.SetAttachment(str("attachment"))
+	tm := misc.NewTextMessage("TEXT_MESSAGE")
+	tm.SetText(str("text"))
+	cfg := misc.NewConfiguration("CONFIGURATION")
+	cfg.SetAttachment(str("attachment"))
+	tc := misc.NewTextConfiguration("TEXT_CONFIGURATION")
+	tc.SetText(str("text"))
 	return []events.EventType{
 		candle.NewCandle("CANDLE{=d}"), greeks.NewGreeks("GREEKS"), ao, o, so, p, quote.NewQuote("QUOTE"),
 		summary.NewSummary("SUMMARY"), ts, trade.NewTrade("TRADE"), trade.NewTradeETH("TRADE_ETH"),
-		underlying.NewUnderlying("UNDERLYING"),
+		underlying.NewUnderlying("UNDERLYING"), candle.NewDailyCandle("DAILY{=d}"), series.NewSeries("SERIES"),
+		theoprice.NewTheoPrice("THEO"), msg, tm, cfg, tc,
 	}
 }
 
@@ -63,6 +76,21 @@ func TestFreeCEventFreesAllAllocations(t *testing.T) {
 	for code := range available {
 		if !covered[code] {
 			t.Errorf("no event for the mapper of native code %d", code)
+		}
+	}
+}
+
+// TestMapperRoundTrip maps every event to C memory and back and checks that no field is lost; this covers the GoEvent
+// side of the mappers whose events a local hub delivers as another type, such as DailyCandle.
+func TestMapperRoundTrip(t *testing.T) {
+	available := mappers.AvailableMappers()
+	for _, event := range eventsWithAllStrings() {
+		mapper := available[event.Type().NativeCode()]
+		native := mapper.CEvent(event)
+		got := mapper.GoEvent(native)
+		mapper.FreeCEvent(native)
+		if fmt.Sprint(got) != fmt.Sprint(event) {
+			t.Errorf("%T changed in the round trip:\n got %v\nwant %v", event, got, event)
 		}
 	}
 }
