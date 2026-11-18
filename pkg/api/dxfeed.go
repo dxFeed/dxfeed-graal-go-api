@@ -21,5 +21,5 @@ func (f *DXFeed) CreateSubscription(eventType ...eventcodes.EventCode) (*DXFeedS
 	if err != nil {
 		return nil, err
 	}
-	return &DXFeedSubscription{sub: sub}, nil
+	return newDXFeedSubscription(sub), nil
 }

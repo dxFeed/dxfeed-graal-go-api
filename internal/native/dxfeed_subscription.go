@@ -43,8 +43,7 @@ func OnEventReceived(thread *C.graal_isolatethread_t, eventsList *C.dxfg_v4_even
 
 // EventListener is a native listener attached to a subscription with AttachListener.
 type EventListener struct {
-	handle   Handler
-	userData unsafe.Pointer
+	nativeListener
 }
 
 // AttachListener creates a native listener that passes the events to listener and adds it to the subscription.
@@ -62,7 +61,7 @@ func (s DXFeedSubscription) AttachListener(listener common.EventListener) (*Even
 		Unref(userData)
 		return nil, err
 	}
-	el := &EventListener{handle: NewJavaHandle(unsafe.Pointer(l)), userData: userData}
+	el := &EventListener{nativeListener{handle: NewJavaHandle(unsafe.Pointer(l)), userData: userData}}
 	if err != nil {
 		return nil, errors.Join(err, el.Release())
 	}
@@ -76,20 +75,6 @@ func (s DXFeedSubscription) DetachListener(el *EventListener) error {
 			(*C.dxfg_v4_feed_event_listener_t)(el.handle.Ptr())))
 	})
 	return errors.Join(err, el.Release())
-}
-
-// Release releases the native listener: the SDK does not call it after Release returns, so the Go listener is
-// forgotten too. Later calls do nothing.
-func (el *EventListener) Release() error {
-	if el.handle.Ptr() == nil {
-		return nil
-	}
-	if err := el.handle.Free(); err != nil {
-		// The SDK may still call the listener: keep the Go listener for it.
-		return err
-	}
-	Unref(el.userData)
-	return nil
 }
 
 func (s DXFeedSubscription) AddSymbol(symbol osub.Symbol) error {
