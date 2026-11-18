@@ -31,7 +31,7 @@ func CString(str *string) *C.char {
 
 func (ts TimeAndSaleMapper) CEvent(event interface{}) unsafe.Pointer {
 	timeAndSale := event.(*timeandsale.TimeAndSale)
-	t := (*C.dxfg_time_and_sale_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_time_and_sale_t{}))))
+	t := (*C.dxfg_v4_time_and_sale_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_time_and_sale_t{}))))
 	t.market_event.event_type.clazz = C.DXFG_EVENT_TIME_AND_SALE
 	t.market_event.event_symbol = C.CString(*timeAndSale.EventSymbol())
 	t.market_event.event_time = C.int64_t(timeAndSale.EventTime())
@@ -51,7 +51,7 @@ func (ts TimeAndSaleMapper) CEvent(event interface{}) unsafe.Pointer {
 }
 
 func (ts TimeAndSaleMapper) GoEvent(native unsafe.Pointer) interface{} {
-	newTimeAndSale := (*C.dxfg_time_and_sale_t)(native)
+	newTimeAndSale := (*C.dxfg_v4_time_and_sale_t)(native)
 	t := timeandsale.NewTimeAndSale(C.GoString(newTimeAndSale.market_event.event_symbol))
 	t.SetEventTime(int64(newTimeAndSale.market_event.event_time))
 	t.SetTimeNanoPart(int32(newTimeAndSale.time_nano_part))

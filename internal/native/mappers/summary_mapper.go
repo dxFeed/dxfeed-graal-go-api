@@ -16,7 +16,7 @@ type SummaryMapper struct{}
 func (m SummaryMapper) CEvent(event interface{}) unsafe.Pointer {
 	s := event.(*summary.Summary)
 
-	n := (*C.dxfg_summary_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_summary_t{}))))
+	n := (*C.dxfg_v4_summary_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_summary_t{}))))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_SUMMARY
 	n.market_event.event_symbol = C.CString(*s.EventSymbol())
 	n.market_event.event_time = C.int64_t(s.EventTime())
@@ -34,7 +34,7 @@ func (m SummaryMapper) CEvent(event interface{}) unsafe.Pointer {
 }
 
 func (m SummaryMapper) GoEvent(native unsafe.Pointer) interface{} {
-	n := (*C.dxfg_summary_t)(native)
+	n := (*C.dxfg_v4_summary_t)(native)
 
 	s := summary.NewSummary(C.GoString(n.market_event.event_symbol))
 	s.SetEventTime(int64(n.market_event.event_time))

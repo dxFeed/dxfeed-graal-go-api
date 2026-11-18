@@ -9,7 +9,7 @@ import "unsafe"
 
 type eventClazzList struct {
 	size     C.int32_t
-	elements **C.dxfg_event_clazz_t
+	elements **C.dxfg_v4_event_clazz_t
 }
 
 func createEventClazzList(eventTypes ...int32) *eventClazzList {
@@ -21,7 +21,7 @@ func createEventClazzList(eventTypes ...int32) *eventClazzList {
 		return l
 	}
 
-	l.elements = (**C.dxfg_event_clazz_t)(C.malloc(C.size_t(l.size) * C.size_t(unsafe.Sizeof((*C.dxfg_event_clazz_t)(nil)))))
+	l.elements = (**C.dxfg_v4_event_clazz_t)(C.malloc(C.size_t(l.size) * C.size_t(unsafe.Sizeof((*C.dxfg_v4_event_clazz_t)(nil)))))
 
 	if l.elements == nil {
 		panic("Memory allocation for eventClazzList.elements failed")
@@ -31,7 +31,7 @@ func createEventClazzList(eventTypes ...int32) *eventClazzList {
 	slice := unsafe.Slice(l.elements, C.size_t(l.size))
 
 	for i, eventType := range eventTypes {
-		slice[i] = (*C.dxfg_event_clazz_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_event_clazz_t(0)))))
+		slice[i] = (*C.dxfg_v4_event_clazz_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_v4_event_clazz_t(0)))))
 
 		if slice[i] == nil {
 			// Free previously allocated elements before panicking
@@ -44,7 +44,7 @@ func createEventClazzList(eventTypes ...int32) *eventClazzList {
 			panic("Memory allocation for eventClazzList's element failed")
 		}
 
-		*slice[i] = C.dxfg_event_clazz_t(eventType)
+		*slice[i] = C.dxfg_v4_event_clazz_t(eventType)
 	}
 
 	return l

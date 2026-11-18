@@ -14,7 +14,7 @@ type AnalyticOrderMapper struct {
 }
 
 func (a AnalyticOrderMapper) GoEvent(native unsafe.Pointer) interface{} {
-	orderNative := (*C.dxfg_analytic_order_t)(native)
+	orderNative := (*C.dxfg_v4_analytic_order_t)(native)
 	o := order.NewAnalyticOrder(C.GoString(orderNative.order_base.order_base.market_event.event_symbol))
 	o.SetEventTime(int64(orderNative.order_base.order_base.market_event.event_time))
 
@@ -47,7 +47,7 @@ func (a AnalyticOrderMapper) GoEvent(native unsafe.Pointer) interface{} {
 func (a AnalyticOrderMapper) CEvent(event interface{}) unsafe.Pointer {
 	orderEvent := event.(*order.AnalyticOrder)
 
-	q := (*C.dxfg_analytic_order_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_analytic_order_t{}))))
+	q := (*C.dxfg_v4_analytic_order_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_analytic_order_t{}))))
 	q.order_base.order_base.market_event.event_type.clazz = C.DXFG_EVENT_ANALYTIC_ORDER
 
 	q.order_base.order_base.market_event.event_symbol = C.CString(*orderEvent.EventSymbol())

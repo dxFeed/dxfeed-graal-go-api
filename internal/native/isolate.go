@@ -1,7 +1,7 @@
 package native
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/include
+#cgo CFLAGS: -I${SRCDIR}/include -Werror=deprecated-declarations
 #include "dxfg_api.h"
 */
 import "C"

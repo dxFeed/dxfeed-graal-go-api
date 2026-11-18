@@ -14,7 +14,7 @@ type UnderlyingMapper struct{}
 
 func (m UnderlyingMapper) CEvent(event interface{}) unsafe.Pointer {
 	u := event.(*underlying.Underlying)
-	n := (*C.dxfg_underlying_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_underlying_t{}))))
+	n := (*C.dxfg_v4_underlying_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_underlying_t{}))))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_UNDERLYING
 	n.market_event.event_symbol = C.CString(*u.EventSymbol())
 	n.market_event.event_time = C.int64_t(u.EventTime())
@@ -30,7 +30,7 @@ func (m UnderlyingMapper) CEvent(event interface{}) unsafe.Pointer {
 }
 
 func (m UnderlyingMapper) GoEvent(native unsafe.Pointer) interface{} {
-	n := (*C.dxfg_underlying_t)(native)
+	n := (*C.dxfg_v4_underlying_t)(native)
 	u := underlying.NewUnderlying(C.GoString(n.market_event.event_symbol))
 	u.SetEventTime(int64(n.market_event.event_time))
 	u.SetEventFlags(int32(n.event_flags))

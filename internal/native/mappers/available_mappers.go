@@ -1,7 +1,7 @@
 package mappers
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/../include
+#cgo CFLAGS: -I${SRCDIR}/../include -Werror=deprecated-declarations
 #include "dxfg_api.h"
 #include <stdlib.h>
 */
