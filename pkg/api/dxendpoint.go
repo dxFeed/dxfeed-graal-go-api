@@ -1,6 +1,9 @@
 package api
 
 import (
+	"context"
+	"io"
+
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 )
@@ -12,6 +15,12 @@ const (
 	Publisher
 	StreamPublisher
 	LocalHub
+)
+
+// The endpoint and the subscription own native resources: close them.
+var (
+	_ io.Closer = (*DXEndpoint)(nil)
+	_ io.Closer = (*DXFeedSubscription)(nil)
 )
 
 type DXEndpoint struct {
@@ -52,10 +61,6 @@ func newEndpoint(role common.Role, handle *native.DXEndpointHandle, err error) (
 	return e, nil
 }
 
-func CreateEndpoint(role common.Role) (*DXEndpoint, error) {
-	return NewEndpoint(role)
-}
-
 func NewEndpointWithProperties(role common.Role, properties map[string]string) (*DXEndpoint, error) {
 	handle, err := native.NewDXEndpointHandleWithProperties(role, properties)
 	return newEndpoint(role, handle, err)
@@ -88,16 +93,44 @@ func (e *DXEndpoint) GetPublisher() (*DXPublisher, error) {
 	return e.publisherHandle, nil
 }
 
-func (e *DXEndpoint) AwaitNotConnected() error {
-	return e.endpointHandle.AwaitNotConnected()
+// AwaitNotConnected waits until the endpoint is not connected. If ctx ends first, it returns ctx.Err(); the wait in the
+// SDK cannot be interrupted and goes on in the background.
+func (e *DXEndpoint) AwaitNotConnected(ctx context.Context) error {
+	return awaitWithContext(ctx, e.endpointHandle.AwaitNotConnected)
 }
 
-func (e *DXEndpoint) CloseAndAwaitTermination() error {
-	return e.endpointHandle.CloseAndAwaitTermination()
+// CloseAndAwaitTermination closes the endpoint and waits until its connections are closed and its pending data is
+// processed. The endpoint is closed even if ctx is already done; if ctx ends first, the call returns ctx.Err() and the
+// endpoint goes on closing in the background.
+func (e *DXEndpoint) CloseAndAwaitTermination(ctx context.Context) error {
+	return runWithContext(ctx, e.endpointHandle.CloseAndAwaitTermination)
 }
 
-func (e *DXEndpoint) AwaitProcessed() error {
-	return e.endpointHandle.AwaitProcessed()
+// AwaitProcessed waits until all data that is published or subscribed before the call is processed. If ctx ends first,
+// it returns ctx.Err(); the wait in the SDK cannot be interrupted and goes on in the background.
+func (e *DXEndpoint) AwaitProcessed(ctx context.Context) error {
+	return awaitWithContext(ctx, e.endpointHandle.AwaitProcessed)
+}
+
+// awaitWithContext runs a blocking SDK wait unless ctx is already done; see runWithContext.
+func awaitWithContext(ctx context.Context, wait func() error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return runWithContext(ctx, wait)
+}
+
+// runWithContext runs a blocking SDK call and returns its error, or ctx.Err() if ctx ends first; when both happen at
+// once, either may be returned. The call keeps running after that: the SDK offers no way to cancel it.
+func runWithContext(ctx context.Context, wait func() error) error {
+	done := make(chan error, 1)
+	go func() { done <- wait() }()
+	select {
+	case err := <-done:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (e *DXEndpoint) AddListener(listener common.ConnectionStateListener) {

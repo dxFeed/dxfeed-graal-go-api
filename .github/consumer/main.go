@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -15,7 +16,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "create endpoint:", err)
 		os.Exit(1)
 	}
-	if err := endpoint.CloseAndAwaitTermination(); err != nil {
+	if err := endpoint.CloseAndAwaitTermination(context.Background()); err != nil {
 		fmt.Fprintln(os.Stderr, "close endpoint:", err)
 		os.Exit(1)
 	}

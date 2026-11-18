@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/parser"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
@@ -152,20 +153,20 @@ func dump(
 		return fmt.Errorf("Connect to %s: %w", inputFile, err)
 	}
 
-	err = inputEndpoint.AwaitNotConnected()
+	err = inputEndpoint.AwaitNotConnected(context.Background())
 	if err != nil {
 		return fmt.Errorf("AwaitNotConnected: %w", err)
 	}
-	err = inputEndpoint.CloseAndAwaitTermination()
+	err = inputEndpoint.CloseAndAwaitTermination(context.Background())
 	if err != nil {
 		return fmt.Errorf("CloseAndAwaitTermination: %w", err)
 	}
 	if outputEndpoint != nil {
-		err = outputEndpoint.AwaitProcessed()
+		err = outputEndpoint.AwaitProcessed(context.Background())
 		if err != nil {
 			return fmt.Errorf("AwaitProcessed: %w", err)
 		}
-		err = outputEndpoint.CloseAndAwaitTermination()
+		err = outputEndpoint.CloseAndAwaitTermination(context.Background())
 		if err != nil {
 			return fmt.Errorf("CloseAndAwaitTermination: %w", err)
 		}
