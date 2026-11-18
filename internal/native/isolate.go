@@ -55,9 +55,7 @@ func getOrCreateIsolate() *isolate {
 func checkSdkVersion(thread *C.graal_isolatethread_t) error {
 	var version *C.char
 	if C.dxfg_v4_system_get_version(thread, &version) != dxfgExecuteSuccessfully {
-		if ex := C.dxfg_get_and_clear_thread_exception_t(thread); ex != nil {
-			C.dxfg_Exception_release(thread, ex)
-		}
+		_ = takeJavaException(thread)
 		return fmt.Errorf("native: cannot read the version of the dxFeed Graal Native SDK library; this API needs %s",
 			sdk.Version)
 	}

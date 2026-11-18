@@ -14,7 +14,7 @@ type GreeksMapper struct{}
 
 func (m GreeksMapper) CEvent(event interface{}) unsafe.Pointer {
 	g := event.(*greeks.Greeks)
-	n := (*C.dxfg_greeks_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_greeks_t{}))))
+	n := (*C.dxfg_greeks_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_greeks_t{}))))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_GREEKS
 	n.market_event.event_symbol = C.CString(*g.EventSymbol())
 	n.market_event.event_time = C.int64_t(g.EventTime())

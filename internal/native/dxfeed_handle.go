@@ -16,7 +16,7 @@ type DXFeedHandle struct {
 	handle Handler
 }
 
-func NewDXFeedHandle(ptr *C.dxfg_feed_t) *DXFeedHandle {
+func NewDXFeedHandle(ptr *C.dxfg_v4_feed_t) *DXFeedHandle {
 	return &DXFeedHandle{handle: NewJavaHandle(unsafe.Pointer(ptr))}
 }
 
@@ -27,13 +27,12 @@ func (f *DXFeedHandle) CreateSubscription(eventTypes ...int32) (*DXFeedSubscript
 			return nil, fmt.Errorf("cannot subscribe: event code %d is not supported yet", eventType)
 		}
 	}
-	var ptr *C.dxfg_subscription_t
+	var ptr *C.dxfg_v4_subscription_t
 	err := executeInIsolateThread(func(thread *isolateThread) error {
 		list := createEventClazzList(eventTypes...)
 		defer destroyEventClazzList(list)
-		return checkCall(func() {
-			ptr = C.dxfg_DXFeed_createSubscription2(thread.ptr, f.ptr(), (*C.dxfg_event_clazz_list_t)(unsafe.Pointer(list)))
-		})
+		return checkStatus(thread, C.dxfg_v4_DXFeed_createSubscriptionWithEventTypes(thread.ptr, f.ptr(),
+			(*C.dxfg_v4_event_clazz_list)(unsafe.Pointer(list)), &ptr))
 	})
 	if err != nil {
 		return nil, err
@@ -49,6 +48,6 @@ func (f *DXFeedHandle) Free() error {
 	return nil
 }
 
-func (f *DXFeedHandle) ptr() *C.dxfg_feed_t {
-	return (*C.dxfg_feed_t)(f.handle.Ptr())
+func (f *DXFeedHandle) ptr() *C.dxfg_v4_feed_t {
+	return (*C.dxfg_v4_feed_t)(f.handle.Ptr())
 }
