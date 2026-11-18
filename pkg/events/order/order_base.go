@@ -270,19 +270,19 @@ func (b *Base) SetSide(value side.Side) {
 
 // Time returns the order time in milliseconds since the epoch.
 func (b *Base) Time() int64 {
-	return ((b.index >> 32) * 1000) + ((b.index >> 22) & 0x3ff)
+	return ((b.timeSequence >> 32) * 1000) + ((b.timeSequence >> 22) & 0x3ff)
 }
 
 // SetTime sets the order time in milliseconds since the epoch.
 func (b *Base) SetTime(value int64) {
-	b.index = (timeutil.GetSecondsFromTime(value) << 32) |
+	b.timeSequence = (timeutil.GetSecondsFromTime(value) << 32) |
 		(int64(timeutil.GetMillisFromTime(value)) << 22) |
 		b.Sequence()
 }
 
 // Sequence returns the sequence number of the order within the same millisecond.
 func (b *Base) Sequence() int64 {
-	return b.index & maxSequence
+	return b.timeSequence & maxSequence
 }
 
 // SetSequence sets the sequence number; it returns an error if the value is out of range.
@@ -291,7 +291,7 @@ func (b *Base) SetSequence(value int64) error {
 		return fmt.Errorf("Sequence(%d) is < 0 or > MaxSequence(%d)", value, maxSequence)
 	}
 
-	b.index = (b.index & ^maxSequence) | value
+	b.timeSequence = (b.timeSequence & ^maxSequence) | value
 	return nil
 }
 
