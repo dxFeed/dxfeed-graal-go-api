@@ -126,7 +126,7 @@ func prepare(root, version string, dryRun bool, out io.Writer) error {
 		}
 	}
 	fmt.Fprintf(out, "Released %s locally with %d fragments. Check the commit, then push it and the tag:\n"+
-		"  git push origin HEAD %s\n", version, len(fragments), version)
+		"  git push --atomic origin HEAD %s\n", version, len(fragments), version)
 	return nil
 }
 
