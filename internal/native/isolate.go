@@ -1,13 +1,16 @@
 package native
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/graal
+#cgo CFLAGS: -I${SRCDIR}/include
 #include "dxfg_api.h"
 */
 import "C"
 import (
+	"fmt"
 	"runtime"
 	"sync"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/sdk"
 )
 
 const (
@@ -26,14 +29,33 @@ var (
 func getOrCreateIsolate() *isolate {
 	isolateOnce.Do(func() {
 		isolateInstance = &isolate{}
+		var thread *C.graal_isolatethread_t
 		err := checkIsolateCall(func() C.int {
-			return C.graal_create_isolate(nil, &isolateInstance.ptr, nil)
+			return C.graal_create_isolate(nil, &isolateInstance.ptr, &thread)
 		})
 		if err != nil {
 			panic(err)
 		}
+		if err := checkSdkVersion(thread); err != nil {
+			panic(err)
+		}
 	})
 	return isolateInstance
+}
+
+// checkSdkVersion compares the release of the loaded native library with the one whose headers the API is built with.
+// It runs on the thread that created the isolate, before getOrCreateIsolate returns, so it calls the SDK directly.
+func checkSdkVersion(thread *C.graal_isolatethread_t) error {
+	var version *C.char
+	if C.dxfg_v4_system_get_version(thread, &version) != dxfgExecuteSuccessfully {
+		if ex := C.dxfg_get_and_clear_thread_exception_t(thread); ex != nil {
+			C.dxfg_Exception_release(thread, ex)
+		}
+		return fmt.Errorf("native: cannot read the version of the dxFeed Graal Native SDK library; this API needs %s",
+			sdk.Version)
+	}
+	defer C.dxfg_v4_String_release(thread, version)
+	return sdk.CheckVersion(C.GoString(version))
 }
 
 type isolateThread struct {
