@@ -14,10 +14,27 @@ type OrderMapper struct {
 }
 
 func (m OrderMapper) CEvent(event interface{}) unsafe.Pointer {
-	orderEvent := event.(*order.Order)
-
 	q := (*C.dxfg_v4_order_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_order_t{})))
-	q.order_base.market_event.event_type.clazz = C.DXFG_EVENT_ORDER
+	orderToC(q, event.(*order.Order), C.DXFG_EVENT_ORDER)
+	return unsafe.Pointer(q)
+}
+
+func (m OrderMapper) GoEvent(native unsafe.Pointer) interface{} {
+	orderNative := (*C.dxfg_v4_order_t)(native)
+	o := order.NewOrder(C.GoString(orderNative.order_base.market_event.event_symbol))
+	orderFromC(o, orderNative)
+	return o
+}
+
+// FreeCEvent frees an event made by CEvent.
+func (OrderMapper) FreeCEvent(event unsafe.Pointer) {
+	freeCOrder((*C.dxfg_v4_order_t)(event))
+	cFree(event)
+}
+
+// orderToC fills the native order with the fields of the Go order and sets its clazz.
+func orderToC(q *C.dxfg_v4_order_t, orderEvent *order.Order, clazz C.dxfg_event_clazz_t) {
+	q.order_base.market_event.event_type.clazz = clazz
 
 	q.order_base.market_event.event_symbol = cString(*orderEvent.EventSymbol())
 	q.order_base.market_event.event_time = C.int64_t(orderEvent.EventTime())
@@ -38,16 +55,11 @@ func (m OrderMapper) CEvent(event interface{}) unsafe.Pointer {
 	q.order_base.trade_price = C.double(orderEvent.TradePrice())
 	q.order_base.trade_size = C.double(orderEvent.TradeSize())
 
-	if orderEvent.MarketMaker() != nil {
-		q.market_maker = cString(*orderEvent.MarketMaker())
-	}
-
-	return unsafe.Pointer(q)
+	q.market_maker = cStringOrNil(orderEvent.MarketMaker())
 }
 
-func (m OrderMapper) GoEvent(native unsafe.Pointer) interface{} {
-	orderNative := (*C.dxfg_v4_order_t)(native)
-	o := order.NewOrder(C.GoString(orderNative.order_base.market_event.event_symbol))
+// orderFromC fills the Go order with the fields of the native order, except the event symbol.
+func orderFromC(o *order.Order, orderNative *C.dxfg_v4_order_t) {
 	o.SetEventTime(int64(orderNative.order_base.market_event.event_time))
 
 	o.SetEventFlags(int32(orderNative.order_base.event_flags))
@@ -67,14 +79,10 @@ func (m OrderMapper) GoEvent(native unsafe.Pointer) interface{} {
 	o.SetTradeSize(float64(orderNative.order_base.trade_size))
 
 	o.SetMarketMaker(convertString(orderNative.market_maker))
-
-	return o
 }
 
-// FreeCEvent frees an event made by CEvent.
-func (OrderMapper) FreeCEvent(event unsafe.Pointer) {
-	n := (*C.dxfg_v4_order_t)(event)
+// freeCOrder frees the strings of a native order made by orderToC, but not the order itself.
+func freeCOrder(n *C.dxfg_v4_order_t) {
 	cFree(unsafe.Pointer(n.order_base.market_event.event_symbol))
 	cFree(unsafe.Pointer(n.market_maker))
-	cFree(event)
 }

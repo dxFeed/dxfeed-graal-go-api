@@ -4,6 +4,8 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/greeks"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/marketmaker"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/optionsale"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/series"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/theoprice"
@@ -19,6 +21,9 @@ var (
 	_ events.IndexedEvent = (*order.Order)(nil)
 	_ events.IndexedEvent = (*order.AnalyticOrder)(nil)
 	_ events.IndexedEvent = (*order.SpreadOrder)(nil)
+	_ events.IndexedEvent = (*order.OtcMarketsOrder)(nil)
+	_ events.IndexedEvent = (*optionsale.OptionSale)(nil)
+	_ events.IndexedEvent = (*marketmaker.MarketMaker)(nil)
 	_ events.IndexedEvent = (*series.Series)(nil)
 	_ events.IndexedEvent = (*theoprice.TheoPrice)(nil)
 	_ events.IndexedEvent = (*timeandsale.TimeAndSale)(nil)
