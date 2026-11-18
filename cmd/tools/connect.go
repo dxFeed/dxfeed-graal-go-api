@@ -6,11 +6,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/parser"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
 )
 
 type Connect struct{}
@@ -126,7 +126,7 @@ func connect(
 			if parseErr != nil {
 				return parseErr
 			}
-			timeSeriesSubscriptionSymbol := Osub.NewTimeSeriesSubscriptionSymbol(symbol, parseTime)
+			timeSeriesSubscriptionSymbol := osub.NewTimeSeriesSubscriptionSymbol(symbol, parseTime)
 			err = subscription.AddSymbol(timeSeriesSubscriptionSymbol)
 		} else {
 			err = subscription.AddSymbol(symbol)

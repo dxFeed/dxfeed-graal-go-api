@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 )
 
@@ -30,7 +30,7 @@ func TestNewCSymbolRejectsInvalidSources(t *testing.T) {
 	}
 	for caseName, c := range cases {
 		t.Run(caseName, func(t *testing.T) {
-			symbol, err := newCSymbol(Osub.NewIndexedEventSubscriptionSymbol("AAPL", c.source))
+			symbol, err := newCSymbol(osub.NewIndexedEventSubscriptionSymbol("AAPL", c.source))
 			if err == nil {
 				freeCSymbol(symbol)
 				t.Fatal("no error")
@@ -43,10 +43,10 @@ func TestNewCSymbolRejectsInvalidSources(t *testing.T) {
 }
 
 func TestNewCSymbolListFreesOnError(t *testing.T) {
-	if _, err := newCSymbolList([]any{"AAPL", Osub.NewWildcardSymbol(), 3.5}); err == nil {
+	if _, err := newCSymbolList([]any{"AAPL", osub.NewWildcardSymbol(), 3.5}); err == nil {
 		t.Fatal("a list with a float symbol built without an error")
 	}
-	list, err := newCSymbolList([]any{"AAPL", Osub.NewTimeSeriesSubscriptionSymbol("IBM", 5)})
+	list, err := newCSymbolList([]any{"AAPL", osub.NewTimeSeriesSubscriptionSymbol("IBM", 5)})
 	if err != nil {
 		t.Fatal(err)
 	}

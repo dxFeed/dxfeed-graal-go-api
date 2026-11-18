@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
@@ -64,7 +64,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	indexedSymbol := Osub.NewIndexedEventSubscriptionSymbol("AAPL", order.AgregateAsk())
+	indexedSymbol := osub.NewIndexedEventSubscriptionSymbol("AAPL", order.AgregateAsk())
 	err = subscription.AddSymbol(indexedSymbol)
 	if err != nil {
 		panic(err)

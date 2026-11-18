@@ -1,4 +1,4 @@
-package Osub
+package osub
 
 import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"

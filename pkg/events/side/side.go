@@ -2,7 +2,7 @@ package side
 
 import (
 	"fmt"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/mathutil"
 )
 
 type Side int64

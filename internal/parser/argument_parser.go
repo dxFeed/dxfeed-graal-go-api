@@ -2,7 +2,7 @@ package parser
 
 import (
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"strings"
 )
@@ -12,7 +12,7 @@ func ParseSymbols(value string) ([]any, error) {
 	value = strings.TrimSpace(value)
 
 	if value == "all" {
-		return []any{Osub.NewWildcardSymbol()}, nil
+		return []any{osub.NewWildcardSymbol()}, nil
 	}
 	return native.ParseSymbols(value)
 }

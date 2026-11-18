@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/parser"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
 	"math"
 	"os"
 	"sync"

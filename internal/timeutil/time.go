@@ -1,7 +1,7 @@
 package timeutil
 
 import (
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/mathutil"
 	"math"
 )
 

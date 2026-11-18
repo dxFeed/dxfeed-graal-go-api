@@ -1,4 +1,4 @@
-package Osub
+package osub
 
 type WildcardSymbol struct {
 	symbol string

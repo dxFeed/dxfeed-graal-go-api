@@ -1,8 +1,8 @@
 package order
 
 import (
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/formatutil"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/formatutil"
 )
 
 type Order struct {
