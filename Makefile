@@ -4,6 +4,13 @@ BIN_DIR := $(shell pwd)/bin
 GO_BUILD_TAGS := -tags origin
 GOOS := $(shell go env GOOS)
 TARGET := github.com/dxfeed/dxfeed-graal-go-api/cmd/tools
+# The SDK that cmd/install-sdk installs into the user cache.
+SDK_DIR := $(shell go run ./cmd/install-sdk -print-dir)
+ifeq ($(SDK_DIR),)
+$(error cannot install the dxFeed Graal Native SDK, see the output of go run ./cmd/install-sdk)
+endif
+# The tools find the library next to them (the origin tag), not in the SDK directory of the build machine.
+export CGO_LDFLAGS := -L$(SDK_DIR)
 
 define GO_BUILD_CMD
 	@echo "Building for $(1)..."
@@ -27,4 +34,4 @@ else ifeq ($(GOOS),linux)
 else ifeq ($(GOOS),darwin)
 	$(call GO_BUILD_CMD_MACOS,macOS)
 endif
-	cp internal/native/graal/*DxFeedGraalNativeSdk.* $(BIN_DIR)/
+	cp "$(SDK_DIR)"/*DxFeedGraalNativeSdk.* $(BIN_DIR)/

@@ -161,24 +161,58 @@ Is supported in the Rosetta 2 x64 emulator.
 
 ## Installation
 
-> :warning: **Use version `0.2.1` or later.**
-> The `go run .` step downloads the native SDK at install time. In `0.2.0` and
-> earlier it was fetched from the dxFeed jFrog Artifactory repository, which has
-> been retired, installing those versions fails with `bad status: 404`.
-> Since `0.2.1` the SDK is downloaded from
-> [dxfeed-graal-native-sdk releases](https://github.com/dxFeed/dxfeed-graal-native-sdk/releases).
-> Older versions cannot be fixed retroactively, because published tags are
-> immutable in the Go module proxy — upgrade instead.
+The API is a cgo package: it needs a C compiler (see [Requirements](#requirements)) and the dxFeed Graal Native SDK
+library, which an installer command downloads into your user cache directory. No `sudo` is needed, and nothing is
+written into the Go module cache.
 
-### Linux
+1. Add the module to your project:
 
-```bash
-sudo apt-get update
-sudo apt-get install build-essential
-go install github.com/dxfeed/dxfeed-graal-go-api@latest
-cd ~/go/pkg/mod/github.com/dxfeed/dxfeed-graal-go-api@<version>
-sudo go run .
-```
+   ```bash
+   go get github.com/dxfeed/dxfeed-graal-go-api@latest
+   ```
+
+2. Install the SDK version that this version of the API needs. The command downloads the release archive from
+   [dxfeed-graal-native-sdk releases](https://github.com/dxFeed/dxfeed-graal-native-sdk/releases), checks its SHA-256
+   checksum and prints the settings for your system:
+
+   ```bash
+   go run github.com/dxfeed/dxfeed-graal-go-api/cmd/install-sdk
+   ```
+
+   Run it again after upgrading the module: each SDK version goes into its own directory. `-dir` chooses another
+   directory, and `-print-dir` prints only the directory, for scripts.
+
+3. Point cgo at the library with `CGO_LDFLAGS`, using the directory that the installer printed (`<dir>` below):
+
+   * **Linux and macOS:**
+
+     ```bash
+     export CGO_LDFLAGS="-L<dir> -Wl,-rpath,<dir>"
+     ```
+
+     The run path lets the program find the library without further settings.
+
+   * **Windows (PowerShell):** Windows has no run path; the program finds `DxFeedGraalNativeSdk.dll` next to its
+     executable or in `PATH`:
+
+     ```powershell
+     $env:CGO_LDFLAGS = "-L<dir>"
+     $env:PATH = "<dir>;" + $env:PATH
+     ```
+
+   `go env -w CGO_LDFLAGS="..."` keeps the setting for all your Go builds instead. A flag with a space in its path
+   goes in single quotes as a whole, for example `'-LC:/Users/John Doe/AppData/Local/...'`; the installer prints it
+   so.
+
+4. Build and run your program as usual with `go build` or `go run`. To ship it, copy the library from `<dir>` next to
+   the executable: on Linux the binaries also look there, on macOS build with `-tags origin` and
+   `CGO_LDFLAGS_ALLOW=-Wl,-rpath,@executable_path/` for that.
+
+At start-up the API checks the version of the loaded library and panics with a message naming the needed version if
+it does not match.
+
+> :warning: Before `0.5.0`, the SDK was installed with `go run .` in the module directory, which needed `sudo` on
+> Linux. Versions `0.2.0` and earlier fetched it from a retired repository and cannot be installed; upgrade instead.
 
 ## Usage
 
