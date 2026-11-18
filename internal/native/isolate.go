@@ -3,13 +3,16 @@ package native
 /*
 #cgo CFLAGS: -I${SRCDIR}/include -Werror=deprecated-declarations
 #include "dxfg_api.h"
+#include <stdlib.h>
 */
 import "C"
 import (
 	"errors"
 	"fmt"
 	"runtime"
+	"strings"
 	"sync"
+	"unsafe"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/sdk"
 )
@@ -29,6 +32,71 @@ var (
 	isolateErr error
 )
 
+// ErrIsolateCreated is returned by SetIsolateArguments after the creation of the isolate has started.
+var ErrIsolateCreated = errors.New("native: the isolate is already created, its arguments cannot be changed")
+
+var (
+	isolateArgsMu sync.Mutex
+	isolateArgs   []string
+	// isolateCreating is set under isolateArgsMu when the creation starts; the arguments are fixed from then on.
+	isolateCreating bool
+)
+
+// SetIsolateArguments stores the arguments that the isolate is created with. It does not create the isolate.
+func SetIsolateArguments(args []string) error {
+	for i, arg := range args {
+		if strings.IndexByte(arg, 0) >= 0 {
+			return fmt.Errorf("native: the isolate argument #%d contains a NUL character", i)
+		}
+	}
+	isolateArgsMu.Lock()
+	defer isolateArgsMu.Unlock()
+	if isolateCreating {
+		return ErrIsolateCreated
+	}
+	isolateArgs = append([]string(nil), args...)
+	return nil
+}
+
+// takeIsolateArguments fixes the arguments and returns them.
+func takeIsolateArguments() []string {
+	isolateArgsMu.Lock()
+	defer isolateArgsMu.Unlock()
+	isolateCreating = true
+	return isolateArgs
+}
+
+// createIsolate calls graal_create_isolate with the stored arguments. Without arguments it passes no parameters, so
+// the SDK uses its defaults.
+func createIsolate(isolatePtr **C.graal_isolate_t, thread **C.graal_isolatethread_t) C.int {
+	args := takeIsolateArguments()
+	if len(args) == 0 {
+		return C.graal_create_isolate(nil, isolatePtr, thread)
+	}
+	// The SDK skips the first argument: it is the name of the program.
+	argv := make([]*C.char, 0, len(args)+1)
+	argv = append(argv, C.CString("dxfeed-graal-go-api"))
+	for _, arg := range args {
+		argv = append(argv, C.CString(arg))
+	}
+	defer func() {
+		for _, ptr := range argv {
+			C.free(unsafe.Pointer(ptr))
+		}
+	}()
+	// The array of the C strings is in C memory as well; the isolate reads it only during the call.
+	cArgv := (**C.char)(C.malloc(C.size_t(len(argv)) * C.size_t(unsafe.Sizeof(argv[0]))))
+	defer C.free(unsafe.Pointer(cArgv))
+	copy(unsafe.Slice(cArgv, len(argv)), argv)
+	var params C.graal_create_isolate_params_t
+	params.version = C.__graal_create_isolate_params_version
+	params.argc = C.int(len(argv))
+	params.argv = cArgv
+	// An unknown option fails the creation instead of being silently dropped.
+	params.ignore_unrecognized_args = 0
+	return C.graal_create_isolate(&params, isolatePtr, thread)
+}
+
 // getOrCreateIsolate creates the isolate on the first call; a failure is returned by this call and every later one.
 func getOrCreateIsolate() (*isolate, error) {
 	isolateOnce.Do(func() {
@@ -38,7 +106,7 @@ func getOrCreateIsolate() (*isolate, error) {
 		instance := &isolate{}
 		var thread *C.graal_isolatethread_t
 		isolateErr = checkIsolateCall(func() C.int {
-			return C.graal_create_isolate(nil, &instance.ptr, &thread)
+			return createIsolate(&instance.ptr, &thread)
 		})
 		if isolateErr == nil {
 			isolateErr = checkSdkVersion(thread)
