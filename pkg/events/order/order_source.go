@@ -8,6 +8,7 @@ import (
 	"sync"
 )
 
+// Source is an indexed event source of order events (an order book source).
 type Source struct {
 	events.IndexedEventSource
 	pubFlags  int64
@@ -131,10 +132,12 @@ func orderSourceCheck(char string) bool {
 	return regexp.MustCompile(`^[a-zA-Z0-9]*$`).MatchString(char)
 }
 
+// IsSpecialSourceId reports whether the identifier belongs to a special (synthetic) source.
 func IsSpecialSourceId(value int64) bool {
 	return value >= 1 && value <= 6
 }
 
+// ValueOfIdentifier returns the order source with the given numeric identifier.
 func ValueOfIdentifier(identifier int64) (*Source, error) {
 	value, ok := sourcesById.Load(identifier)
 	if ok {
@@ -150,6 +153,7 @@ func ValueOfIdentifier(identifier int64) (*Source, error) {
 
 }
 
+// ValueOfName returns the order source with the given name.
 func ValueOfName(name string) (*Source, error) {
 	value, ok := sourcesByName.Load(name)
 	if ok {
@@ -164,6 +168,7 @@ func ValueOfName(name string) (*Source, error) {
 	}
 }
 
+// Type returns the event source type, which is always the order source type.
 func (source Source) Type() events.EventSourceType {
 	return events.OrderSourceType
 }
