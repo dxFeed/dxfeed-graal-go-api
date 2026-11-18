@@ -25,9 +25,13 @@ func (pr PrintState) UpdateState(old common.ConnectionState, new common.Connecti
 
 func main() {
 	// The experimental property must be enabled.
-	api.SetSystemProperty("dxfeed.experimental.dxlink.enable", "true")
+	if err := api.SetSystemProperty("dxfeed.experimental.dxlink.enable", "true"); err != nil {
+		panic(err)
+	}
 	// Set scheme for dxLink.
-	api.SetSystemProperty("scheme", "ext:opt:sysprops,resource:dxlink.xml")
+	if err := api.SetSystemProperty("scheme", "ext:opt:sysprops,resource:dxlink.xml"); err != nil {
+		panic(err)
+	}
 
 	// For token-based authorization, use the following address format:
 	// "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws[login=dxlink:token]"
@@ -56,7 +60,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer subscription.Close()
+	defer func() { _ = subscription.Close() }()
 
 	err = subscription.AddListener(PrintEvents(func(events []interface{}) {
 		for _, event := range events {

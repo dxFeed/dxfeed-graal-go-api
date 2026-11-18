@@ -6,6 +6,7 @@ package native
 */
 import "C"
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"sync"
@@ -28,7 +29,8 @@ var (
 	isolateErr error
 )
 
-func getOrCreateIsolate() *isolate {
+// getOrCreateIsolate creates the isolate on the first call; a failure is returned by this call and every later one.
+func getOrCreateIsolate() (*isolate, error) {
 	isolateOnce.Do(func() {
 		// The thread that creates the isolate is attached to it; keep the goroutine on it for the version check.
 		runtime.LockOSThread()
@@ -44,9 +46,9 @@ func getOrCreateIsolate() *isolate {
 		isolateInstance = instance
 	})
 	if isolateErr != nil {
-		panic(isolateErr)
+		return nil, isolateErr
 	}
-	return isolateInstance
+	return isolateInstance, nil
 }
 
 // checkSdkVersion compares the release of the loaded native library with the one whose headers the API is built with.
@@ -68,37 +70,51 @@ type isolateThread struct {
 	shouldDetach bool
 }
 
-func executeInIsolateThread(call func(thread *isolateThread) error) error {
-	thread := attachCurrentThread()
-	defer thread.detach()
+// executeInIsolateThread runs call on an OS thread attached to the isolate. An error of creating the isolate or of
+// attaching or detaching the thread is returned, the error of call joined with a detach failure.
+func executeInIsolateThread(call func(thread *isolateThread) error) (err error) {
+	thread, err := attachCurrentThread()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		// The error of call is kept as it is unless detaching fails too.
+		if detachErr := thread.detach(); detachErr != nil {
+			err = errors.Join(err, detachErr)
+		}
+	}()
 	return call(thread)
 }
 
-func attachCurrentThread() *isolateThread {
+func attachCurrentThread() (*isolateThread, error) {
 	runtime.LockOSThread()
-	isolate := getOrCreateIsolate()
+	isolate, err := getOrCreateIsolate()
+	if err != nil {
+		runtime.UnlockOSThread()
+		return nil, err
+	}
 	thread := &isolateThread{ptr: C.graal_get_current_thread(isolate.ptr), shouldDetach: false}
 	if thread.ptr == nil {
 		err := checkIsolateCall(func() C.int {
 			return C.graal_attach_thread(isolate.ptr, &thread.ptr)
 		})
 		if err != nil {
-			panic(err)
+			runtime.UnlockOSThread()
+			return nil, err
 		}
 		thread.shouldDetach = true
 	}
-	return thread
+	return thread, nil
 }
 
-func (t *isolateThread) detach() {
+func (t *isolateThread) detach() error {
 	defer runtime.UnlockOSThread()
+	var err error
 	if t.ptr != nil && t.shouldDetach {
-		err := checkIsolateCall(func() C.int {
+		err = checkIsolateCall(func() C.int {
 			return C.graal_detach_thread(t.ptr)
 		})
-		if err != nil {
-			panic(err)
-		}
 	}
 	t.ptr = nil
+	return err
 }

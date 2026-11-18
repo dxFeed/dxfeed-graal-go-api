@@ -7,9 +7,8 @@ package native
 import "C"
 import "unsafe"
 
-// SetSystemProperty and GetSystemProperty have no error result yet: a failure is taken from the thread and dropped.
-func SetSystemProperty(key, value string) {
-	_ = executeInIsolateThread(func(thread *isolateThread) error {
+func SetSystemProperty(key, value string) error {
+	return executeInIsolateThread(func(thread *isolateThread) error {
 		keyPtr := C.CString(key)
 		defer C.free(unsafe.Pointer(keyPtr))
 
@@ -20,9 +19,9 @@ func SetSystemProperty(key, value string) {
 	})
 }
 
-func GetSystemProperty(key string) string {
+func GetSystemProperty(key string) (string, error) {
 	value := ""
-	_ = executeInIsolateThread(func(thread *isolateThread) error {
+	err := executeInIsolateThread(func(thread *isolateThread) error {
 		keyPtr := C.CString(key)
 		defer C.free(unsafe.Pointer(keyPtr))
 
@@ -36,5 +35,5 @@ func GetSystemProperty(key string) string {
 		}
 		return nil
 	})
-	return value
+	return value, err
 }

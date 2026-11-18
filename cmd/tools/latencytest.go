@@ -46,9 +46,13 @@ func (c LatencyTest) Run(args []string) {
 	}
 	address := arguments[0]
 	types := parser.ParseEventTypes(arguments[1])
-	symbols := parser.ParseSymbols(arguments[2])
+	symbols, err := parser.ParseSymbols(arguments[2])
+	if err != nil {
+		fmt.Printf("Error parsing symbols: %v\n", err)
+		os.Exit(1)
+	}
 	dxarguments.forceStream()
-	err := latency(address, types, symbols, dxarguments.forceStream(), dxarguments.ignoreExchanges())
+	err = latency(address, types, symbols, dxarguments.forceStream(), dxarguments.ignoreExchanges())
 	if err != nil {
 		fmt.Printf("Error during dump: %v", err)
 	}

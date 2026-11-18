@@ -12,6 +12,8 @@ type eventClazzList struct {
 	elements **C.dxfg_v4_event_clazz_t
 }
 
+// createEventClazzList builds the list in C memory. cgo's C.malloc never returns NULL: it ends the process when C is
+// out of memory.
 func createEventClazzList(eventTypes ...int32) *eventClazzList {
 	l := &eventClazzList{
 		size: C.int32_t(len(eventTypes)),
@@ -23,26 +25,11 @@ func createEventClazzList(eventTypes ...int32) *eventClazzList {
 
 	l.elements = (**C.dxfg_v4_event_clazz_t)(C.malloc(C.size_t(l.size) * C.size_t(unsafe.Sizeof((*C.dxfg_v4_event_clazz_t)(nil)))))
 
-	if l.elements == nil {
-		panic("Memory allocation for eventClazzList.elements failed")
-	}
-
 	// Convert the C pointer to a Go slice for easier indexing
 	slice := unsafe.Slice(l.elements, C.size_t(l.size))
 
 	for i, eventType := range eventTypes {
 		slice[i] = (*C.dxfg_v4_event_clazz_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_v4_event_clazz_t(0)))))
-
-		if slice[i] == nil {
-			// Free previously allocated elements before panicking
-			for j := 0; j < i; j++ {
-				C.free(unsafe.Pointer(slice[j]))
-			}
-
-			C.free(unsafe.Pointer(l.elements))
-
-			panic("Memory allocation for eventClazzList's element failed")
-		}
 
 		*slice[i] = C.dxfg_v4_event_clazz_t(eventType)
 	}

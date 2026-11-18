@@ -7,14 +7,14 @@ import (
 	"strings"
 )
 
-func ParseSymbols(value string) []any {
+// ParseSymbols parses a comma-separated list of symbols; "all" is the wildcard symbol.
+func ParseSymbols(value string) ([]any, error) {
 	value = strings.TrimSpace(value)
 
 	if value == "all" {
-		return []any{Osub.NewWildcardSymbol()}
+		return []any{Osub.NewWildcardSymbol()}, nil
 	}
-	values, _ := native.ParseSymbols(value)
-	return values
+	return native.ParseSymbols(value)
 }
 
 func ParseEventTypes(value string) []eventcodes.EventCode {

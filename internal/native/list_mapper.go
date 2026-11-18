@@ -6,7 +6,6 @@ package native
 */
 import "C"
 import (
-	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"unsafe"
@@ -35,22 +34,15 @@ func NewListMapper[T CMapper, U comparable](elements []U) *ListMapper[T] {
 	}
 }
 
+// allocElement maps an event to C memory; the callers check beforehand that every element is an event with a mapper.
 func allocElement[T CMapper, U comparable](element U, mappers map[int32]mappers.MapperInterface) *T {
-	switch t := any(element).(type) {
-	case int32:
-		return (*T)(C.malloc(C.size_t(unsafe.Sizeof(element))))
-	case events.EventType:
-		// all market events have to implement this interface
-		mapper := mappers[int32(t.Type())]
-		return (*T)(mapper.CEvent(t))
-	default:
-		symbol := newEventMapper().cSymbol(t)
-		if symbol != nil {
-			return (*T)(symbol)
-		} else {
-			fmt.Printf("Couldn't alloc element for %T\n", element)
-			return nil
-		}
-
+	event, ok := any(element).(events.EventType)
+	if !ok {
+		return nil
 	}
+	mapper := mappers[event.Type().NativeCode()]
+	if mapper == nil {
+		return nil
+	}
+	return (*T)(mapper.CEvent(event))
 }

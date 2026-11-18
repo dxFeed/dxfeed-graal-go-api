@@ -52,7 +52,6 @@ to your dxFeed support contact.
 
 Features planned with **high priority**:
 
-* a stable public API that returns errors instead of panicking
 * simpler delivery of the native library to applications
 * all market events of the Graal Native SDK
 * more tools and samples, on par with the dxFeed C++ API
@@ -208,8 +207,8 @@ written into the Go module cache.
    the executable: on Linux the binaries also look there, on macOS build with `-tags origin` and
    `CGO_LDFLAGS_ALLOW=-Wl,-rpath,@executable_path/` for that.
 
-At start-up the API checks the version of the loaded library and panics with a message naming the needed version if
-it does not match.
+At start-up the API checks the version of the loaded library. If it does not match, the first call and every later one
+return an error naming the needed version.
 
 > :warning: Before `0.5.0`, the SDK was installed with `go run .` in the module directory, which needed `sudo` on
 > Linux. Versions `0.2.0` and earlier fetched it from a retired repository and cannot be installed; upgrade instead.
@@ -261,7 +260,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer subscription.Close()
+	defer func() { _ = subscription.Close() }()
 
 	err = subscription.AddListener(PrintEvents(func(events []interface{}) {
 		for _, event := range events {
@@ -325,9 +324,13 @@ func (pr PrintEvents) Update(events []any) {
 
 func main() {
 	// The experimental property must be enabled.
-	api.SetSystemProperty("dxfeed.experimental.dxlink.enable", "true")
+	if err := api.SetSystemProperty("dxfeed.experimental.dxlink.enable", "true"); err != nil {
+		panic(err)
+	}
 	// Set scheme for dxLink.
-	api.SetSystemProperty("scheme", "ext:opt:sysprops,resource:dxlink.xml")
+	if err := api.SetSystemProperty("scheme", "ext:opt:sysprops,resource:dxlink.xml"); err != nil {
+		panic(err)
+	}
 
 	// For token-based authorization, use the following address format:
 	// "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws[login=dxlink:token]"
@@ -353,7 +356,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer subscription.Close()
+	defer func() { _ = subscription.Close() }()
 
 	err = subscription.AddListener(PrintEvents(func(events []interface{}) {
 		for _, event := range events {

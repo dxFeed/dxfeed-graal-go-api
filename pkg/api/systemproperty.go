@@ -4,10 +4,12 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
 )
 
-func SetSystemProperty(key string, value string) {
-	native.SetSystemProperty(key, value)
+// SetSystemProperty sets a Java system property of the SDK, for example "dxfeed.address".
+func SetSystemProperty(key string, value string) error {
+	return native.SetSystemProperty(key, value)
 }
 
-func GetSystemProperty(key string) string {
+// GetSystemProperty returns a Java system property of the SDK; an unset property is an empty string.
+func GetSystemProperty(key string) (string, error) {
 	return native.GetSystemProperty(key)
 }

@@ -46,10 +46,14 @@ func (c Connect) Run(args []string) {
 	}
 
 	address := arguments[0]
-	symbols := parser.ParseSymbols(arguments[2])
+	symbols, err := parser.ParseSymbols(arguments[2])
+	if err != nil {
+		fmt.Printf("Error parsing symbols: %v\n", err)
+		os.Exit(1)
+	}
 	types := parser.ParseEventTypes(arguments[1])
 
-	err := connect(address, types, symbols, dxarguments.properties(), dxarguments.forceStream(), dxarguments.isQuite(), dxarguments.time())
+	err = connect(address, types, symbols, dxarguments.properties(), dxarguments.forceStream(), dxarguments.isQuite(), dxarguments.time())
 	if err != nil {
 		fmt.Printf("Error during connect: %v", err)
 	}
@@ -65,7 +69,9 @@ func connect(
 	fromTime *string,
 ) error {
 	for key, value := range properties {
-		api.SetSystemProperty(key, value)
+		if err := api.SetSystemProperty(key, value); err != nil {
+			return fmt.Errorf("SetSystemProperty %s: %w", key, err)
+		}
 	}
 	role := api.Feed
 	if forceStream {
@@ -97,7 +103,7 @@ func connect(
 	if err != nil {
 		return fmt.Errorf("CreateSubscription: %w", err)
 	}
-	defer subscription.Close()
+	defer func() { _ = subscription.Close() }()
 	if !isQuite {
 		err = subscription.AddListener(PrintEvents(func(eventsList []interface{}) {
 			for _, event := range eventsList {

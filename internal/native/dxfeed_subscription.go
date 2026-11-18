@@ -7,36 +7,12 @@ extern void OnEventReceived(graal_isolatethread_t *thread, dxfg_v4_event_type_li
 */
 import "C"
 import (
-	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"unsafe"
 )
 
 type DXFeedSubscription struct {
 	ptr *C.dxfg_v4_subscription_t
-}
-
-type dxfg_symbol_t struct {
-	t      C.int32_t
-	symbol *C.char
-}
-
-type dxfg_time_series_subscription_symbol_t struct {
-	t         C.int32_t
-	symbol    *dxfg_symbol_t
-	from_time C.int64_t
-}
-
-type dxfg_indexed_event_source_t struct {
-	t    C.int32_t
-	id   C.int32_t
-	name *C.char
-}
-
-type dxfg_indexed_event_subscription_symbol_t struct {
-	t      C.int32_t
-	symbol *dxfg_symbol_t
-	source *dxfg_indexed_event_source_t
 }
 
 func ConvertString(value *C.char) *string {
@@ -50,11 +26,16 @@ func ConvertString(value *C.char) *string {
 
 //export OnEventReceived
 func OnEventReceived(thread *C.graal_isolatethread_t, eventsList *C.dxfg_v4_event_type_list, userData unsafe.Pointer) {
+	defer recoverCallback("event listener")
+	listener, ok := Restore(userData).(common.EventListener)
+	if !ok {
+		return
+	}
 	events := newEventMapper().goEvents(eventsList)
 	if len(events) == 0 {
 		return
 	}
-	Restore(userData).(common.EventListener).Update(events)
+	listener.Update(events)
 }
 
 func (s DXFeedSubscription) AttachListener(listener common.EventListener) error {
@@ -69,55 +50,63 @@ func (s DXFeedSubscription) AttachListener(listener common.EventListener) error 
 }
 
 func (s DXFeedSubscription) AddSymbol(symbol any) error {
-	return executeInIsolateThread(func(thread *isolateThread) error {
-		cSymbol := s.convertSymbol(symbol)
-		if cSymbol == nil {
-			return fmt.Errorf("unsupported symbol %T", symbol)
-		}
-		return checkStatus(thread, C.dxfg_v4_DXFeedSubscription_addSymbol(thread.ptr, s.ptr, cSymbol))
+	return s.withSymbol(symbol, func(thread *isolateThread, cSymbol *C.dxfg_v4_symbol_t) C.int32_t {
+		return C.dxfg_v4_DXFeedSubscription_addSymbol(thread.ptr, s.ptr, cSymbol)
 	})
 }
 
 func (s DXFeedSubscription) AddSymbols(symbols ...any) error {
-	return executeInIsolateThread(func(thread *isolateThread) error {
-		l := NewListMapper[C.dxfg_v4_symbol_list, interface{}](symbols)
-		return checkStatus(thread, C.dxfg_v4_DXFeedSubscription_addSymbols(thread.ptr, s.ptr,
-			(*C.dxfg_v4_symbol_list)(unsafe.Pointer(l))))
+	return s.withSymbols(symbols, func(thread *isolateThread, list *C.dxfg_v4_symbol_list) C.int32_t {
+		return C.dxfg_v4_DXFeedSubscription_addSymbols(thread.ptr, s.ptr, list)
 	})
 }
 
-func (s DXFeedSubscription) convertSymbol(symbol any) *C.dxfg_v4_symbol_t {
-	value := newEventMapper().cSymbol(symbol)
-	return (*C.dxfg_v4_symbol_t)(value)
-}
-
 func (s DXFeedSubscription) RemoveSymbol(symbol any) error {
-	return executeInIsolateThread(func(thread *isolateThread) error {
-		cSymbol := s.convertSymbol(symbol)
-		if cSymbol == nil {
-			return fmt.Errorf("unsupported symbol %T", symbol)
-		}
-		return checkStatus(thread, C.dxfg_v4_DXFeedSubscription_removeSymbol(thread.ptr, s.ptr, cSymbol))
+	return s.withSymbol(symbol, func(thread *isolateThread, cSymbol *C.dxfg_v4_symbol_t) C.int32_t {
+		return C.dxfg_v4_DXFeedSubscription_removeSymbol(thread.ptr, s.ptr, cSymbol)
 	})
 }
 
 func (s DXFeedSubscription) RemoveSymbols(symbols ...any) error {
-	return executeInIsolateThread(func(thread *isolateThread) error {
-		l := NewListMapper[C.dxfg_v4_symbol_list, interface{}](symbols)
-		return checkStatus(thread, C.dxfg_v4_DXFeedSubscription_removeSymbols(thread.ptr, s.ptr,
-			(*C.dxfg_v4_symbol_list)(unsafe.Pointer(l))))
+	return s.withSymbols(symbols, func(thread *isolateThread, list *C.dxfg_v4_symbol_list) C.int32_t {
+		return C.dxfg_v4_DXFeedSubscription_removeSymbols(thread.ptr, s.ptr, list)
 	})
 }
 
-// Clear and Close have no error result yet: a failure is taken from the thread and dropped.
-func (s DXFeedSubscription) Clear() {
-	_ = executeInIsolateThread(func(thread *isolateThread) error {
+// withSymbol passes the symbol, built in C memory, to call and frees it afterwards; the SDK only reads it.
+func (s DXFeedSubscription) withSymbol(symbol any,
+	call func(thread *isolateThread, cSymbol *C.dxfg_v4_symbol_t) C.int32_t) error {
+	cSymbol, err := newCSymbol(symbol)
+	if err != nil {
+		return err
+	}
+	defer freeCSymbol(cSymbol)
+	return executeInIsolateThread(func(thread *isolateThread) error {
+		return checkStatus(thread, call(thread, cSymbol))
+	})
+}
+
+// withSymbols passes the symbols, built in C memory, to call and frees them afterwards; the SDK only reads them.
+func (s DXFeedSubscription) withSymbols(symbols []any,
+	call func(thread *isolateThread, list *C.dxfg_v4_symbol_list) C.int32_t) error {
+	list, err := newCSymbolList(symbols)
+	if err != nil {
+		return err
+	}
+	defer freeCSymbolList(list)
+	return executeInIsolateThread(func(thread *isolateThread) error {
+		return checkStatus(thread, call(thread, list))
+	})
+}
+
+func (s DXFeedSubscription) Clear() error {
+	return executeInIsolateThread(func(thread *isolateThread) error {
 		return checkStatus(thread, C.dxfg_v4_DXFeedSubscription_clear(thread.ptr, s.ptr))
 	})
 }
 
-func (s DXFeedSubscription) Close() {
-	_ = executeInIsolateThread(func(thread *isolateThread) error {
+func (s DXFeedSubscription) Close() error {
+	return executeInIsolateThread(func(thread *isolateThread) error {
 		return checkStatus(thread, C.dxfg_v4_DXFeedSubscription_close(thread.ptr, s.ptr))
 	})
 }

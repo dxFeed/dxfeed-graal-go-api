@@ -51,7 +51,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer subscription.Close()
+	defer func() { _ = subscription.Close() }()
 
 	err = subscription.AddListener(PrintEvents(func(events []interface{}) {
 		for _, event := range events {
