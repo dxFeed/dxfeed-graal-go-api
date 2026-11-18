@@ -8,13 +8,17 @@ import (
 )
 
 // ParseSymbols parses a comma-separated list of symbols; "all" is the wildcard symbol.
-func ParseSymbols(value string) ([]any, error) {
+func ParseSymbols(value string) ([]osub.Symbol, error) {
 	value = strings.TrimSpace(value)
 
 	if value == "all" {
-		return []any{osub.NewWildcardSymbol()}, nil
+		return []osub.Symbol{osub.NewWildcardSymbol()}, nil
 	}
-	return native.ParseSymbols(value)
+	symbols, err := native.ParseSymbols(value)
+	if err != nil {
+		return nil, err
+	}
+	return osub.Strings(symbols...), nil
 }
 
 func ParseEventTypes(value string) []eventcodes.EventCode {

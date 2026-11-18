@@ -29,10 +29,7 @@ func TestParseSymbols(t *testing.T) {
 		t.Fatalf("ParseSymbols: %v", err)
 	}
 	// The SDK returns a set: the order of the symbols is not defined.
-	symbols := make([]string, 0, len(got))
-	for _, symbol := range got {
-		symbols = append(symbols, symbol.(string))
-	}
+	symbols := append([]string(nil), got...)
 	sort.Strings(symbols)
 	if want := []string{"AAPL", "IBM"}; !reflect.DeepEqual(symbols, want) {
 		t.Fatalf("ParseSymbols = %v, want %v in any order", got, want)

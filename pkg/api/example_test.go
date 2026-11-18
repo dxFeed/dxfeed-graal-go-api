@@ -53,7 +53,7 @@ func Example() {
 	if err := subscription.AddListener(printer); err != nil {
 		log.Fatal(err)
 	}
-	if err := subscription.AddSymbol("EXAMPLE"); err != nil {
+	if err := subscription.AddSymbol(osub.String("EXAMPLE")); err != nil {
 		log.Fatal(err)
 	}
 
@@ -95,7 +95,7 @@ func ExampleDXFeedSubscription_AddSymbols() {
 
 	weekAgo := time.Now().Add(-7 * 24 * time.Hour).UnixMilli()
 	err = subscription.AddSymbols(
-		"AAPL",
+		osub.String("AAPL"),
 		osub.NewWildcardSymbol(),
 		osub.NewTimeSeriesSubscriptionSymbol("AAPL{=d}", weekAgo),
 	)

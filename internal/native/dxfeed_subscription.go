@@ -7,8 +7,10 @@ extern void OnEventReceived(graal_isolatethread_t *thread, dxfg_v4_event_type_li
 */
 import "C"
 import (
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"unsafe"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 )
 
 type DXFeedSubscription struct {
@@ -49,32 +51,32 @@ func (s DXFeedSubscription) AttachListener(listener common.EventListener) error 
 	})
 }
 
-func (s DXFeedSubscription) AddSymbol(symbol any) error {
+func (s DXFeedSubscription) AddSymbol(symbol osub.Symbol) error {
 	return s.withSymbol(symbol, func(thread *isolateThread, cSymbol *C.dxfg_v4_symbol_t) C.int32_t {
 		return C.dxfg_v4_DXFeedSubscription_addSymbol(thread.ptr, s.ptr, cSymbol)
 	})
 }
 
-func (s DXFeedSubscription) AddSymbols(symbols ...any) error {
+func (s DXFeedSubscription) AddSymbols(symbols ...osub.Symbol) error {
 	return s.withSymbols(symbols, func(thread *isolateThread, list *C.dxfg_v4_symbol_list) C.int32_t {
 		return C.dxfg_v4_DXFeedSubscription_addSymbols(thread.ptr, s.ptr, list)
 	})
 }
 
-func (s DXFeedSubscription) RemoveSymbol(symbol any) error {
+func (s DXFeedSubscription) RemoveSymbol(symbol osub.Symbol) error {
 	return s.withSymbol(symbol, func(thread *isolateThread, cSymbol *C.dxfg_v4_symbol_t) C.int32_t {
 		return C.dxfg_v4_DXFeedSubscription_removeSymbol(thread.ptr, s.ptr, cSymbol)
 	})
 }
 
-func (s DXFeedSubscription) RemoveSymbols(symbols ...any) error {
+func (s DXFeedSubscription) RemoveSymbols(symbols ...osub.Symbol) error {
 	return s.withSymbols(symbols, func(thread *isolateThread, list *C.dxfg_v4_symbol_list) C.int32_t {
 		return C.dxfg_v4_DXFeedSubscription_removeSymbols(thread.ptr, s.ptr, list)
 	})
 }
 
 // withSymbol passes the symbol, built in C memory, to call and frees it afterwards; the SDK only reads it.
-func (s DXFeedSubscription) withSymbol(symbol any,
+func (s DXFeedSubscription) withSymbol(symbol osub.Symbol,
 	call func(thread *isolateThread, cSymbol *C.dxfg_v4_symbol_t) C.int32_t) error {
 	cSymbol, err := newCSymbol(symbol)
 	if err != nil {
@@ -87,7 +89,7 @@ func (s DXFeedSubscription) withSymbol(symbol any,
 }
 
 // withSymbols passes the symbols, built in C memory, to call and frees them afterwards; the SDK only reads them.
-func (s DXFeedSubscription) withSymbols(symbols []any,
+func (s DXFeedSubscription) withSymbols(symbols []osub.Symbol,
 	call func(thread *isolateThread, list *C.dxfg_v4_symbol_list) C.int32_t) error {
 	list, err := newCSymbolList(symbols)
 	if err != nil {

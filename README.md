@@ -223,6 +223,7 @@ package main
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"math"
@@ -271,7 +272,7 @@ func main() {
 		}
 	}))
 
-	err = subscription.AddSymbol("AAPL")
+	err = subscription.AddSymbol(osub.String("AAPL"))
 	if err != nil {
 		panic(err)
 	}
@@ -310,6 +311,7 @@ package main
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"math"
@@ -367,7 +369,7 @@ func main() {
 		}
 	}))
 
-	err = subscription.AddSymbol("AAPL")
+	err = subscription.AddSymbol(osub.String("AAPL"))
 	if err != nil {
 		panic(err)
 	}
@@ -538,8 +540,8 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 
 ### Subscription Symbols
 
-- [x] [String](https://pkg.go.dev/strings)
-  is a string representation of the symbol
+- [x] [osub.String](https://pkg.go.dev/github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub#String)
+  is a string representation of the symbol; `osub.Strings` converts several strings at once
 
 - [x] [TimeSeriesSubscriptionSymbol](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/osub/TimeSeriesSubscriptionSymbol.html)
   represents subscription to time-series events
@@ -553,7 +555,7 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [ ] [CandleSymbol](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/candle/CandleSymbol.html)
   is a symbol used with [DXFeedSubscription](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeedSubscription.html)
   class to subscribe for [Candle](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/candle/Candle.html) events
-  (the Go type exists, but a subscription does not accept it yet; subscribe with the candle symbol string)
+  (the Go type exists, but a subscription does not accept it yet; subscribe with `osub.String("AAPL{=d}")`)
 
 ### Subscriptions & Models
 

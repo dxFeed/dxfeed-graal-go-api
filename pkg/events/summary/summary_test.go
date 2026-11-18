@@ -2,6 +2,7 @@ package summary_test
 
 import (
 	"context"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"math"
 	"testing"
 	"time"
@@ -31,7 +32,7 @@ func TestSummaryLocalHub(t *testing.T) {
 	mustNoErr(t, sub.AddListener(&chanListener{ch: ch}))
 
 	const sym = "HUB_SUM_TEST"
-	mustNoErr(t, sub.AddSymbol(sym))
+	mustNoErr(t, sub.AddSymbol(osub.String(sym)))
 
 	// publish
 	want := summary.NewSummary(sym)

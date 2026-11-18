@@ -9,8 +9,9 @@ import (
 	"unsafe"
 )
 
-func ParseSymbols(symbols string) ([]any, error) {
-	var result []any
+// ParseSymbols splits a list of symbols as the SDK tools do; the order of the result is not defined.
+func ParseSymbols(symbols string) ([]string, error) {
+	var result []string
 	err := executeInIsolateThread(func(thread *isolateThread) error {
 		symbolsPtr := C.CString(symbols)
 		defer C.free(unsafe.Pointer(symbolsPtr))
@@ -21,9 +22,7 @@ func ParseSymbols(symbols string) ([]any, error) {
 		}
 		defer releaseStringList(thread, list)
 
-		for _, symbol := range goStrings(list) {
-			result = append(result, symbol)
-		}
+		result = goStrings(list)
 		return nil
 	})
 

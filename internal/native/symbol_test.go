@@ -43,12 +43,26 @@ func TestNewCSymbolRejectsInvalidSources(t *testing.T) {
 }
 
 func TestNewCSymbolListFreesOnError(t *testing.T) {
-	if _, err := newCSymbolList([]any{"AAPL", osub.NewWildcardSymbol(), 3.5}); err == nil {
-		t.Fatal("a list with a float symbol built without an error")
+	invalid := osub.NewTimeSeriesSubscriptionSymbol(3.5, 0)
+	if _, err := newCSymbolList([]osub.Symbol{osub.String("AAPL"), osub.NewWildcardSymbol(), invalid}); err == nil {
+		t.Fatal("a list with a float inner symbol built without an error")
 	}
-	list, err := newCSymbolList([]any{"AAPL", osub.NewTimeSeriesSubscriptionSymbol("IBM", 5)})
+	list, err := newCSymbolList([]osub.Symbol{osub.String("AAPL"), osub.NewTimeSeriesSubscriptionSymbol(osub.String("IBM"), 5)})
 	if err != nil {
 		t.Fatal(err)
 	}
 	freeCSymbolList(list)
+}
+
+func TestNewCSymbolOfString(t *testing.T) {
+	for _, symbol := range []any{"AAPL{=d}", osub.String("AAPL{=d}")} {
+		cSymbol, err := newCSymbol(symbol)
+		if err != nil {
+			t.Fatalf("%T: %v", symbol, err)
+		}
+		if got, ok := stringSymbolText(cSymbol); !ok || got != "AAPL{=d}" {
+			t.Errorf("%T: got %q, string symbol %v", symbol, got, ok)
+		}
+		freeCSymbol(cSymbol)
+	}
 }
