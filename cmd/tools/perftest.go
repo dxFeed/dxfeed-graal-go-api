@@ -60,9 +60,9 @@ func perf(address string, types []eventcodes.EventCode, symbols []any, forceStre
 	if forceStream {
 		role = api.StreamFeed
 	}
-	endpoint, err := api.CreateEndpoint(role)
+	endpoint, err := api.NewEndpoint(role)
 	if err != nil {
-		return fmt.Errorf("CreateEndpoint: %w", err)
+		return fmt.Errorf("NewEndpoint: %w", err)
 	}
 	err = endpoint.Connect(address)
 	if err != nil {

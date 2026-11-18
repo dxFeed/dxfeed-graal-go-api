@@ -1,6 +1,7 @@
 package underlying_test
 
 import (
+	"context"
 	"math"
 	"testing"
 	"time"
@@ -12,9 +13,9 @@ import (
 )
 
 func TestUnderlyingLocalHub(t *testing.T) {
-	ep, err := api.CreateEndpoint(api.LocalHub)
+	ep, err := api.NewEndpoint(api.LocalHub)
 	mustNoErr(t, err)
-	defer func() { _ = ep.CloseAndAwaitTermination() }()
+	defer func() { _ = ep.CloseAndAwaitTermination(context.Background()) }()
 
 	feed, err := ep.GetFeed()
 	mustNoErr(t, err)
@@ -47,7 +48,7 @@ func TestUnderlyingLocalHub(t *testing.T) {
 	want.SetPutCallRatio(3.5)
 
 	mustNoErr(t, pub.Publish([]interface{}{want}))
-	_ = ep.AwaitProcessed()
+	_ = ep.AwaitProcessed(context.Background())
 
 	// receive & verify
 	got := receiveOne(t, ch, 10*time.Second)

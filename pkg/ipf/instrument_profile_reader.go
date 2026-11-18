@@ -2,9 +2,14 @@ package ipf
 
 import "C"
 import (
+	"io"
+
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 )
+
+// The reader owns a native object: close it.
+var _ io.Closer = (*InstrumentProfileReader)(nil)
 
 type InstrumentProfileReader struct {
 	reader *native.InstrumentProfileReader

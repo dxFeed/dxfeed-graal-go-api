@@ -80,7 +80,7 @@ func connect(
 	endpoint, err := api.NewEndpointWithProperties(role, properties)
 
 	if err != nil {
-		return fmt.Errorf("CreateEndpoint: %w", err)
+		return fmt.Errorf("NewEndpointWithProperties: %w", err)
 	}
 
 	defer func(endpoint *api.DXEndpoint) {

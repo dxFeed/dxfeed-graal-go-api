@@ -1,6 +1,8 @@
 package api
 
 import (
+	"sync/atomic"
+
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 )
@@ -8,10 +10,12 @@ import (
 type DXFeedSubscription struct {
 	sub               *native.DXFeedSubscription
 	eventListenerList []common.EventListener
+	closed            atomic.Bool
 }
 
+// IsClosed reports whether Close succeeded.
 func (s *DXFeedSubscription) IsClosed() bool {
-	return true
+	return s.closed.Load()
 }
 
 func (s *DXFeedSubscription) AddListener(listener common.EventListener) error {
@@ -46,7 +50,11 @@ func (s *DXFeedSubscription) Clear() error {
 
 // Close closes the subscription; it stops receiving events.
 func (s *DXFeedSubscription) Close() error {
-	return s.sub.Close()
+	if err := s.sub.Close(); err != nil {
+		return err
+	}
+	s.closed.Store(true)
+	return nil
 }
 
 func removeFromSlice(list []common.EventListener, observerToRemove common.EventListener) []common.EventListener {
