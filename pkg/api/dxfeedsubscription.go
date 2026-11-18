@@ -1,6 +1,9 @@
 package api
 
 import (
+	"errors"
+	"log"
+	"sync"
 	"sync/atomic"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
@@ -15,9 +18,16 @@ import (
 // *osub.WildcardSymbol for all symbols, *osub.TimeSeriesSubscriptionSymbol for time series events from a time, and
 // *osub.IndexedEventSubscriptionSymbol for indexed events of one source.
 type DXFeedSubscription struct {
-	sub               *native.DXFeedSubscription
-	eventListenerList []common.EventListener
-	closed            atomic.Bool
+	sub       *native.DXFeedSubscription
+	mu        sync.Mutex
+	listeners []attachedListener
+	closed    atomic.Bool
+}
+
+// attachedListener pairs a listener added with AddListener with its native listener.
+type attachedListener struct {
+	listener common.EventListener
+	native   *native.EventListener
 }
 
 // IsClosed reports whether Close succeeded.
@@ -28,14 +38,35 @@ func (s *DXFeedSubscription) IsClosed() bool {
 // AddListener adds a listener that receives the events of the subscription. The listener is called from an SDK thread;
 // a panic in it is logged and does not end the process.
 func (s *DXFeedSubscription) AddListener(listener common.EventListener) error {
-	s.eventListenerList = append(s.eventListenerList, listener)
-	return s.sub.AttachListener(listener)
+	nativeListener, err := s.sub.AttachListener(listener)
+	if err != nil {
+		return err
+	}
+	s.mu.Lock()
+	s.listeners = append(s.listeners, attachedListener{listener: listener, native: nativeListener})
+	s.mu.Unlock()
+	return nil
 }
 
-// RemoveListener is meant to remove a listener added with AddListener. Known limitation: the listener still receives
-// events; close the subscription to stop them.
+// RemoveListener removes a listener added with AddListener; the listener is not called after RemoveListener returns.
+// A listener added several times is removed once. A failure of the SDK is logged.
 func (s *DXFeedSubscription) RemoveListener(listener common.EventListener) {
-	s.eventListenerList = removeFromSlice(s.eventListenerList, listener)
+	s.mu.Lock()
+	var removed *native.EventListener
+	for i, l := range s.listeners {
+		if l.listener == listener {
+			removed = l.native
+			s.listeners = append(s.listeners[:i:i], s.listeners[i+1:]...)
+			break
+		}
+	}
+	s.mu.Unlock()
+	if removed == nil {
+		return
+	}
+	if err := s.sub.DetachListener(removed); err != nil {
+		log.Printf("dxfeed: remove event listener: %v", err)
+	}
 }
 
 // AddSymbol adds a symbol to the subscription; see DXFeedSubscription for the symbol types.
@@ -69,16 +100,13 @@ func (s *DXFeedSubscription) Close() error {
 		return err
 	}
 	s.closed.Store(true)
-	return nil
-}
-
-func removeFromSlice(list []common.EventListener, observerToRemove common.EventListener) []common.EventListener {
-	listLength := len(list)
-	for i, observer := range list {
-		if observerToRemove == observer {
-			list[listLength-1], list[i] = list[i], list[listLength-1]
-			return list[:listLength-1]
-		}
+	s.mu.Lock()
+	listeners := s.listeners
+	s.listeners = nil
+	s.mu.Unlock()
+	var err error
+	for _, l := range listeners {
+		err = errors.Join(err, l.native.Release())
 	}
-	return list
+	return err
 }
