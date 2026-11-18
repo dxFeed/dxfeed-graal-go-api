@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -47,11 +48,15 @@ func run(dir string, printDir bool) error {
 	if !ok {
 		return fmt.Errorf("dxFeed Graal Native SDK %s has no library for %s", sdk.Version, platform)
 	}
+	var err error
 	if dir == "" {
-		var err error
-		if dir, err = sdk.DefaultDir(runtime.GOOS, runtime.GOARCH); err != nil {
-			return err
-		}
+		dir, err = sdk.DefaultDir(runtime.GOOS, runtime.GOARCH)
+	} else {
+		// The linker runs in another directory, so the printed flags need an absolute path.
+		dir, err = filepath.Abs(dir)
+	}
+	if err != nil {
+		return err
 	}
 	if !sdk.Installed(dir, archive) {
 		url := sdk.DownloadURL(archive)

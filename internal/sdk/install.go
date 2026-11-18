@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -40,18 +41,25 @@ func DefaultDir(goos, goarch string) (string, error) {
 	return filepath.Join(cache, "dxfeed-graal-go-api", "graal-native-sdk", Version, goos+"-"+goarch), nil
 }
 
-// Installed reports whether dir holds an installation of the archive.
+// Installed reports whether dir holds an installation of the archive with the library of this platform.
 func Installed(dir string, archive Archive) bool {
 	marker, err := os.ReadFile(filepath.Join(dir, installedMarker))
-	return err == nil && strings.TrimSpace(string(marker)) == archive.SHA256
+	if err != nil || strings.TrimSpace(string(marker)) != archive.SHA256 {
+		return false
+	}
+	_, err = os.Stat(filepath.Join(dir, LibraryFile(runtime.GOOS)))
+	return err == nil
 }
 
 // Install downloads the archive from url, checks its SHA-256 checksum and extracts it into dir.
-// An existing installation of the same archive is kept; any other content of dir is replaced.
-// Nothing is written into dir unless the checksum matches.
+// An existing installation of the same archive is kept, and an installation of another archive is replaced.
+// Nothing is written into dir unless the checksum matches, and a non-empty dir that is not an installation is refused.
 func Install(client *http.Client, url string, archive Archive, dir string) error {
 	if Installed(dir, archive) {
 		return nil
+	}
+	if err := checkReplaceable(dir); err != nil {
+		return err
 	}
 	parent := filepath.Dir(dir)
 	if err := os.MkdirAll(parent, 0o755); err != nil {
@@ -80,10 +88,52 @@ func Install(client *http.Client, url string, archive Archive, dir string) error
 	if err := os.WriteFile(filepath.Join(staging, installedMarker), []byte(archive.SHA256+"\n"), 0o644); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(dir); err != nil {
+	// MkdirTemp creates the directory for the owner only; the library is for everyone who may read the parent.
+	if err := os.Chmod(staging, 0o755); err != nil {
 		return err
 	}
-	return os.Rename(staging, dir)
+	return replace(staging, dir, archive)
+}
+
+// checkReplaceable refuses a directory that exists, is not empty and holds no installation of the SDK,
+// so that a mistyped -dir does not delete the user's files.
+func checkReplaceable(dir string) error {
+	entries, err := os.ReadDir(dir)
+	if errors.Is(err, os.ErrNotExist) || err == nil && len(entries) == 0 {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(filepath.Join(dir, installedMarker)); err != nil {
+		return fmt.Errorf("%s is not empty and holds no SDK installation; choose an empty or new directory", dir)
+	}
+	return nil
+}
+
+// replace moves staging to dir. An older installation in dir is moved aside first and removed afterwards, so a failed
+// move leaves it in place; when another installer has put the same archive into dir meanwhile, its result is kept.
+func replace(staging, dir string, archive Archive) error {
+	var old string
+	if _, err := os.Stat(dir); err == nil {
+		old = staging + ".old"
+		if err := os.Rename(dir, old); err != nil {
+			return fmt.Errorf("cannot replace the installation in %s (is the library in use?): %w", dir, err)
+		}
+	}
+	if err := os.Rename(staging, dir); err != nil {
+		if Installed(dir, archive) {
+			return nil
+		}
+		if old != "" {
+			_ = os.Rename(old, dir)
+		}
+		return err
+	}
+	if old != "" {
+		_ = os.RemoveAll(old)
+	}
+	return nil
 }
 
 // download writes the body of url into file and checks its SHA-256 checksum.

@@ -200,8 +200,9 @@ written into the Go module cache.
      $env:PATH = "<dir>;" + $env:PATH
      ```
 
-   `go env -w CGO_LDFLAGS="..."` keeps the setting for all your Go builds instead. A path with spaces goes in single
-   quotes inside the value, for example `-L'C:/Users/John Doe/AppData/Local/...'`.
+   `go env -w CGO_LDFLAGS="..."` keeps the setting for all your Go builds instead. A flag with a space in its path
+   goes in single quotes as a whole, for example `'-LC:/Users/John Doe/AppData/Local/...'`; the installer prints it
+   so.
 
 4. Build and run your program as usual with `go build` or `go run`. To ship it, copy the library from `<dir>` next to
    the executable: on Linux the binaries also look there, on macOS build with `-tags origin` and

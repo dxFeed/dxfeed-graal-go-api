@@ -9,10 +9,13 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
 )
+
+var lib = LibraryFile(runtime.GOOS)
 
 func makeZip(t *testing.T, files map[string]string) []byte {
 	t.Helper()
@@ -50,7 +53,7 @@ func checksum(data []byte) string {
 }
 
 func TestInstall(t *testing.T) {
-	body := makeZip(t, map[string]string{"lib.so": "library", "docs/a.txt": "doc"})
+	body := makeZip(t, map[string]string{lib: "library", "docs/a.txt": "doc"})
 	srv, requests := serve(t, body)
 	archive := Archive{Name: "sdk.zip", SHA256: checksum(body)}
 	dir := filepath.Join(t.TempDir(), "sdk")
@@ -78,7 +81,7 @@ func TestInstall(t *testing.T) {
 }
 
 func TestInstallRefusesChecksumMismatch(t *testing.T) {
-	body := makeZip(t, map[string]string{"lib.so": "library"})
+	body := makeZip(t, map[string]string{lib: "library"})
 	srv, _ := serve(t, body)
 	archive := Archive{Name: "sdk.zip", SHA256: strings.Repeat("0", 64)}
 	dir := filepath.Join(t.TempDir(), "sdk")
@@ -108,15 +111,17 @@ func TestInstallRefusesPathOutsideDirectory(t *testing.T) {
 	}
 }
 
-func TestInstallReplacesOtherContent(t *testing.T) {
-	body := makeZip(t, map[string]string{"lib.so": "new"})
+func TestInstallReplacesOlderInstallation(t *testing.T) {
+	body := makeZip(t, map[string]string{lib: "new"})
 	srv, _ := serve(t, body)
 	dir := filepath.Join(t.TempDir(), "sdk")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "stale.so"), []byte("old"), 0o644); err != nil {
-		t.Fatal(err)
+	for name, content := range map[string]string{installedMarker: strings.Repeat("1", 64), "stale.so": "old"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if err := Install(srv.Client(), srv.URL, Archive{Name: "sdk.zip", SHA256: checksum(body)}, dir); err != nil {
 		t.Fatal(err)
@@ -124,8 +129,40 @@ func TestInstallReplacesOtherContent(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "stale.so")); !os.IsNotExist(err) {
 		t.Errorf("stale.so survived the installation: %v", err)
 	}
+	if entries, _ := os.ReadDir(filepath.Dir(dir)); len(entries) != 1 {
+		t.Errorf("the older installation was left next to the new one: %v", entries)
+	}
 }
 
+func TestInstallRefusesOtherDirectory(t *testing.T) {
+	body := makeZip(t, map[string]string{lib: "library"})
+	srv, requests := serve(t, body)
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("mine"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := Install(srv.Client(), srv.URL, Archive{Name: "sdk.zip", SHA256: checksum(body)}, dir)
+	if err == nil || !strings.Contains(err.Error(), "holds no SDK installation") {
+		t.Fatalf("Install error = %v, want a refusal", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "notes.txt")); err != nil {
+		t.Errorf("a file of the user was removed: %v", err)
+	}
+	if requests.Load() != 0 {
+		t.Error("the archive was downloaded for a refused directory")
+	}
+}
+
+func TestInstalledNeedsLibrary(t *testing.T) {
+	dir := t.TempDir()
+	archive := Archive{SHA256: strings.Repeat("2", 64)}
+	if err := os.WriteFile(filepath.Join(dir, installedMarker), []byte(archive.SHA256+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if Installed(dir, archive) {
+		t.Error("Installed = true without the library")
+	}
+}
 func TestDefaultDir(t *testing.T) {
 	dir, err := DefaultDir("linux", "arm64")
 	if err != nil {
