@@ -29,15 +29,6 @@ func cString(s string) (*C.char, func()) {
 	return ptr, func() { C.free(unsafe.Pointer(ptr)) }
 }
 
-// takeString copies and releases a string that the SDK returned; NULL is "" and false.
-func takeString(thread *isolateThread, s *C.char) (string, bool) {
-	if s == nil {
-		return "", false
-	}
-	defer C.dxfg_v4_String_release(thread.ptr, s)
-	return C.GoString(s), true
-}
-
 func releaseJavaObject(thread *isolateThread, ptr unsafe.Pointer) {
 	if ptr != nil {
 		C.dxfg_v4_JavaObjectHandler_release(thread.ptr, (*C.dxfg_v4_java_object_handler)(ptr))
@@ -114,25 +105,26 @@ func NewAuthToken(kind int, args ...string) (*AuthTokenFields, error) {
 		if err := checkStatus(thread, C.dxfg_v4_AuthToken_getScheme(thread.ptr, token, &s)); err != nil {
 			return err
 		}
-		fields.Scheme, _ = takeString(thread, s)
+		fields.Scheme = takeString(thread, s)
 		if err := checkStatus(thread, C.dxfg_v4_AuthToken_getValue(thread.ptr, token, &s)); err != nil {
 			return err
 		}
-		fields.Value, _ = takeString(thread, s)
+		fields.Value = takeString(thread, s)
 		if err := checkStatus(thread, C.dxfg_v4_AuthToken_getHttpAuthorization(thread.ptr, token, &s)); err != nil {
 			return err
 		}
-		fields.HTTPAuthorization, _ = takeString(thread, s)
+		fields.HTTPAuthorization = takeString(thread, s)
 		s = nil
 		if err := checkStatus(thread, C.dxfg_v4_AuthToken_getUser(thread.ptr, token, &s)); err != nil {
 			return err
 		}
-		fields.User, fields.HasUser = takeString(thread, s)
+		fields.HasUser = s != nil
+		fields.User = takeString(thread, s)
 		s = nil
 		if err := checkStatus(thread, C.dxfg_v4_AuthToken_getPassword(thread.ptr, token, &s)); err != nil {
 			return err
 		}
-		fields.Password, _ = takeString(thread, s)
+		fields.Password = takeString(thread, s)
 		result = fields
 		return nil
 	})
@@ -177,7 +169,7 @@ func FormatTimePeriod(millis int64) (string, error) {
 		if err := checkStatus(thread, status); err != nil {
 			return err
 		}
-		result, _ = takeString(thread, s)
+		result = takeString(thread, s)
 		return nil
 	})
 	return result, err
@@ -257,7 +249,7 @@ func NewTimeFormatInZone(zoneID string) (*TimeFormat, error) {
 			if err := checkStatus(thread, C.dxfg_v4_TimeZone_getID(thread.ptr, zone, &s)); err != nil {
 				return err
 			}
-			if got, _ := takeString(thread, s); got != zoneID {
+			if got := takeString(thread, s); got != zoneID {
 				return fmt.Errorf("%w %q", ErrUnknownTimeZone, zoneID)
 			}
 		}
@@ -298,7 +290,7 @@ func (f *TimeFormat) Format(millis int64) (string, error) {
 		if err := checkStatus(thread, C.dxfg_v4_TimeFormat_format(thread.ptr, f.ptr(), C.int64_t(millis), &s)); err != nil {
 			return err
 		}
-		result, _ = takeString(thread, s)
+		result = takeString(thread, s)
 		return nil
 	})
 	runtime.KeepAlive(f)
