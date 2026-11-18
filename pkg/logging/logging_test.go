@@ -64,6 +64,7 @@ func TestListenerReceivesSdkRecords(t *testing.T) {
 	if err := logging.SetLevel(logging.All); err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { _ = logging.SetLevel(logging.Info) })
 	endpoint, err := api.NewEndpoint(api.Feed)
 	if err != nil {
 		t.Fatal(err)
@@ -81,12 +82,24 @@ func TestListenerReceivesSdkRecords(t *testing.T) {
 			if record.Time.IsZero() || record.ThreadName == "" || !strings.Contains(record.Formatted, record.Message) {
 				t.Errorf("incomplete record: %+v", record)
 			}
-			return
+			break
 		}
 		if time.Since(start) > 10*time.Second {
 			t.Fatal("no record of the SDK about 127.0.0.1 within 10 s")
 		}
 		time.Sleep(50 * time.Millisecond)
+	}
+
+	// With the level Off the SDK gives no records about another connection.
+	if err := logging.SetLevel(logging.Off); err != nil {
+		t.Fatal(err)
+	}
+	if err := endpoint.Connect("127.0.0.1:2"); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(time.Second)
+	if record, ok := got.find(func(r logging.Record) bool { return strings.Contains(r.Message, "127.0.0.1:2") }); ok {
+		t.Errorf("a record with the level Off: %+v", record)
 	}
 }
 

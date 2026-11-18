@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -58,8 +59,19 @@ func TestReportGoesToLogListener(t *testing.T) {
 	reportedClazzes.Delete(clazz)
 	t.Cleanup(func() { reportedClazzes.Delete(clazz) })
 
+	// The SDK listener is process-wide: keep only the records of the Go API, the SDK may log from its threads.
+	var mu sync.Mutex
 	var first, second []LogRecord
-	if err := SetLogListener(func(r LogRecord) { first = append(first, r) }); err != nil {
+	collect := func(to *[]LogRecord) func(LogRecord) {
+		return func(r LogRecord) {
+			if r.LoggerName == GoLoggerName {
+				mu.Lock()
+				defer mu.Unlock()
+				*to = append(*to, r)
+			}
+		}
+	}
+	if err := SetLogListener(collect(&first)); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = SetLogListener(nil) })
@@ -69,7 +81,7 @@ func TestReportGoesToLogListener(t *testing.T) {
 		t.Fatalf("records = %+v, want one warning about MESSAGE", first)
 	}
 	// A replaced listener gets nothing more.
-	if err := SetLogListener(func(r LogRecord) { second = append(second, r) }); err != nil {
+	if err := SetLogListener(collect(&second)); err != nil {
 		t.Fatal(err)
 	}
 	logGo(LogLevelError, "second %d", 2)
@@ -91,7 +103,11 @@ func TestReportGoesToLogListener(t *testing.T) {
 
 func TestPanickingLogListenerFallsBackToLog(t *testing.T) {
 	logged := captureLog(t)
-	if err := SetLogListener(func(LogRecord) { panic("boom") }); err != nil {
+	if err := SetLogListener(func(r LogRecord) {
+		if r.LoggerName == GoLoggerName {
+			panic("boom")
+		}
+	}); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = SetLogListener(nil) })

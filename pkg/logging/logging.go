@@ -87,9 +87,11 @@ type Record struct {
 
 const interceptableLogging = "com.devexperts.logging.InterceptableLogging"
 
-func setProperties(properties ...string) error {
-	for i := 0; i < len(properties); i += 2 {
-		if err := native.SetSystemProperty(properties[i], properties[i+1]); err != nil {
+// initLogging sets log.className to InterceptableLogging, as the C++ API does, and then the given properties.
+func initLogging(properties ...[2]string) error {
+	properties = append([][2]string{{"log.className", interceptableLogging}}, properties...)
+	for _, property := range properties {
+		if err := native.SetSystemProperty(property[0], property[1]); err != nil {
 			return err
 		}
 	}
@@ -103,8 +105,7 @@ func Init(level Level) error {
 	if err := level.valid(); err != nil {
 		return err
 	}
-	return setProperties("log.className", interceptableLogging, "log.level", level.String(), "err.level",
-		level.String())
+	return initLogging([2]string{"log.level", level.String()}, [2]string{"err.level", level.String()})
 }
 
 // InitFile makes the SDK write its log to the file instead of the console, the records of the level and above. The SDK
@@ -116,7 +117,7 @@ func InitFile(logFile string, level Level) error {
 	if err := level.valid(); err != nil {
 		return err
 	}
-	return setProperties("log.className", interceptableLogging, "log.file", logFile, "log.level", level.String())
+	return initLogging([2]string{"log.file", logFile}, [2]string{"log.level", level.String()})
 }
 
 // InitFiles is [InitFile] that also writes the records of errLevel and above (usually [Warn]) to errFile. It is
@@ -128,8 +129,8 @@ func InitFiles(logFile, errFile string, logLevel, errLevel Level) error {
 	if err := errLevel.valid(); err != nil {
 		return err
 	}
-	return setProperties("log.className", interceptableLogging, "log.file", logFile, "log.level",
-		logLevel.String(), "err.file", errFile, "err.level", errLevel.String())
+	return initLogging([2]string{"log.file", logFile}, [2]string{"log.level", logLevel.String()},
+		[2]string{"err.file", errFile}, [2]string{"err.level", errLevel.String()})
 }
 
 // SetLevel sets the level of the records that reach the listener (see [SetListener]), or else the console or the log
@@ -153,8 +154,9 @@ func SetErrLevel(level Level) error {
 //
 // The first call with a listener installs it in the SDK for the rest of the process: the SDK stops writing to the
 // console and to the files, also after SetListener(nil). Later calls replace the function. The records reach it from
-// the thread that logs them, one at a time: while it runs, the other threads that log wait, so it must return quickly
-// and must not call the API. A panic of the listener is written to the standard log.
+// the thread or goroutine that logs them, one at a time: while it runs, the others that log wait, so it must return
+// quickly and must not call the API. The levels ([SetLevel]) filter the records of the SDK only; the few records of
+// the Go API always arrive. A panic of the listener is written to the standard log.
 func SetListener(listener func(Record)) error {
 	if listener == nil {
 		return native.SetLogListener(nil)

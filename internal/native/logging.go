@@ -20,17 +20,20 @@ import (
 
 // Log levels: the values of dxfg_logging_level_t.
 const (
-	LogLevelAll int32 = iota
-	LogLevelTrace
-	LogLevelDebug
-	LogLevelInfo
-	LogLevelWarn
-	LogLevelError
-	LogLevelOff
+	LogLevelAll   int32 = C.DXFG_LOGGING_LEVEL_ALL
+	LogLevelTrace int32 = C.DXFG_LOGGING_LEVEL_TRACE
+	LogLevelDebug int32 = C.DXFG_LOGGING_LEVEL_DEBUG
+	LogLevelInfo  int32 = C.DXFG_LOGGING_LEVEL_INFO
+	LogLevelWarn  int32 = C.DXFG_LOGGING_LEVEL_WARN
+	LogLevelError int32 = C.DXFG_LOGGING_LEVEL_ERROR
+	LogLevelOff   int32 = C.DXFG_LOGGING_LEVEL_OFF
 )
 
 // GoLoggerName is the logger name of the records that the Go API itself reports.
 const GoLoggerName = "dxfeed-graal-go-api"
+
+// goLogPrefix starts the messages of the Go API in the standard log.
+const goLogPrefix = "dxfeed: "
 
 // LogRecord is a message of the SDK or of the Go API.
 type LogRecord struct {
@@ -49,6 +52,9 @@ type LogRecord struct {
 
 var (
 	logSink atomic.Pointer[func(LogRecord)]
+	// logDeliveryMu serializes the calls of the sink: the SDK serializes its own records, the records of the Go API
+	// come from any goroutine.
+	logDeliveryMu sync.Mutex
 
 	logListenerOnce sync.Once
 	logListenerErr  error
@@ -61,6 +67,8 @@ func SetLogListener(fn func(LogRecord)) error {
 		logSink.Store(nil)
 		return nil
 	}
+	// Stored first, so that the records logged right after the installation are not lost.
+	logSink.Store(&fn)
 	logListenerOnce.Do(func() {
 		logListenerErr = executeInIsolateThread(func(thread *isolateThread) error {
 			var listener *C.dxfg_v4_logging_listener_t
@@ -73,9 +81,9 @@ func SetLogListener(fn func(LogRecord)) error {
 		})
 	})
 	if logListenerErr != nil {
+		logSink.Store(nil)
 		return logListenerErr
 	}
-	logSink.Store(&fn)
 	return nil
 }
 
@@ -93,6 +101,24 @@ func SetErrLevel(level int32) error {
 	})
 }
 
+// deliverLog gives the record to the sink one call at a time. It returns false if there is no sink or the sink
+// panicked; the panic is written to the standard log, not to the sink, which would panic again.
+func deliverLog(sink *func(LogRecord), record LogRecord) (delivered bool) {
+	if sink == nil {
+		return false
+	}
+	logDeliveryMu.Lock()
+	defer logDeliveryMu.Unlock()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf(goLogPrefix+"log listener panicked: %v", r)
+			delivered = false
+		}
+	}()
+	(*sink)(record)
+	return true
+}
+
 func goStringOrEmpty(s *C.char) string {
 	if s == nil {
 		return ""
@@ -104,12 +130,6 @@ func goStringOrEmpty(s *C.char) string {
 func OnLog(thread *C.graal_isolatethread_t, level C.dxfg_logging_level_t, timestamp C.int64_t, threadName *C.char,
 	threadID C.int64_t, loggerName *C.char, message *C.char, exception *C.dxfg_exception_t, formatted *C.char,
 	_ unsafe.Pointer) {
-	// recoverCallback would report to the same sink: a panicking listener would be called again.
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("dxfeed: log listener panicked: %v", r)
-		}
-	}()
 	sink := logSink.Load()
 	if sink == nil {
 		return
@@ -130,30 +150,21 @@ func OnLog(thread *C.graal_isolatethread_t, level C.dxfg_logging_level_t, timest
 			StackTrace: goStringOrEmpty(exception.print_stack_trace),
 		}
 	}
-	(*sink)(record)
+	deliverLog(sink, record)
 }
 
-// logGo reports a message of the Go API: to the log listener if one is set, otherwise to the standard log.
+// logGo reports a message of the Go API: to the log listener if one is set, otherwise (or if the listener panics) to
+// the standard log.
 func logGo(level int32, format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
-	sink := logSink.Load()
-	if sink == nil {
-		log.Print("dxfeed: " + message)
-		return
+	record := LogRecord{
+		Level:      level,
+		Time:       time.Now(),
+		LoggerName: GoLoggerName,
+		Message:    message,
+		Formatted:  goLogPrefix + message,
 	}
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Printf("dxfeed: log listener panicked: %v", r)
-				log.Print("dxfeed: " + message)
-			}
-		}()
-		(*sink)(LogRecord{
-			Level:      level,
-			Time:       time.Now(),
-			LoggerName: GoLoggerName,
-			Message:    message,
-			Formatted:  "dxfeed: " + message,
-		})
-	}()
+	if !deliverLog(logSink.Load(), record) {
+		log.Print(record.Formatted)
+	}
 }

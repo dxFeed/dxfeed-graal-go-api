@@ -50,6 +50,8 @@ func TestIsolateArgumentsChild(t *testing.T) {
 				t.Errorf("call %d: error = %v, want ArgumentParsingFailed", i, err)
 			}
 		}
+	default:
+		t.Fatalf("unknown mode %q", os.Getenv(isolateArgsChild))
 	}
 }
 
