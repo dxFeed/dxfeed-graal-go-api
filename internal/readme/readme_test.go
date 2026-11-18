@@ -1,0 +1,45 @@
+// Package readme checks that the Go code in README.md compiles: every ```go block of the README must be the exact
+// text of a sample under cmd/samples, which the build and go vet compile.
+package readme
+
+import (
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"testing"
+)
+
+var goBlock = regexp.MustCompile("(?ms)^```go\n(.*?)^```$")
+
+func readNormalized(t *testing.T, path string) string {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.ReplaceAll(string(data), "\r\n", "\n")
+}
+
+func TestReadmeGoBlocksAreSamples(t *testing.T) {
+	samples, err := filepath.Glob("../../cmd/samples/*/main.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sampleTexts := make(map[string]string, len(samples))
+	for _, sample := range samples {
+		sampleTexts[readNormalized(t, sample)] = sample
+	}
+
+	blocks := goBlock.FindAllStringSubmatch(readNormalized(t, "../../README.md"), -1)
+	if len(blocks) == 0 {
+		t.Fatal("README.md has no ```go blocks")
+	}
+	for i, block := range blocks {
+		if _, ok := sampleTexts[block[1]]; !ok {
+			first, _, _ := strings.Cut(block[1], "\n")
+			t.Errorf("README.md ```go block %d (%q) is not the text of any cmd/samples/*/main.go; "+
+				"copy the sample into the README or the README block into a sample", i+1, first)
+		}
+	}
+}
