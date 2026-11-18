@@ -2,7 +2,7 @@ package order
 
 import (
 	"fmt"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/mathutil"
 )
 
 type Scope int32

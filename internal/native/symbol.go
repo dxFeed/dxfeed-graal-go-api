@@ -9,13 +9,13 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 )
 
 // newCSymbol builds a subscription symbol in C memory, so the SDK never sees Go memory; free it with freeCSymbol.
-// It accepts a string, *Osub.WildcardSymbol, *Osub.TimeSeriesSubscriptionSymbol and
-// *Osub.IndexedEventSubscriptionSymbol; anything else is an error.
+// It accepts a string, *osub.WildcardSymbol, *osub.TimeSeriesSubscriptionSymbol and
+// *osub.IndexedEventSubscriptionSymbol; anything else is an error.
 func newCSymbol(symbol any) (*C.dxfg_v4_symbol_t, error) {
 	switch value := symbol.(type) {
 	case string:
@@ -23,14 +23,14 @@ func newCSymbol(symbol any) (*C.dxfg_v4_symbol_t, error) {
 		s.supper._type = C.STRING
 		s.symbol = C.CString(value)
 		return &s.supper, nil
-	case *Osub.WildcardSymbol:
+	case *osub.WildcardSymbol:
 		if value == nil {
 			return nil, fmt.Errorf("nil %T symbol", symbol)
 		}
 		s := (*C.dxfg_v4_wildcard_symbol_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_wildcard_symbol_t{}))))
 		s.supper._type = C.WILDCARD
 		return &s.supper, nil
-	case *Osub.TimeSeriesSubscriptionSymbol:
+	case *osub.TimeSeriesSubscriptionSymbol:
 		if value == nil {
 			return nil, fmt.Errorf("nil %T symbol", symbol)
 		}
@@ -44,7 +44,7 @@ func newCSymbol(symbol any) (*C.dxfg_v4_symbol_t, error) {
 		s.symbol = inner
 		s.from_time = C.int64_t(value.FromTime())
 		return &s.supper, nil
-	case *Osub.IndexedEventSubscriptionSymbol:
+	case *osub.IndexedEventSubscriptionSymbol:
 		if value == nil {
 			return nil, fmt.Errorf("nil %T symbol", symbol)
 		}

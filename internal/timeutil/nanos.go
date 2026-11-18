@@ -1,6 +1,6 @@
 package timeutil
 
-import "github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
+import "github.com/dxfeed/dxfeed-graal-go-api/internal/mathutil"
 
 const (
 	NanosInMillis = 1_000_000

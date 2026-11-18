@@ -1,10 +1,10 @@
 package quote
 
 import (
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/formatutil"
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/mathutil"
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/timeutil"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/formatutil"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/timeutil"
 	"math"
 	"strconv"
 )

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
@@ -26,10 +26,10 @@ func TestSubscriptionSymbolKinds(t *testing.T) {
 
 	symbols := []any{
 		"AAPL",
-		Osub.NewWildcardSymbol(),
-		Osub.NewTimeSeriesSubscriptionSymbol("IBM", 1000),
-		Osub.NewIndexedEventSubscriptionSymbol("MSFT", order.Default()),
-		Osub.NewIndexedEventSubscriptionSymbol(Osub.NewTimeSeriesSubscriptionSymbol("TSLA", 0), order.Default()),
+		osub.NewWildcardSymbol(),
+		osub.NewTimeSeriesSubscriptionSymbol("IBM", 1000),
+		osub.NewIndexedEventSubscriptionSymbol("MSFT", order.Default()),
+		osub.NewIndexedEventSubscriptionSymbol(osub.NewTimeSeriesSubscriptionSymbol("TSLA", 0), order.Default()),
 	}
 	for _, symbol := range symbols {
 		if err := sub.AddSymbol(symbol); err != nil {
@@ -55,11 +55,11 @@ func TestSubscriptionSymbolKinds(t *testing.T) {
 	if err := sub.AddSymbols("AAPL", 42); err == nil {
 		t.Error("AddSymbols with an int returned no error")
 	}
-	if err := sub.RemoveSymbols(Osub.NewTimeSeriesSubscriptionSymbol(42, 0)); err == nil {
+	if err := sub.RemoveSymbols(osub.NewTimeSeriesSubscriptionSymbol(42, 0)); err == nil {
 		t.Error("RemoveSymbols of a time series symbol of an int returned no error")
 	}
-	for _, symbol := range []any{(*Osub.WildcardSymbol)(nil), (*Osub.TimeSeriesSubscriptionSymbol)(nil),
-		(*Osub.IndexedEventSubscriptionSymbol)(nil), Osub.NewIndexedEventSubscriptionSymbol("AAPL", nil)} {
+	for _, symbol := range []any{(*osub.WildcardSymbol)(nil), (*osub.TimeSeriesSubscriptionSymbol)(nil),
+		(*osub.IndexedEventSubscriptionSymbol)(nil), osub.NewIndexedEventSubscriptionSymbol("AAPL", nil)} {
 		if err := sub.AddSymbol(symbol); err == nil {
 			t.Errorf("AddSymbol(%#v) returned no error", symbol)
 		}

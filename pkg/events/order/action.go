@@ -1,6 +1,6 @@
 package order
 
-import "github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
+import "github.com/dxfeed/dxfeed-graal-go-api/internal/mathutil"
 
 type Action int32
 

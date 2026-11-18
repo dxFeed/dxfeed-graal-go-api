@@ -1,7 +1,7 @@
 package events
 
 import (
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/formatutil"
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/formatutil"
 )
 
 type InstrumentProfile struct {

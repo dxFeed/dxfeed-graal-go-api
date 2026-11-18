@@ -1,6 +1,6 @@
 package profile
 
-import "github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
+import "github.com/dxfeed/dxfeed-graal-go-api/internal/mathutil"
 
 type TradingStatus int64
 

@@ -1,6 +1,6 @@
 package trade
 
-import "github.com/dxfeed/dxfeed-graal-go-api/pkg/mathutil"
+import "github.com/dxfeed/dxfeed-graal-go-api/internal/mathutil"
 
 type Direction int32
 
