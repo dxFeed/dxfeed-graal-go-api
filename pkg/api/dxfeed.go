@@ -5,10 +5,13 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 )
 
+// DXFeed is the feed of an endpoint; get it with DXEndpoint.GetFeed.
 type DXFeed struct {
 	feed *native.DXFeedHandle
 }
 
+// CreateSubscription creates a subscription to events of the given types. Add symbols and a listener to it, and close
+// it when it is no longer needed.
 func (f *DXFeed) CreateSubscription(eventType ...eventcodes.EventCode) (*DXFeedSubscription, error) {
 	data := make([]int32, len(eventType))
 	for i := range data {

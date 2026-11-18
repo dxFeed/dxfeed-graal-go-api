@@ -7,3 +7,7 @@
     `context.Context`. If it ends first, the call returns `ctx.Err()` and the wait goes on in the background;
     `CloseAndAwaitTermination` closes the endpoint even with a context that is already done.
   * `DXFeedSubscription.IsClosed` reports whether `Close` succeeded; before, it always returned `true`.
+  * The connection states `common.NotConnected`, `Connecting`, `Connected` and `Closed` are exported, so a state
+    listener can compare them.
+  * Every exported identifier has a doc comment, and runnable examples show the endpoint, the subscription, the
+    publisher and `common.JavaError`.

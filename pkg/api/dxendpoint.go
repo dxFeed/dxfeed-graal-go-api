@@ -1,3 +1,5 @@
+// Package api connects to dxFeed: an endpoint (DXEndpoint) gives a feed to subscribe to market events and a publisher
+// to publish them. It wraps the dxFeed Graal Native SDK.
 package api
 
 import (
@@ -8,12 +10,19 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 )
 
+// Roles of an endpoint, as in the dxFeed Java API DXEndpoint.Role.
 const (
+	// Feed receives events from a remote address with conflation of fast updates.
 	Feed common.Role = iota
+	// OnDemandFeed is a feed for historical data replay on demand.
 	OnDemandFeed
+	// StreamFeed receives every event, without conflation.
 	StreamFeed
+	// Publisher publishes events to a remote address.
 	Publisher
+	// StreamPublisher publishes every event, without conflation.
 	StreamPublisher
+	// LocalHub connects a feed and a publisher in the same process, without a network connection.
 	LocalHub
 )
 
@@ -23,6 +32,7 @@ var (
 	_ io.Closer = (*DXFeedSubscription)(nil)
 )
 
+// DXEndpoint is a connection to dxFeed: create it with NewEndpoint, connect it with Connect and close it with Close.
 type DXEndpoint struct {
 	role            common.Role
 	endpointHandle  *native.DXEndpointHandle
@@ -32,12 +42,15 @@ type DXEndpoint struct {
 	stateListenerList []common.ConnectionStateListener
 }
 
+// UpdateState is called by the SDK when the connection state changes and notifies the state listeners; applications
+// do not call it.
 func (e *DXEndpoint) UpdateState(old common.ConnectionState, new common.ConnectionState) {
 	for _, listener := range e.stateListenerList {
 		listener.UpdateState(old, new)
 	}
 }
 
+// NewEndpoint creates an endpoint with the given role and the default properties.
 func NewEndpoint(role common.Role) (*DXEndpoint, error) {
 	handle, err := native.NewDXEndpointHandle(role)
 	return newEndpoint(role, handle, err)
@@ -61,19 +74,25 @@ func newEndpoint(role common.Role, handle *native.DXEndpointHandle, err error) (
 	return e, nil
 }
 
+// NewEndpointWithProperties creates an endpoint with the given role and properties, such as "dxfeed.address".
 func NewEndpointWithProperties(role common.Role, properties map[string]string) (*DXEndpoint, error) {
 	handle, err := native.NewDXEndpointHandleWithProperties(role, properties)
 	return newEndpoint(role, handle, err)
 }
 
+// Connect connects the endpoint to the address, for example "demo.dxfeed.com:7300", and returns at once; the
+// connection is made in the background.
 func (e *DXEndpoint) Connect(address string) error {
 	return e.endpointHandle.Connect(address)
 }
 
+// Close closes the endpoint and its connections and releases its native resources at once, without waiting for
+// pending data.
 func (e *DXEndpoint) Close() error {
 	return e.endpointHandle.Close()
 }
 
+// GetFeed returns the feed of the endpoint to create subscriptions.
 func (e *DXEndpoint) GetFeed() (*DXFeed, error) {
 	handle, err := e.endpointHandle.GetFeed()
 	if err != nil {
@@ -84,6 +103,7 @@ func (e *DXEndpoint) GetFeed() (*DXFeed, error) {
 	return e.feedHandle, nil
 }
 
+// GetPublisher returns the publisher of the endpoint to publish events.
 func (e *DXEndpoint) GetPublisher() (*DXPublisher, error) {
 	handle, err := e.endpointHandle.GetPublisher()
 	if err != nil {
@@ -133,10 +153,13 @@ func runWithContext(ctx context.Context, wait func() error) error {
 	}
 }
 
+// AddListener adds a listener of connection state changes. It is not safe to call concurrently with the other listener
+// methods.
 func (e *DXEndpoint) AddListener(listener common.ConnectionStateListener) {
 	e.stateListenerList = append(e.stateListenerList, listener)
 }
 
+// RemoveListener removes a listener added with AddListener.
 func (e *DXEndpoint) RemoveListener(listener common.ConnectionStateListener) {
 	e.stateListenerList = removeStateListenerFromSlice(e.stateListenerList, listener)
 }
