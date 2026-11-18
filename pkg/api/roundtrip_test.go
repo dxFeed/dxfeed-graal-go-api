@@ -13,8 +13,11 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/greeks"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/marketmaker"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/misc"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/optionsale"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/orderimbalance"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/series"
@@ -199,6 +202,66 @@ func TestPublishSubscribeRoundTrip(t *testing.T) {
 			_ = e.SetSequence(7)
 			e.SetVersion(8)
 			e.SetText(&description)
+			return e
+		}},
+		{eventcodes.OptionSale, func(symbol string) events.EventType {
+			e := optionsale.NewOptionSale(symbol)
+			e.SetIndex(9)
+			e.SetTime(roundTripTime)
+			_ = e.SetSequence(6)
+			e.SetExchangeCode('C')
+			e.SetPrice(3.5)
+			e.SetSize(10)
+			e.SetBidPrice(3.25)
+			e.SetAskPrice(3.75)
+			// The data scheme keeps the sale conditions as a short string of up to 8 characters.
+			conditions := "FTI"
+			e.SetExchangeSaleConditions(&conditions)
+			e.SetAggressorSide(side.Buy)
+			e.SetIsValidTick(true)
+			e.SetUnderlyingPrice(150.5)
+			e.SetVolatility(0.35)
+			e.SetDelta(0.45)
+			e.SetOptionSymbol(&description)
+			return e
+		}},
+		{eventcodes.MarketMaker, func(symbol string) events.EventType {
+			e := marketmaker.NewMarketMaker(symbol)
+			e.SetExchangeCode('Q')
+			mmid := "NSDQ"
+			_ = e.SetMarketMaker(&mmid)
+			e.SetBidTime(roundTripTime)
+			e.SetBidPrice(22.5)
+			e.SetBidSize(100)
+			e.SetBidCount(2)
+			e.SetAskTime(roundTripTime + 1000)
+			e.SetAskPrice(23.5)
+			e.SetAskSize(200)
+			e.SetAskCount(3)
+			return e
+		}},
+		{eventcodes.OtcMarketsOrder, func(symbol string) events.EventType {
+			e := order.NewOtcMarketsOrder(symbol)
+			e.SetSide(side.Sell)
+			e.SetPrice(24.5)
+			e.SetSize(9)
+			e.SetQuoteAccessPayment(-3)
+			e.SetOtcMarketsPriceType(order.OtcMarketsPriceTypeActual)
+			e.SetOpen(true)
+			e.SetAutoExecution(true)
+			return e
+		}},
+		{eventcodes.OrderImbalance, func(symbol string) events.EventType {
+			e := orderimbalance.NewOrderImbalance(symbol)
+			e.SetTime(roundTripTime)
+			_ = e.SetSequence(8)
+			e.SetRefPrice(25.5)
+			e.SetPairedSize(1000)
+			e.SetImbalanceSize(300)
+			e.SetNearPrice(25.25)
+			e.SetFarPrice(25.75)
+			e.SetImbalanceSide(orderimbalance.ImbalanceSideBuy)
+			e.SetAuctionType(orderimbalance.AuctionTypeClosing)
 			return e
 		}},
 	}

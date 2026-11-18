@@ -459,6 +459,15 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   is an `Order` extension that introduces analytic information, such as adding iceberg-related information to a given
   order
 
+- [x] [OtcMarketsOrder](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/OtcMarketsOrder.html)
+  is an order of the OTC Markets: a bid or an ask of an OTC Markets quote
+
+- [x] [MarketMaker](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/MarketMaker.html)
+  is the top bid and ask of one market participant on one exchange
+
+- [x] [OrderImbalance](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/OrderImbalance.html)
+  is the imbalance of the buy and sell orders of an auction
+
 - [x] [Trade](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/Trade.html)
   is a snapshot of the price and size of the last trade during regular trading hours and an overall day volume and day
   turnover
@@ -496,7 +505,7 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [X] [Underlying](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/option/Underlying.html)
   is a snapshot of computed values available for an option underlying symbol based on the market’s option prices
 
-- [ ] [OptionSale](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/OptionSale.html)
+- [x] [OptionSale](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/OptionSale.html)
   represents a trade or another market event with the price (for example, market open/close price, etc.) for each option
   symbol listed under the specified `Underlying`
 

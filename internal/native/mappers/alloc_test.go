@@ -8,11 +8,15 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/greeks"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/marketmaker"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/misc"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/optionsale"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/orderimbalance"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/series"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/side"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/summary"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/theoprice"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
@@ -44,11 +48,30 @@ func eventsWithAllStrings() []events.EventType {
 	cfg.SetAttachment(str("attachment"))
 	tc := misc.NewTextConfiguration("TEXT_CONFIGURATION")
 	tc.SetText(str("text"))
+	os := optionsale.NewOptionSale("OPTION_SALE")
+	os.SetExchangeSaleConditions(str("conditions"))
+	os.SetOptionSymbol(str(".AAPL260116C200"))
+	os.SetAggressorSide(side.Sell)
+	os.SetDelta(0.5)
+	mm := marketmaker.NewMarketMaker("MARKET_MAKER")
+	mm.SetExchangeCode('Q')
+	_ = mm.SetMarketMaker(str("NSDQ"))
+	mm.SetBidCount(3)
+	otc := order.NewOtcMarketsOrder("OTC")
+	otc.SetMarketMaker(str("MM"))
+	otc.SetQuoteAccessPayment(-5)
+	otc.SetOtcMarketsPriceType(order.OtcMarketsPriceTypeWanted)
+	otc.SetOpen(true)
+	oi := orderimbalance.NewOrderImbalance("IMBALANCE")
+	ntv, _ := order.ValueOfName("NTV")
+	oi.SetSource(ntv)
+	oi.SetImbalanceSide(orderimbalance.ImbalanceSideSell)
+	oi.SetAuctionType(orderimbalance.AuctionTypeClosing)
 	return []events.EventType{
 		candle.NewCandle("CANDLE{=d}"), greeks.NewGreeks("GREEKS"), ao, o, so, p, quote.NewQuote("QUOTE"),
 		summary.NewSummary("SUMMARY"), ts, trade.NewTrade("TRADE"), trade.NewTradeETH("TRADE_ETH"),
 		underlying.NewUnderlying("UNDERLYING"), candle.NewDailyCandle("DAILY{=d}"), series.NewSeries("SERIES"),
-		theoprice.NewTheoPrice("THEO"), msg, tm, cfg, tc,
+		theoprice.NewTheoPrice("THEO"), msg, tm, cfg, tc, os, mm, otc, oi,
 	}
 }
 

@@ -41,6 +41,10 @@ func ParseEventTypes(value string) []eventcodes.EventCode {
 		"textmessage":       eventcodes.TextMessage,
 		"configuration":     eventcodes.Configuration,
 		"textconfiguration": eventcodes.TextConfiguration,
+		"optionsale":        eventcodes.OptionSale,
+		"marketmaker":       eventcodes.MarketMaker,
+		"otcmarketsorder":   eventcodes.OtcMarketsOrder,
+		"orderimbalance":    eventcodes.OrderImbalance,
 	}
 	var values []eventcodes.EventCode
 	if value == "all" {

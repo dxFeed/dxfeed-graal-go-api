@@ -29,6 +29,10 @@ func AvailableMappers() map[int32]MapperInterface {
 		C.DXFG_EVENT_CONFIGURATION:  ConfigurationMapper{},
 
 		C.DXFG_EVENT_TEXT_CONFIGURATION: TextConfigurationMapper{},
+		C.DXFG_EVENT_OPTION_SALE:        OptionSaleMapper{},
+		C.DXFG_EVENT_MARKET_MAKER:       MarketMakerMapper{},
+		C.DXFG_EVENT_OTC_MARKETS_ORDER:  OtcMarketsOrderMapper{},
+		C.DXFG_EVENT_ORDER_IMBALANCE:    OrderImbalanceMapper{},
 	}
 	return eventMappers
 }
