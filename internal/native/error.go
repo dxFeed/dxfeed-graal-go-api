@@ -10,6 +10,40 @@ import (
 	"fmt"
 )
 
+// checkStatus turns the status of a dxfg_v4 call into an error. A failed call leaves a Java exception on the isolate
+// thread; it is taken right away, so that a later failure does not report it again.
+func checkStatus(thread *isolateThread, status C.int32_t) error {
+	if status == dxfgExecuteSuccessfully {
+		return nil
+	}
+	if err := takeJavaException(thread.ptr); err != nil {
+		return err
+	}
+	return fmt.Errorf("native: call failed with code %d without a pending java exception", int32(status))
+}
+
+// takeJavaException takes and releases the pending Java exception of the thread; nil if there is none.
+func takeJavaException(thread *C.graal_isolatethread_t) error {
+	var ptr *C.dxfg_v4_exception_t
+	if C.dxfg_v4_get_and_clear_thread_exception(thread, &ptr) != dxfgExecuteSuccessfully || ptr == nil {
+		return nil
+	}
+	defer C.dxfg_v4_Exception_release(thread, ptr)
+	return JavaError{
+		ClassName:  C.GoString(ptr.class_name),
+		Message:    C.GoString(ptr.message),
+		StackTrace: C.GoString(ptr.print_stack_trace),
+	}
+}
+
+func checkIsolateCall(call func() C.int) error {
+	e := call()
+	if !errors.Is((IsolateError)(e), NoError) {
+		return (IsolateError)(e)
+	}
+	return nil
+}
+
 func checkCall(call func()) error {
 	call()
 	return getJavaThreadErrorIfExist()
@@ -26,26 +60,9 @@ func checkResultCall(call func() C.int32_t) error {
 	return fmt.Errorf("native: call failed with code %d without a pending java exception", int32(result))
 }
 
-func checkIsolateCall(call func() C.int) error {
-	e := call()
-	if !errors.Is((IsolateError)(e), NoError) {
-		return (IsolateError)(e)
-	}
-	return nil
-}
-
 func getJavaThreadErrorIfExist() error {
 	return executeInIsolateThread(func(thread *isolateThread) error {
-		ptr := C.dxfg_get_and_clear_thread_exception_t(thread.ptr)
-		if ptr == nil {
-			return nil
-		}
-		defer C.dxfg_Exception_release(thread.ptr, ptr)
-		return JavaError{
-			ClassName:  C.GoString(ptr.class_name),
-			Message:    C.GoString(ptr.message),
-			StackTrace: C.GoString(ptr.print_stack_trace),
-		}
+		return takeJavaException(thread.ptr)
 	})
 }
 

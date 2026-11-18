@@ -39,7 +39,7 @@ func (c CandleMapper) GoEvent(nativeEvent unsafe.Pointer) interface{} {
 func (c CandleMapper) CEvent(event interface{}) unsafe.Pointer {
 	candleEvent := event.(*candle.Candle)
 
-	native := (*C.dxfg_candle_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_candle_t{}))))
+	native := (*C.dxfg_candle_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_candle_t{}))))
 	native.event_type.clazz = C.DXFG_EVENT_CANDLE
 	native.event_symbol = C.CString(*candleEvent.EventSymbol().Symbol())
 	native.event_time = C.int64_t(candleEvent.EventTime())

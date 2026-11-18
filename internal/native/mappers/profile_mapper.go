@@ -15,7 +15,7 @@ type ProfileMapper struct {
 
 func (m ProfileMapper) CEvent(event interface{}) unsafe.Pointer {
 	profile := event.(*profile.Profile)
-	p := (*C.dxfg_profile_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_profile_t{}))))
+	p := (*C.dxfg_profile_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_profile_t{}))))
 	p.market_event.event_type.clazz = C.DXFG_EVENT_PROFILE
 	p.market_event.event_symbol = C.CString(*profile.EventSymbol())
 	p.market_event.event_time = C.int64_t(profile.EventTime())

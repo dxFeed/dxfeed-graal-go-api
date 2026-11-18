@@ -47,7 +47,7 @@ func (a AnalyticOrderMapper) GoEvent(native unsafe.Pointer) interface{} {
 func (a AnalyticOrderMapper) CEvent(event interface{}) unsafe.Pointer {
 	orderEvent := event.(*order.AnalyticOrder)
 
-	q := (*C.dxfg_analytic_order_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_analytic_order_t{}))))
+	q := (*C.dxfg_analytic_order_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_analytic_order_t{}))))
 	q.order_base.order_base.market_event.event_type.clazz = C.DXFG_EVENT_ANALYTIC_ORDER
 
 	q.order_base.order_base.market_event.event_symbol = C.CString(*orderEvent.EventSymbol())

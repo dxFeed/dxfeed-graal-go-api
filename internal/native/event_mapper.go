@@ -21,7 +21,7 @@ func newEventMapper() *eventMapper {
 	return &eventMapper{mappers: mappers.AvailableMappers()}
 }
 
-func (m *eventMapper) goEvents(eventsList *C.dxfg_event_type_list) []interface{} {
+func (m *eventMapper) goEvents(eventsList *C.dxfg_v4_event_type_list) []interface{} {
 	if eventsList == nil || eventsList.elements == nil || int(eventsList.size) == 0 {
 		return nil
 	}
@@ -39,7 +39,7 @@ func (m *eventMapper) goEvents(eventsList *C.dxfg_event_type_list) []interface{}
 }
 
 // goEvent returns nil for an event class that has no Go mapper yet; such events are skipped.
-func (m *eventMapper) goEvent(event *C.dxfg_event_type_t) interface{} {
+func (m *eventMapper) goEvent(event *C.dxfg_v4_event_type_t) interface{} {
 	if event == nil {
 		return nil
 	}

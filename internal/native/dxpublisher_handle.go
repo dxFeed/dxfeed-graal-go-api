@@ -17,7 +17,7 @@ type DXPublisherHandle struct {
 	handle Handler
 }
 
-func NewDXPublisherHandle(ptr *C.dxfg_publisher_t) *DXPublisherHandle {
+func NewDXPublisherHandle(ptr *C.dxfg_v4_publisher_t) *DXPublisherHandle {
 	return &DXPublisherHandle{handle: NewJavaHandle(unsafe.Pointer(ptr))}
 }
 
@@ -39,14 +39,13 @@ func (p *DXPublisherHandle) Publish(events []interface{}) error {
 			return fmt.Errorf("cannot publish %T: event code %d is not supported yet", event, e.Type())
 		}
 	}
-	err := executeInIsolateThread(func(thread *isolateThread) error {
-		l := NewListMapper[C.dxfg_event_type_list, interface{}](events)
-		_ = C.dxfg_DXPublisher_publishEvents(thread.ptr, p.ptr(), (*C.dxfg_event_type_list)(unsafe.Pointer(l)))
-		return nil
+	return executeInIsolateThread(func(thread *isolateThread) error {
+		l := NewListMapper[C.dxfg_v4_event_type_list, interface{}](events)
+		return checkStatus(thread, C.dxfg_v4_DXPublisher_publishEvents(thread.ptr, p.ptr(),
+			(*C.dxfg_v4_event_type_list)(unsafe.Pointer(l))))
 	})
-	return err
 }
 
-func (p *DXPublisherHandle) ptr() *C.dxfg_publisher_t {
-	return (*C.dxfg_publisher_t)(p.handle.Ptr())
+func (p *DXPublisherHandle) ptr() *C.dxfg_v4_publisher_t {
+	return (*C.dxfg_v4_publisher_t)(p.handle.Ptr())
 }

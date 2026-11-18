@@ -16,7 +16,7 @@ type QuoteMapper struct {
 func (m QuoteMapper) CEvent(event interface{}) unsafe.Pointer {
 	quoteEvent := event.(*quote.Quote)
 
-	q := (*C.dxfg_quote_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_quote_t{}))))
+	q := (*C.dxfg_quote_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_quote_t{}))))
 	q.market_event.event_type.clazz = C.DXFG_EVENT_QUOTE
 	q.market_event.event_symbol = C.CString(*quoteEvent.EventSymbol())
 	q.market_event.event_time = C.int64_t(quoteEvent.EventTime())
