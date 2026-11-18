@@ -40,11 +40,19 @@ func (e *ThreadPoolExecutor) Close() error {
 }
 
 func (e *ThreadPoolExecutor) handle() *native.ExecutorHandle {
+	if e == nil {
+		return nil
+	}
 	return e.h
 }
 
 // InPlaceExecutor queues the notifications and runs them on the goroutine that calls ProcessAllPendingTasks, as the
-// C++ API InPlaceExecutor does. It lets an application receive events in its own loop, one goroutine at a time.
+// C++ API InPlaceExecutor does. It lets an application receive events in its own loop: call ProcessAllPendingTasks
+// from one goroutine, since calls from several goroutines run the listeners concurrently, and do not Close the executor
+// while a call runs.
+//
+// The waits of an endpoint built with this executor (AwaitProcessed, AwaitNotConnected, CloseAndAwaitTermination)
+// complete only while ProcessAllPendingTasks keeps being called, so do not wait on the goroutine that calls it.
 type InPlaceExecutor struct {
 	h *native.ExecutorHandle
 }
@@ -69,5 +77,8 @@ func (e *InPlaceExecutor) Close() error {
 }
 
 func (e *InPlaceExecutor) handle() *native.ExecutorHandle {
+	if e == nil {
+		return nil
+	}
 	return e.h
 }

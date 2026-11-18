@@ -85,8 +85,7 @@ func newEndpoint(role common.Role, handle *native.DXEndpointHandle, err error) (
 
 // NewEndpointWithProperties creates an endpoint with the given role and properties, such as "dxfeed.address".
 func NewEndpointWithProperties(role common.Role, properties map[string]string) (*DXEndpoint, error) {
-	handle, err := native.NewDXEndpointHandleWithProperties(role, properties)
-	return newEndpoint(role, handle, err)
+	return NewEndpointBuilder().WithRole(role).WithProperties(properties).Build()
 }
 
 // Connect connects the endpoint to the address, for example "demo.dxfeed.com:7300", and returns at once; the
@@ -163,15 +162,20 @@ func (e *DXEndpoint) EventTypes() ([]eventcodes.EventCode, error) {
 // maxAggregationPeriod is the longest aggregation period the SDK accepts.
 const maxAggregationPeriod = 24 * time.Hour
 
-// SetRequestedAggregationPeriod asks the servers to deliver the events of the endpoint conflated over the given period,
-// in milliseconds; zero asks for real-time delivery. The servers keep the period within their own bounds: see
-// AggregationPeriodInfo. The period must be between 0 and 24 hours. The property "dxfeed.aggregationPeriod" and the
-// address option "[aggregationPeriod=5s]" do the same at creation.
+// SetRequestedAggregationPeriod asks the servers to deliver the events of the endpoint conflated over the given period;
+// zero asks for real-time delivery. The SDK keeps whole milliseconds: a shorter period is rounded up to 1 ms. The
+// servers keep the period within their own bounds: see AggregationPeriodInfo. The period must be between 0 and 24
+// hours. The property "dxfeed.requestedAggregationPeriod" and the address option "[requestedAggregationPeriod=5s]" do
+// the same at creation.
 func (e *DXEndpoint) SetRequestedAggregationPeriod(period time.Duration) error {
 	if period < 0 || period > maxAggregationPeriod {
 		return fmt.Errorf("dxfeed: aggregation period %v is out of range [0, %v]", period, maxAggregationPeriod)
 	}
-	return e.endpointHandle.SetRequestedAggregationPeriodMillis(period.Milliseconds())
+	millis := period.Milliseconds()
+	if millis == 0 && period > 0 {
+		millis = 1
+	}
+	return e.endpointHandle.SetRequestedAggregationPeriodMillis(millis)
 }
 
 // ClearRequestedAggregationPeriod withdraws the requested aggregation period: the servers use their default one.

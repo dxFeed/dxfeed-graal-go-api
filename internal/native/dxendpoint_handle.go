@@ -36,14 +36,6 @@ func NewDXEndpointHandle(role common.Role) (*DXEndpointHandle, error) {
 	return &DXEndpointHandle{self: NewJavaHandle(unsafe.Pointer(ptr))}, nil
 }
 
-func NewDXEndpointHandleWithProperties(role common.Role, properties map[string]string) (*DXEndpointHandle, error) {
-	steps := []BuilderStep{WithRole(role)}
-	for key, value := range properties {
-		steps = append(steps, WithProperty(key, value))
-	}
-	return BuildDXEndpointHandle(steps...)
-}
-
 // BuilderStep is one setting of an endpoint builder; the steps are applied in order, so a later one wins.
 type BuilderStep interface {
 	apply(thread *isolateThread, builder *C.dxfg_v4_endpoint_builder_t) C.int32_t
@@ -152,12 +144,13 @@ func (e *DXEndpointHandle) Role() (common.Role, error) {
 
 // State returns the state of the endpoint; Closed after Close, whose Free drops the handle.
 func (e *DXEndpointHandle) State() (common.ConnectionState, error) {
-	if e.ptr() == nil {
+	ptr := e.ptr()
+	if ptr == nil {
 		return common.Closed, nil
 	}
 	var state C.dxfg_v4_endpoint_state_t
 	err := executeInIsolateThread(func(thread *isolateThread) error {
-		return checkStatus(thread, C.dxfg_v4_DXEndpoint_getState(thread.ptr, e.ptr(), &state))
+		return checkStatus(thread, C.dxfg_v4_DXEndpoint_getState(thread.ptr, ptr, &state))
 	})
 	return common.ConnectionState(state), err
 }

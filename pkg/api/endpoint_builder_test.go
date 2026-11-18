@@ -22,11 +22,20 @@ func buildEndpoint(t *testing.T, b *EndpointBuilder) *DXEndpoint {
 	return endpoint
 }
 
+func wantPeriod(t *testing.T, endpoint *DXEndpoint, want time.Duration) {
+	t.Helper()
+	period, ok, err := endpoint.RequestedAggregationPeriod()
+	if err != nil || !ok || period != want {
+		t.Errorf("RequestedAggregationPeriod() = %v, %v, %v; want %v", period, ok, err, want)
+	}
+}
+
 func TestEndpointBuilder(t *testing.T) {
 	endpoint := buildEndpoint(t, NewEndpointBuilder().
 		WithRole(LocalHub).
 		WithName("builder-test").
-		WithProperties(map[string]string{"dxfeed.aggregationPeriod": "1s"}))
+		WithProperties(map[string]string{"dxfeed.requestedAggregationPeriod": "1s"}))
+	wantPeriod(t, endpoint, time.Second)
 	if endpoint.Role() != LocalHub {
 		t.Errorf("Role() = %v, want LocalHub", endpoint.Role())
 	}
@@ -57,10 +66,17 @@ func TestEndpointBuilderSupportsProperty(t *testing.T) {
 
 func TestEndpointBuilderPropertiesFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "dxfeed.properties")
-	if err := os.WriteFile(path, []byte("dxfeed.aggregationPeriod=2s\n"), 0o600); err != nil {
+	if err := os.WriteFile(path, []byte("dxfeed.requestedAggregationPeriod=2s\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	buildEndpoint(t, NewEndpointBuilder().WithPropertiesFile(path))
+	wantPeriod(t, buildEndpoint(t, NewEndpointBuilder().WithPropertiesFile(path)), 2*time.Second)
+	// The steps apply in the order of the calls: a later property wins over the file and over an earlier property.
+	wantPeriod(t, buildEndpoint(t, NewEndpointBuilder().
+		WithPropertiesFile(path).
+		WithProperty("dxfeed.requestedAggregationPeriod", "3s")), 3*time.Second)
+	wantPeriod(t, buildEndpoint(t, NewEndpointBuilder().
+		WithProperty("dxfeed.requestedAggregationPeriod", "3s").
+		WithPropertiesFile(path)), 2*time.Second)
 
 	_, err := NewEndpointBuilder().WithPropertiesFile(filepath.Join(t.TempDir(), "missing.properties")).Build()
 	if err == nil {
@@ -130,6 +146,10 @@ func TestEndpointAggregationPeriod(t *testing.T) {
 	if period, ok, _ := endpoint.RequestedAggregationPeriod(); !ok || period != 0 {
 		t.Fatalf("RequestedAggregationPeriod() = %v, %v; want 0 (real time)", period, ok)
 	}
+	if err := endpoint.SetRequestedAggregationPeriod(500 * time.Microsecond); err != nil {
+		t.Fatalf("SetRequestedAggregationPeriod(500us): %v", err)
+	}
+	wantPeriod(t, endpoint, time.Millisecond)
 	for _, bad := range []time.Duration{-time.Second, 25 * time.Hour} {
 		if err := endpoint.SetRequestedAggregationPeriod(bad); err == nil {
 			t.Errorf("SetRequestedAggregationPeriod(%v): no error", bad)
@@ -221,6 +241,10 @@ func TestClosedExecutor(t *testing.T) {
 	}
 	if _, err := NewEndpointBuilder().WithExecutor(executor).Build(); err == nil {
 		t.Error("Build with a closed executor: no error")
+	}
+	var nilExecutor *InPlaceExecutor
+	if _, err := NewEndpointBuilder().WithExecutor(nilExecutor).Build(); err == nil {
+		t.Error("Build with a nil *InPlaceExecutor: no error")
 	}
 	inPlace, err := NewInPlaceExecutor()
 	if err != nil {

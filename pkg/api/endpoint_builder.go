@@ -67,7 +67,8 @@ func (b *EndpointBuilder) WithPropertiesFile(path string) *EndpointBuilder {
 }
 
 // WithExecutor sets the executor of the notifications of the endpoints: event listeners, state changes and the like.
-// nil restores the SDK's default executor. Build fails if the executor is closed.
+// nil restores the SDK's default executor. Build fails if the executor is closed or is a nil pointer, and an executor
+// closed while Build runs may leave the endpoint with the default executor.
 func (b *EndpointBuilder) WithExecutor(executor Executor) *EndpointBuilder {
 	b.executor = executor
 	return b
@@ -85,7 +86,7 @@ func (b *EndpointBuilder) Build() (*DXEndpoint, error) {
 	steps = append(steps, native.WithRole(b.role))
 	if b.executor != nil {
 		h := b.executor.handle()
-		if h.IsFreed() {
+		if h == nil || h.IsFreed() {
 			return nil, errors.New("dxfeed: the executor of the endpoint builder is closed")
 		}
 		steps = append(steps, native.WithExecutor(h))

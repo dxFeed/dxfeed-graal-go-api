@@ -43,11 +43,12 @@ func NewInPlaceExecutor() (*ExecutorHandle, error) {
 
 // ProcessAllPendingTasks runs the queued tasks of an executor made by NewInPlaceExecutor on the calling goroutine.
 func (e *ExecutorHandle) ProcessAllPendingTasks() error {
-	if e.ptr() == nil {
+	ptr := e.ptr()
+	if ptr == nil {
 		return errors.New("native: the executor is closed")
 	}
 	return executeInIsolateThread(func(thread *isolateThread) error {
-		return checkStatus(thread, C.dxfg_v4_ExecutorBaseOnConcurrentLinkedQueue_processAllPendingTasks(thread.ptr, e.ptr()))
+		return checkStatus(thread, C.dxfg_v4_ExecutorBaseOnConcurrentLinkedQueue_processAllPendingTasks(thread.ptr, ptr))
 	})
 }
 
