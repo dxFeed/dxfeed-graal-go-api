@@ -114,3 +114,12 @@ jobs:
         env:
           GOPROXY: https://proxy.golang.org
         run: go list -m "github.com/${GITHUB_REPOSITORY,,}@$VERSION"
+
+  # An application module gets the published version through the proxy, installs the SDK and runs.
+  consumer:
+    name: Consumer of the release
+    needs: [ proxy ]
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/consumer.yml
+    with:
+      version: ${{ github.ref_name }}
