@@ -31,7 +31,10 @@
 //	if err != nil {
 //		return err
 //	}
-//	err = subscription.AddSymbols(osub.Strings("AAPL", "IBM")...)
+//	if err := subscription.AddSymbols(osub.Strings("AAPL", "IBM")...); err != nil {
+//		return err
+//	}
+//	// The events come to the listener while the program runs: wait here (a signal, a timer) before returning.
 //
 // # Endpoints and roles
 //
@@ -44,8 +47,8 @@
 //
 // [NewEndpoint] creates an endpoint with the default properties; [NewEndpointBuilder] sets properties, a properties
 // file, a name and the executor of the notifications. [DXEndpoint.Connect] takes an address such as
-// "demo.dxfeed.com:7300", "dxlink:wss://demo.dxfeed.com/dxlink-ws" or a file; an authorization token goes into the
-// address as "host:port[login=entitle:<token>]" (see package auth). [DXEndpoint.AddListener] reports the connection
+// "demo.dxfeed.com:7300" or a file; an authorization token goes into the address as
+// "host:port[login=entitle:<token>]". [DXEndpoint.AddListener] reports the connection
 // state, [DXEndpoint.Connectors] and [DXEndpoint.LastConnectionError] the connections and their errors.
 //
 // # Subscriptions and symbols
@@ -66,8 +69,8 @@
 // # Time series
 //
 // A subscription to a time series event with an [osub.TimeSeriesSubscriptionSymbol] gets the events of the symbol
-// from the given time on, then the new ones as they come. Candles take a candle symbol (package candle) that names
-// the period and the other attributes of the aggregation.
+// from the given time on, then the new ones as they come. For candles the symbol is a string with the period and the
+// other attributes of the aggregation in braces, such as "AAPL{=1d}" (package candle).
 //
 // # Publishing
 //
@@ -81,10 +84,13 @@
 //
 // # Threads and listeners
 //
-// The listeners (events, connection state, connectors) are called from the threads of the SDK, or of the executor set
-// with [EndpointBuilder.WithExecutor], not from the goroutine that subscribed. A listener must return quickly and must
-// not block on the API: it holds back the delivery of the next events. A panic in a listener is written to the log
-// (package logging) and does not end the process.
+// The listeners (events, connection state, connectors) are called from the threads of the SDK, or by the executor set
+// with [EndpointBuilder.WithExecutor] (an [InPlaceExecutor] runs them in the goroutine that calls
+// [InPlaceExecutor.ProcessAllPendingTasks]), not from the goroutine that subscribed. A listener must return quickly:
+// it holds back the delivery of the next events, so it must not run long operations or wait for the endpoint, as
+// [DXEndpoint.AwaitProcessed] does. The methods documented as callable from a listener, such as adding or removing
+// listeners or closing the endpoint, may be called. A panic in a listener is written to the log (package logging) and
+// does not end the process.
 //
 // # Errors
 //
@@ -94,7 +100,5 @@
 // # Related packages
 //
 //   - logging: the levels, files and a Go listener of the log of the SDK.
-//   - auth: the authorization tokens for the addresses.
-//   - dxtime: the time format and time periods of the SDK.
 //   - Isolate settings: [SetSystemProperty], [GetSystemProperty] and [SetIsolateArguments].
 package api
