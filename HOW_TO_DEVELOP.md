@@ -1,7 +1,7 @@
 # How to develop
 
 The API is a cgo wrapper over the [Graal Native SDK](https://github.com/dxFeed/dxfeed-graal-native-sdk), a C library.
-Building it needs Go, a C compiler and the SDK, which a script downloads into the repository.
+Building it needs Go, a C compiler and the SDK library, which an installer command downloads into the user cache.
 
 Supported platforms: Windows x64, Linux x64 and arm64, macOS arm64 and x64.
 
@@ -19,13 +19,16 @@ Supported platforms: Windows x64, Linux x64 and arm64, macOS arm64 and x64.
 ```bash
 git clone https://github.com/dxFeed/dxfeed-graal-go-api.git
 cd dxfeed-graal-go-api
-go run .
+go run ./cmd/install-sdk
 ```
 
-`go run .` runs [install_dependencies.go](install_dependencies.go): it downloads the SDK release for the current OS and
-architecture into `internal/native/graal` (ignored by git). Run it from the repository root, and again after the SDK
-version changes.
-
+The SDK headers are in the repository ([internal/native/include](internal/native/include)), and the SDK version with
+the checksums of its archives is pinned in [internal/sdk/sdk.go](internal/sdk/sdk.go).
+[cmd/install-sdk](cmd/install-sdk/main.go) downloads the library of that version for the current OS and architecture
+into the user cache directory and prints the settings: `CGO_LDFLAGS` with the directory of the library and, on
+Windows, the `PATH` entry. Set them in the shell or in the run and test configurations of your IDE, as
+[README.md](README.md#installation) describes. Run the command again after the SDK version changes; each version has
+its own directory.
 ## Build and test
 
 ```bash
@@ -72,17 +75,11 @@ cgo needs a GCC-compatible compiler: MinGW-w64 GCC (from [MSYS2](https://www.msy
    old MinGW) fails the build with `64-bit mode not compiled in`.
 
 3. Make the SDK DLL findable at run time. Windows has no rpath: a program finds the DLL next to its executable or in
-   `PATH`, and `go test` and `go run` start binaries from a temporary directory. Add the SDK directory to `PATH` in the
-   shell, or in the run and test configurations of your IDE:
-
-   ```powershell
-   $env:PATH = "$PWD\internal\native\graal;$env:PATH"
-   ```
-
-   Prefer this per checkout to a global `PATH` entry: checkouts on different SDK versions would load the wrong DLL.
+   `PATH`, and `go test` and `go run` start binaries from a temporary directory. Add the directory that
+   `go run ./cmd/install-sdk` prints to `PATH` in the shell, or in the run and test configurations of your IDE.
    Without it, tests fail at start with exit status `0xc0000135` (DLL not found).
 
-Linux and macOS binaries need nothing like this: they carry an rpath to `internal/native/graal`.
+Linux and macOS binaries need nothing like this: the `-Wl,-rpath` flag in `CGO_LDFLAGS` points them at the library.
 
 ### Line endings
 
@@ -93,9 +90,12 @@ well, whatever `core.autocrlf` says. Otherwise `gofmt -l` would list every file 
 
 ## Update the Graal Native SDK
 
-1. Change `version` in [install_dependencies.go](install_dependencies.go) to the new
-   [SDK release](https://github.com/dxFeed/dxfeed-graal-native-sdk/releases).
-2. Run `go run .`, then build and run the tests on every platform you can; CI covers the rest.
+1. Change `Version` and the archive names and SHA-256 checksums in [internal/sdk/sdk.go](internal/sdk/sdk.go) to those
+   of the new [SDK release](https://github.com/dxFeed/dxfeed-graal-native-sdk/releases) (the release page shows the
+   checksum of each archive), and replace the headers in [internal/native/include](internal/native/include) with
+   those of the release.
+2. Run `go run ./cmd/install-sdk`, update `CGO_LDFLAGS` and `PATH` to the new directory, then build and run the tests
+   on every platform you can; CI covers the rest.
 3. Check the SDK release notes for changes in the C API (`internal/native` calls it) and in the event types.
 4. Add a release note fragment, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
