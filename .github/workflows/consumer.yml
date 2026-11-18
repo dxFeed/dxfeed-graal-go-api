@@ -1,0 +1,89 @@
+name: "Consumer module"
+
+# Builds and runs a separate module that uses the API as an application does: it gets the module with go get, installs
+# the SDK with cmd/install-sdk and links it through CGO_LDFLAGS, as README.md describes.
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Released version to get through the Go module proxy; empty for a module zip of the checkout'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+env:
+  MODULE: github.com/dxfeed/dxfeed-graal-go-api
+
+jobs:
+  consumer:
+    name: Consumer module on ${{ matrix.OS_NAME }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            OS_NAME: win-x64
+          - os: ubuntu-24.04
+            OS_NAME: linux-x64
+          - os: ubuntu-24.04-arm
+            OS_NAME: linux-aarch64
+          - os: macos-15
+            OS_NAME: osx-aarch64
+    env:
+      API_VERSION: ${{ inputs.version || 'v0.0.0-ci' }}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: 'stable'
+          cache: false
+
+      # Only committed files go into the zip, as into a module from the proxy; the module cache keeps them read-only.
+      - name: Serve a module zip of the checkout
+        if: inputs.version == ''
+        run: |
+          version=$API_VERSION
+          dir="$RUNNER_TEMP/proxy/$MODULE/@v"
+          mkdir -p "$dir"
+          git archive --format=zip --prefix="$MODULE@$version/" -o "$dir/$version.zip" HEAD
+          cp go.mod "$dir/$version.mod"
+          echo "{\"Version\":\"$version\"}" > "$dir/$version.info"
+          echo "$version" > "$dir/list"
+          proxy=$RUNNER_TEMP/proxy
+          if [ "$RUNNER_OS" = Windows ]; then proxy=/$(cygpath -m "$proxy"); fi
+          {
+            echo "GOPROXY=file://$proxy,https://proxy.golang.org"
+            echo "GONOSUMDB=$MODULE"
+          } >> "$GITHUB_ENV"
+
+      - name: Get the module and install the SDK
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir consumer
+          cp "$GITHUB_WORKSPACE/.github/consumer/main.go" consumer/
+          cd consumer
+          go mod init example.com/consumer
+          go get "$MODULE@$API_VERSION"
+          dir=$(go run "$MODULE/cmd/install-sdk" -print-dir)
+          if [ "$RUNNER_OS" = Windows ]; then
+            echo "CGO_LDFLAGS=-L$dir" >> "$GITHUB_ENV"
+            echo "$dir" >> "$GITHUB_PATH"
+          else
+            echo "CGO_LDFLAGS=-L$dir -Wl,-rpath,$dir" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build and run
+        working-directory: ${{ runner.temp }}/consumer
+        run: |
+          go build -o "consumer$(go env GOEXE)" .
+          ./consumer

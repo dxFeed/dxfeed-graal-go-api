@@ -144,3 +144,10 @@ jobs:
           name: tools-${{ matrix.platform.OS_NAME }}
           path: bin/tools-${{ matrix.platform.OS_NAME }}-${{ inputs.tools_version }}.zip
           if-no-files-found: error
+
+  # A separate module gets the API from a module zip of this commit, as an application gets it with go get.
+  # A release runs the same job against the published version (release.yml).
+  consumer:
+    name: Consumer
+    if: inputs.tools_version == ''
+    uses: ./.github/workflows/consumer.yml
