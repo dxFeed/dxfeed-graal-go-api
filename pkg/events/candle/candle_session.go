@@ -2,6 +2,7 @@ package candle
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/eventsymbols"
 )
@@ -31,6 +32,9 @@ var candleSessions = [...]string{
 
 // String returns the string form of the session: "false" for any session, "true" for the regular one.
 func (s CandleSession) String() string {
+	if int(s) >= len(candleSessions) {
+		return "CandleSession(" + strconv.Itoa(int(s)) + ")"
+	}
 	return candleSessions[s]
 }
 

@@ -2,6 +2,7 @@ package candle
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/eventsymbols"
 )
@@ -40,6 +41,9 @@ var candlePrices = [...]string{
 
 // String returns the string form of the price type: "last", "bid", "ask", "mark" or "s".
 func (p CandlePrice) String() string {
+	if int(p) >= len(candlePrices) {
+		return "CandlePrice(" + strconv.Itoa(int(p)) + ")"
+	}
 	return candlePrices[p]
 }
 

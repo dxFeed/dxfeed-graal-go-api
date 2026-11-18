@@ -205,3 +205,17 @@ func TestCandleAttributeStrings(t *testing.T) {
 		t.Errorf("NormalizeCandleDataTypeAttribute = %q", got)
 	}
 }
+
+func TestEnumStringsOutOfRangeDoNotPanic(t *testing.T) {
+	if s := CandleType(99).String(); s != "CandleType(99)" {
+		t.Errorf("CandleType(99).String() = %q", s)
+	}
+	if CandleType(99).PeriodIntervalMillis() != 0 || CandleType(99).Name() != "CandleType(99)" {
+		t.Error("out of range CandleType")
+	}
+	_ = NewCandlePeriod(1, CandleType(99)).String()
+	if CandlePrice(9).String() != "CandlePrice(9)" || CandleSession(2).String() != "CandleSession(2)" ||
+		CandleAlignment(2).String() != "CandleAlignment(2)" {
+		t.Error("out of range enum strings")
+	}
+}

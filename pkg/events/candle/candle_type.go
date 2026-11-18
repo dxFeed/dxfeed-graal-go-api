@@ -1,6 +1,9 @@
 package candle
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // CandleType is the type of the candle aggregation period. Together with a value it makes a CandlePeriod.
 // The zero value is CandleTypeTick.
@@ -76,16 +79,25 @@ func CandleTypes() []CandleType {
 // PeriodIntervalMillis returns the length of one unit of the type in milliseconds as closely as possible; it is 0
 // for the types that are not time intervals (ticks, volume and the price types).
 func (t CandleType) PeriodIntervalMillis() int64 {
+	if int(t) >= len(candleTypes) {
+		return 0
+	}
 	return candleTypes[t].intervalMillis
 }
 
 // Name returns the name of the type: "TICK", "MINUTE", "PRICE_RENKO".
 func (t CandleType) Name() string {
+	if int(t) >= len(candleTypes) {
+		return "CandleType(" + strconv.Itoa(int(t)) + ")"
+	}
 	return candleTypes[t].name
 }
 
 // String returns the short form of the type: "t", "m", "pr". ParseCandleType converts it back.
 func (t CandleType) String() string {
+	if int(t) >= len(candleTypes) {
+		return "CandleType(" + strconv.Itoa(int(t)) + ")"
+	}
 	return candleTypes[t].str
 }
 

@@ -2,6 +2,7 @@ package candle
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/eventsymbols"
 )
@@ -30,6 +31,9 @@ var candleAlignments = [...]string{
 
 // String returns the string form of the alignment: "m" or "s".
 func (a CandleAlignment) String() string {
+	if int(a) >= len(candleAlignments) {
+		return "CandleAlignment(" + strconv.Itoa(int(a)) + ")"
+	}
 	return candleAlignments[a]
 }
 
