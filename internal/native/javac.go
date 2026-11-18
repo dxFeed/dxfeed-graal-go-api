@@ -9,8 +9,19 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"strings"
 	"unsafe"
 )
+
+// checkNoNul returns an error if a string contains a NUL character: C would cut the string there.
+func checkNoNul(values ...string) error {
+	for _, v := range values {
+		if strings.IndexByte(v, 0) >= 0 {
+			return errors.New("native: a string argument contains a NUL character")
+		}
+	}
+	return nil
+}
 
 // cString is C.CString freed by the returned function.
 func cString(s string) (*C.char, func()) {
@@ -54,6 +65,9 @@ const (
 // NewAuthToken creates a Java AuthToken of the kind from the arguments, reads its values and releases it. It returns
 // nil without an error when an "OrNull" kind gives no token.
 func NewAuthToken(kind int, args ...string) (*AuthTokenFields, error) {
+	if err := checkNoNul(args...); err != nil {
+		return nil, err
+	}
 	var result *AuthTokenFields
 	err := executeInIsolateThread(func(thread *isolateThread) error {
 		ptrs := make([]*C.char, len(args))
@@ -127,6 +141,9 @@ func NewAuthToken(kind int, args ...string) (*AuthTokenFields, error) {
 
 // ParseTimePeriod returns the milliseconds of a Java TimePeriod parsed from the string.
 func ParseTimePeriod(value string) (int64, error) {
+	if err := checkNoNul(value); err != nil {
+		return 0, err
+	}
 	var millis int64
 	err := executeInIsolateThread(func(thread *isolateThread) error {
 		ptr, free := cString(value)
@@ -177,6 +194,18 @@ func newTimeFormat(ptr *C.dxfg_v4_time_format_t) *TimeFormat {
 	return f
 }
 
+// timeFormatOf wraps the handle of a call; on an error it releases a handle that the call returned anyway (a failed
+// detach of the thread after a successful call).
+func timeFormatOf(ptr *C.dxfg_v4_time_format_t, err error) (*TimeFormat, error) {
+	if err != nil {
+		if ptr != nil {
+			_ = NewJavaHandle(unsafe.Pointer(ptr)).Free()
+		}
+		return nil, err
+	}
+	return newTimeFormat(ptr), nil
+}
+
 func (f *TimeFormat) ptr() *C.dxfg_v4_time_format_t {
 	return (*C.dxfg_v4_time_format_t)(f.handle.Ptr())
 }
@@ -196,10 +225,7 @@ func NewTimeFormat(kind int) (*TimeFormat, error) {
 		}
 		return checkStatus(thread, C.dxfg_v4_TimeFormat_DEFAULT(thread.ptr, &ptr))
 	})
-	if err != nil {
-		return nil, err
-	}
-	return newTimeFormat(ptr), nil
+	return timeFormatOf(ptr, err)
 }
 
 // ErrUnknownTimeZone is returned by NewTimeFormatInZone for a time zone that Java does not know.
@@ -207,6 +233,9 @@ var ErrUnknownTimeZone = errors.New("unknown time zone")
 
 // NewTimeFormatInZone returns the TimeFormat of the time zone; an empty ID is the default time zone of Java.
 func NewTimeFormatInZone(zoneID string) (*TimeFormat, error) {
+	if err := checkNoNul(zoneID); err != nil {
+		return nil, err
+	}
 	var ptr *C.dxfg_v4_time_format_t
 	err := executeInIsolateThread(func(thread *isolateThread) error {
 		var zone *C.dxfg_v4_time_zone_t
@@ -234,10 +263,7 @@ func NewTimeFormatInZone(zoneID string) (*TimeFormat, error) {
 		}
 		return checkStatus(thread, C.dxfg_v4_TimeFormat_getInstance(thread.ptr, zone, &ptr))
 	})
-	if err != nil {
-		return nil, err
-	}
-	return newTimeFormat(ptr), nil
+	return timeFormatOf(ptr, err)
 }
 
 // Derived time format kinds of Derive.
@@ -261,10 +287,7 @@ func (f *TimeFormat) Derive(kind int) (*TimeFormat, error) {
 		}
 	})
 	runtime.KeepAlive(f)
-	if err != nil {
-		return nil, err
-	}
-	return newTimeFormat(ptr), nil
+	return timeFormatOf(ptr, err)
 }
 
 // Format formats the milliseconds since the Unix epoch.
@@ -284,6 +307,9 @@ func (f *TimeFormat) Format(millis int64) (string, error) {
 
 // Parse returns the milliseconds since the Unix epoch of the string.
 func (f *TimeFormat) Parse(value string) (int64, error) {
+	if err := checkNoNul(value); err != nil {
+		return 0, err
+	}
 	var millis C.int64_t
 	err := executeInIsolateThread(func(thread *isolateThread) error {
 		ptr, free := cString(value)

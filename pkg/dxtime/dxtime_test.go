@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+	// The zones of the tests do not depend on the zone database of the system.
+	_ "time/tzdata"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/dxtime"
 )
@@ -14,7 +16,7 @@ func newFormat(t *testing.T, zone string) *dxtime.Format {
 	t.Helper()
 	loc, err := time.LoadLocation(zone)
 	if err != nil {
-		t.Skip(err)
+		t.Fatal(err)
 	}
 	f, err := dxtime.NewFormat(loc)
 	if err != nil {
@@ -94,8 +96,18 @@ func TestDefaultFormatIsLocal(t *testing.T) {
 }
 
 func TestUnknownZone(t *testing.T) {
-	if _, err := dxtime.NewFormat(time.FixedZone("Nowhere", 3600)); !errors.Is(err, dxtime.ErrUnknownTimeZone) {
-		t.Errorf("error = %v, want ErrUnknownTimeZone", err)
+	for _, loc := range []*time.Location{
+		time.FixedZone("Nowhere", 3600),
+		time.FixedZone("", 3*3600),
+		// Java knows EST, but as -05:00.
+		time.FixedZone("EST", 3*3600),
+	} {
+		if _, err := dxtime.NewFormat(loc); !errors.Is(err, dxtime.ErrUnknownTimeZone) {
+			t.Errorf("NewFormat(%q) error = %v, want ErrUnknownTimeZone", loc, err)
+		}
+	}
+	if _, err := dxtime.NewFormat(time.FixedZone("UTC", 0)); err != nil {
+		t.Errorf("NewFormat of a fixed UTC: %v", err)
 	}
 	if _, err := dxtime.NewFormat(nil); err == nil {
 		t.Error("NewFormat(nil) gives no error")
@@ -136,5 +148,37 @@ func TestPeriods(t *testing.T) {
 	}
 	if _, err := dxtime.FormatPeriod(-time.Second); err == nil {
 		t.Error("FormatPeriod of a negative period gives no error")
+	}
+}
+
+func TestSpecialInputs(t *testing.T) {
+	f := dxtime.GMTFormat()
+	if s, err := f.Format(time.UnixMilli(0)); err != nil || s != "0" {
+		t.Errorf("Format of the epoch = %q, %v", s, err)
+	}
+	if s, err := f.Format(time.Unix(1<<60, 0)); err == nil {
+		t.Errorf("Format of a time out of range = %q, want an error", s)
+	}
+	if _, err := f.Parse("0\x00garbage"); err == nil {
+		t.Error("Parse with NUL gives no error")
+	}
+	if _, err := dxtime.ParsePeriod("1d\x00x"); err == nil {
+		t.Error("ParsePeriod with NUL gives no error")
+	}
+	if d, err := dxtime.ParsePeriod("P200000000D"); err != nil || d != dxtime.Unlimited {
+		t.Errorf("ParsePeriod of 200000000 days = %v, %v; want Unlimited", d, err)
+	}
+	if s, err := dxtime.FormatPeriod(1500*time.Millisecond + 999*time.Microsecond); err != nil || s != "PT1.5S" {
+		t.Errorf("FormatPeriod truncation = %q, %v", s, err)
+	}
+	var zero dxtime.Format
+	if _, err := zero.Format(moment); err == nil {
+		t.Error("the zero Format formats")
+	}
+	if _, err := zero.WithMillis().Parse("0"); err == nil {
+		t.Error("a format derived from the zero Format parses")
+	}
+	if f.WithMillis() != f.WithMillis() {
+		t.Error("the derived formats are not reused")
 	}
 }

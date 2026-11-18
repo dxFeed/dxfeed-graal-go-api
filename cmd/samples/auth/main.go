@@ -55,6 +55,8 @@ func main() {
 }
 
 func run() error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 	endpoint, err := api.NewEndpoint(api.Feed)
 	if err != nil {
 		return err
@@ -90,8 +92,6 @@ func run() error {
 	if err := connect(endpoint); err != nil {
 		return err
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 	for {

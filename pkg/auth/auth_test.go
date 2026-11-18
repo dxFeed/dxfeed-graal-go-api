@@ -1,7 +1,9 @@
 package auth_test
 
 import (
+	"bytes"
 	"fmt"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -84,18 +86,51 @@ func TestInvalid(t *testing.T) {
 	}
 }
 
-func TestStringHidesTheSecret(t *testing.T) {
-	token, err := auth.NewBearer("secret")
+func TestPrintingHidesTheSecret(t *testing.T) {
+	token, err := auth.NewBasicUser("user", "secret")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, s := range []string{token.String(), fmt.Sprintf("%+v", token)} {
-		if strings.Contains(s, "secret") || !strings.HasPrefix(s, "Bearer") {
-			t.Errorf("string = %q", s)
+	var logged bytes.Buffer
+	slog.New(slog.NewTextHandler(&logged, nil)).Info("connect", "token", token, "value", *token)
+	holder := struct{ Token auth.Token }{*token}
+	for _, s := range []string{
+		token.String(), fmt.Sprint(token), fmt.Sprintf("%+v", token), fmt.Sprintf("%#v", token),
+		fmt.Sprint(*token), fmt.Sprintf("%+v", *token), fmt.Sprintf("%#v", *token), fmt.Sprintf("%v %+v", holder, holder),
+		logged.String(),
+	} {
+		if strings.Contains(s, "secret") || strings.Contains(s, token.Value()) || !strings.Contains(s, "Basic") {
+			t.Errorf("printed = %q", s)
 		}
 	}
 	var none *auth.Token
-	if none.String() != "<nil>" {
-		t.Errorf("nil string = %q", none.String())
+	if s := fmt.Sprint(none); s != "<nil>" {
+		t.Errorf("nil printed = %q", s)
+	}
+}
+
+func TestNulIsRejected(t *testing.T) {
+	if token, err := auth.NewBearer("abc\x00def"); token != nil || err == nil {
+		t.Errorf("NewBearer with NUL = %v, %v; want an error", token, err)
+	}
+	if token, err := auth.NewBearerOrNil("\x00x"); token != nil || err == nil {
+		t.Errorf("NewBearerOrNil with NUL = %v, %v; want an error", token, err)
+	}
+}
+
+func TestColonInPassword(t *testing.T) {
+	token, err := auth.NewBasicUser("user", "pa:ss")
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := auth.Parse(token.HTTPAuthorization())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if user, _ := parsed.User(); user != "user" {
+		t.Errorf("user = %q", user)
+	}
+	if password, _ := parsed.Password(); password != "pa:ss" {
+		t.Errorf("password = %q", password)
 	}
 }
