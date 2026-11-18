@@ -545,7 +545,7 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [x] [CandleSymbol](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/candle/CandleSymbol.html)
   is a symbol used with [DXFeedSubscription](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeedSubscription.html)
   class to subscribe for [Candle](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/candle/Candle.html) events
-  (the Go type exists, but a subscription does not accept it yet; subscribe with `osub.String("AAPL{=d}")`)
+  (subscribe with `osub.Candle(candle.NewCandleSymbol("AAPL{=5m}"))`)
 
 ### Subscriptions & Models
 
