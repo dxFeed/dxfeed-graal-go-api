@@ -62,7 +62,7 @@ func (c Connect) Run(args []string) {
 func connect(
 	address string,
 	types []eventcodes.EventCode,
-	symbols []any,
+	symbols []osub.Symbol,
 	properties map[string]string,
 	forceStream bool,
 	isQuite bool,

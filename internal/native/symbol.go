@@ -14,10 +14,12 @@ import (
 )
 
 // newCSymbol builds a subscription symbol in C memory, so the SDK never sees Go memory; free it with freeCSymbol.
-// It accepts a string, *osub.WildcardSymbol, *osub.TimeSeriesSubscriptionSymbol and
+// It accepts a string, osub.String, *osub.WildcardSymbol, *osub.TimeSeriesSubscriptionSymbol and
 // *osub.IndexedEventSubscriptionSymbol; anything else is an error.
 func newCSymbol(symbol any) (*C.dxfg_v4_symbol_t, error) {
 	switch value := symbol.(type) {
+	case osub.String:
+		return newCSymbol(string(value))
 	case string:
 		s := (*C.dxfg_v4_string_symbol_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_string_symbol_t{}))))
 		s.supper._type = C.STRING
@@ -119,7 +121,7 @@ func freeCSymbol(s *C.dxfg_v4_symbol_t) {
 }
 
 // newCSymbolList builds a list of symbols in C memory; free it with freeCSymbolList.
-func newCSymbolList(symbols []any) (*C.dxfg_v4_symbol_list, error) {
+func newCSymbolList(symbols []osub.Symbol) (*C.dxfg_v4_symbol_list, error) {
 	list := (*C.dxfg_v4_symbol_list)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_symbol_list{}))))
 	if len(symbols) == 0 {
 		return list, nil
@@ -151,4 +153,12 @@ func freeCSymbolList(list *C.dxfg_v4_symbol_list) {
 		C.free(unsafe.Pointer(list.elements))
 	}
 	C.free(unsafe.Pointer(list))
+}
+
+// stringSymbolText returns the text of a string symbol built by newCSymbol, and false for a symbol of another kind.
+func stringSymbolText(symbol *C.dxfg_v4_symbol_t) (string, bool) {
+	if symbol._type != C.STRING {
+		return "", false
+	}
+	return C.GoString((*C.dxfg_v4_string_symbol_t)(unsafe.Pointer(symbol)).symbol), true
 }

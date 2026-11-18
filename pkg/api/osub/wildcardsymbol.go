@@ -1,5 +1,3 @@
-// Package osub holds the subscription symbols other than plain strings: the wildcard, time series and indexed event
-// symbols.
 package osub
 
 // WildcardSymbol subscribes to all symbols of an event type; use it only where the data source allows it.

@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"math"
 	"testing"
 	"time"
@@ -139,7 +140,7 @@ func TestPublishSubscribeRoundTrip(t *testing.T) {
 			if err := sub.AddListener(collector); err != nil {
 				t.Fatalf("add listener: %v", err)
 			}
-			if err := sub.AddSymbol(symbol); err != nil {
+			if err := sub.AddSymbol(osub.String(symbol)); err != nil {
 				t.Fatalf("add symbol: %v", err)
 			}
 			if err := publisher.Publish([]interface{}{event}); err != nil {
@@ -171,15 +172,15 @@ func TestRemoveSymbolsStopsDelivery(t *testing.T) {
 	if err := sub.AddListener(collector); err != nil {
 		t.Fatalf("add listener: %v", err)
 	}
-	symbols := []any{"REMOVE/A", "REMOVE/B", "REMOVE/C"}
-	if err := sub.AddSymbols(symbols...); err != nil {
+	symbols := []string{"REMOVE/A", "REMOVE/B", "REMOVE/C"}
+	if err := sub.AddSymbols(osub.Strings(symbols...)...); err != nil {
 		t.Fatalf("add symbols: %v", err)
 	}
 	publish := func() {
 		t.Helper()
 		quotes := make([]interface{}, 0, len(symbols))
 		for _, s := range symbols {
-			quotes = append(quotes, quote.NewQuote(s.(string)))
+			quotes = append(quotes, quote.NewQuote(s))
 		}
 		if err := publisher.Publish(quotes); err != nil {
 			t.Fatalf("publish: %v", err)
@@ -193,10 +194,10 @@ func TestRemoveSymbolsStopsDelivery(t *testing.T) {
 			t.Fatal("not all subscribed symbols delivered an event within 10 s")
 		}
 	}
-	if err := sub.RemoveSymbol(symbols[0]); err != nil {
+	if err := sub.RemoveSymbol(osub.String(symbols[0])); err != nil {
 		t.Fatalf("remove symbol: %v", err)
 	}
-	if err := sub.RemoveSymbols(symbols[1:]...); err != nil {
+	if err := sub.RemoveSymbols(osub.Strings(symbols[1:]...)...); err != nil {
 		t.Fatalf("remove symbols: %v", err)
 	}
 	publish()

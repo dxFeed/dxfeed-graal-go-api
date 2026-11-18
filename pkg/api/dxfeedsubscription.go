@@ -4,15 +4,16 @@ import (
 	"sync/atomic"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 )
 
 // DXFeedSubscription is a subscription to events of some types for a set of symbols; create it with
 // DXFeed.CreateSubscription.
 //
-// A symbol is a string such as "AAPL", or one of the osub types: *osub.WildcardSymbol for all symbols,
-// *osub.TimeSeriesSubscriptionSymbol for time series events from a time, *osub.IndexedEventSubscriptionSymbol for
-// indexed events of one source.
+// A symbol is an osub.Symbol: osub.String for a symbol such as "AAPL" (osub.Strings converts several strings at once),
+// *osub.WildcardSymbol for all symbols, *osub.TimeSeriesSubscriptionSymbol for time series events from a time, and
+// *osub.IndexedEventSubscriptionSymbol for indexed events of one source.
 type DXFeedSubscription struct {
 	sub               *native.DXFeedSubscription
 	eventListenerList []common.EventListener
@@ -38,22 +39,22 @@ func (s *DXFeedSubscription) RemoveListener(listener common.EventListener) {
 }
 
 // AddSymbol adds a symbol to the subscription; see DXFeedSubscription for the symbol types.
-func (s *DXFeedSubscription) AddSymbol(symbol any) error {
+func (s *DXFeedSubscription) AddSymbol(symbol osub.Symbol) error {
 	return s.sub.AddSymbol(symbol)
 }
 
 // AddSymbols adds symbols to the subscription; see DXFeedSubscription for the symbol types.
-func (s *DXFeedSubscription) AddSymbols(symbols ...any) error {
+func (s *DXFeedSubscription) AddSymbols(symbols ...osub.Symbol) error {
 	return s.sub.AddSymbols(symbols...)
 }
 
 // RemoveSymbol removes a symbol from the subscription.
-func (s *DXFeedSubscription) RemoveSymbol(symbol any) error {
+func (s *DXFeedSubscription) RemoveSymbol(symbol osub.Symbol) error {
 	return s.sub.RemoveSymbol(symbol)
 }
 
 // RemoveSymbols removes symbols from the subscription.
-func (s *DXFeedSubscription) RemoveSymbols(symbols ...any) error {
+func (s *DXFeedSubscription) RemoveSymbols(symbols ...osub.Symbol) error {
 	return s.sub.RemoveSymbols(symbols...)
 }
 

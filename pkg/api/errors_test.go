@@ -15,7 +15,8 @@ import (
 )
 
 // TestSubscriptionSymbolKinds adds and removes every kind of symbol, one by one and as a list, and checks that an
-// unsupported symbol is an error, not a panic or a NULL passed to the SDK.
+// invalid symbol is an error, not a panic or a NULL passed to the SDK. A value of a type that is not an osub.Symbol
+// does not compile.
 func TestSubscriptionSymbolKinds(t *testing.T) {
 	feed, _ := newLocalHub(t)
 	sub, err := feed.CreateSubscription(eventcodes.Order)
@@ -24,11 +25,11 @@ func TestSubscriptionSymbolKinds(t *testing.T) {
 	}
 	defer func() { _ = sub.Close() }()
 
-	symbols := []any{
-		"AAPL",
+	symbols := []osub.Symbol{
+		osub.String("AAPL"),
 		osub.NewWildcardSymbol(),
 		osub.NewTimeSeriesSubscriptionSymbol("IBM", 1000),
-		osub.NewIndexedEventSubscriptionSymbol("MSFT", order.Default()),
+		osub.NewIndexedEventSubscriptionSymbol(osub.String("MSFT"), order.Default()),
 		osub.NewIndexedEventSubscriptionSymbol(osub.NewTimeSeriesSubscriptionSymbol("TSLA", 0), order.Default()),
 	}
 	for _, symbol := range symbols {
@@ -49,16 +50,16 @@ func TestSubscriptionSymbolKinds(t *testing.T) {
 		t.Errorf("Clear: %v", err)
 	}
 
-	if err := sub.AddSymbol(42); err == nil {
-		t.Error("AddSymbol of an int returned no error")
+	if err := sub.AddSymbol(nil); err == nil {
+		t.Error("AddSymbol(nil) returned no error")
 	}
-	if err := sub.AddSymbols("AAPL", 42); err == nil {
-		t.Error("AddSymbols with an int returned no error")
+	if err := sub.AddSymbols(osub.String("AAPL"), nil); err == nil {
+		t.Error("AddSymbols with a nil symbol returned no error")
 	}
 	if err := sub.RemoveSymbols(osub.NewTimeSeriesSubscriptionSymbol(42, 0)); err == nil {
 		t.Error("RemoveSymbols of a time series symbol of an int returned no error")
 	}
-	for _, symbol := range []any{(*osub.WildcardSymbol)(nil), (*osub.TimeSeriesSubscriptionSymbol)(nil),
+	for _, symbol := range []osub.Symbol{(*osub.WildcardSymbol)(nil), (*osub.TimeSeriesSubscriptionSymbol)(nil),
 		(*osub.IndexedEventSubscriptionSymbol)(nil), osub.NewIndexedEventSubscriptionSymbol("AAPL", nil)} {
 		if err := sub.AddSymbol(symbol); err == nil {
 			t.Errorf("AddSymbol(%#v) returned no error", symbol)
@@ -100,7 +101,7 @@ func TestListenerPanicIsRecovered(t *testing.T) {
 	if err := sub.AddListener(listener); err != nil {
 		t.Fatalf("add listener: %v", err)
 	}
-	if err := sub.AddSymbol("PANIC/LISTENER"); err != nil {
+	if err := sub.AddSymbol(osub.String("PANIC/LISTENER")); err != nil {
 		t.Fatalf("add symbol: %v", err)
 	}
 

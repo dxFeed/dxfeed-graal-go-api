@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
@@ -74,7 +75,7 @@ func main() {
 		panic(err)
 	}
 
-	err = subscription.AddSymbol("AAPL")
+	err = subscription.AddSymbol(osub.String("AAPL"))
 	if err != nil {
 		panic(err)
 	}

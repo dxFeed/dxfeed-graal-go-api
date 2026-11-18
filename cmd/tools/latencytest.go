@@ -5,6 +5,7 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/formatutil"
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/parser"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"github.com/montanaflynn/stats"
@@ -58,7 +59,7 @@ func (c LatencyTest) Run(args []string) {
 	}
 }
 
-func latency(address string, types []eventcodes.EventCode, symbols []any, forceStream bool, ignoreExchanges *string) error {
+func latency(address string, types []eventcodes.EventCode, symbols []osub.Symbol, forceStream bool, ignoreExchanges *string) error {
 	role := api.Feed
 	if forceStream {
 		role = api.StreamFeed

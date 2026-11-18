@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/parser"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
@@ -65,7 +66,7 @@ func (c Dump) Run(args []string) {
 func dump(
 	inputFile string,
 	outputFile *string,
-	symbols []any,
+	symbols []osub.Symbol,
 	types []eventcodes.EventCode,
 	properties map[string]string,
 	isQuite bool,

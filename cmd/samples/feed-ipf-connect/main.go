@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
@@ -52,9 +53,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	var symbols []any
+	var symbols []osub.Symbol
 	for _, instrumentProfile := range instrumentProfiles {
-		symbols = append(symbols, *instrumentProfile.Symbol())
+		symbols = append(symbols, osub.String(*instrumentProfile.Symbol()))
 		fmt.Printf("%s\n", instrumentProfile.String())
 	}
 	completed, _ := ipfReader.WasComplete()

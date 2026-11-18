@@ -11,3 +11,7 @@
     listener can compare them.
   * Every exported identifier has a doc comment, and runnable examples show the endpoint, the subscription, the
     publisher and `common.JavaError`.
+  * **\[BREAKING]** `DXFeedSubscription.AddSymbol`, `AddSymbols`, `RemoveSymbol` and `RemoveSymbols` take `osub.Symbol`
+    instead of `any`, so a symbol of a wrong type does not compile. `osub.Symbol` is implemented by `osub.String`,
+    `*osub.WildcardSymbol`, `*osub.TimeSeriesSubscriptionSymbol` and `*osub.IndexedEventSubscriptionSymbol`. Pass a
+    string as `osub.String("AAPL")`, or several at once as `sub.AddSymbols(osub.Strings("AAPL", "IBM")...)`.

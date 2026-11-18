@@ -11,6 +11,7 @@ type IndexedEventSubscriptionSymbol struct {
 }
 
 // NewIndexedEventSubscriptionSymbol returns a symbol for the events of symbol from source, for example an order source.
+// The symbol is a string or an osub.String, or a *TimeSeriesSubscriptionSymbol for time series indexed events.
 func NewIndexedEventSubscriptionSymbol(symbol any, source events.IndexedEventSourceInterface) *IndexedEventSubscriptionSymbol {
 	return &IndexedEventSubscriptionSymbol{symbol, source}
 }
