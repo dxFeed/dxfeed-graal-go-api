@@ -22,6 +22,8 @@ var (
 	_ events.IndexedEvent = (*order.AnalyticOrder)(nil)
 	_ events.IndexedEvent = (*order.SpreadOrder)(nil)
 	_ events.IndexedEvent = (*order.OtcMarketsOrder)(nil)
+	_ events.IndexedEvent = (*order.NuamOrder)(nil)
+	_ events.IndexedEvent = (*timeandsale.NuamTimeAndSale)(nil)
 	_ events.IndexedEvent = (*optionsale.OptionSale)(nil)
 	_ events.IndexedEvent = (*marketmaker.MarketMaker)(nil)
 	_ events.IndexedEvent = (*series.Series)(nil)

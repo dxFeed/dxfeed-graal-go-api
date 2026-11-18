@@ -45,6 +45,9 @@ func ParseEventTypes(value string) []eventcodes.EventCode {
 		"marketmaker":       eventcodes.MarketMaker,
 		"otcmarketsorder":   eventcodes.OtcMarketsOrder,
 		"orderimbalance":    eventcodes.OrderImbalance,
+		"nuamorder":         eventcodes.NuamOrder,
+		"nuamtimeandsale":   eventcodes.NuamTimeAndSale,
+		"nuamtrade":         eventcodes.NuamTrade,
 	}
 	var values []eventcodes.EventCode
 	if value == "all" {

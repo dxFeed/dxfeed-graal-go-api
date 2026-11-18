@@ -10,6 +10,7 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/orderimbalance"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/side"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/trade"
 )
 
 func TestMarketMakerIndex(t *testing.T) {
@@ -127,5 +128,35 @@ func TestOptionSaleFlags(t *testing.T) {
 	o.SetTimeNanos(1_700_000_000_123_456_789)
 	if o.TimeNanos() != 1_700_000_000_123_456_789 || o.TimeNanoPart() != 456_789 {
 		t.Errorf("time nanos = %d, nano part = %d", o.TimeNanos(), o.TimeNanoPart())
+	}
+}
+
+func TestNuamOrderFlags(t *testing.T) {
+	o := order.NewNuamOrder("AAPL")
+	o.SetNuamOrderType(order.NuamOrderTypeImbalance)
+	o.SetTimeInForce(order.NuamTimeInForceTypeNumberOfDays)
+	if want := int32(5 | 6<<4); o.NuamFlags() != want {
+		t.Fatalf("flags = %#x, want %#x", o.NuamFlags(), want)
+	}
+	o.SetNuamOrderType(order.NuamOrderTypeLimit)
+	if o.NuamOrderType() != order.NuamOrderTypeLimit || o.TimeInForce() != order.NuamTimeInForceTypeNumberOfDays {
+		t.Fatalf("flags = %#x after the change", o.NuamFlags())
+	}
+	if s := o.String(); !strings.HasPrefix(s, "NuamOrder{AAPL") || !strings.Contains(s, "timeInForce=NUMBER_OF_DAYS") ||
+		!strings.Contains(s, "orderType=LIMIT") {
+		t.Errorf("String() = %s", s)
+	}
+}
+
+func TestNuamTimeAndSaleAndTradeStrings(t *testing.T) {
+	ts := timeandsale.NewNuamTimeAndSale("AAPL")
+	ts.SetMatchId(42)
+	if s := ts.String(); !strings.HasPrefix(s, "NuamTimeAndSale{AAPL") || !strings.HasSuffix(s, ", matchId=42}") {
+		t.Errorf("String() = %s", s)
+	}
+	tr := trade.NewNuamTrade("AAPL")
+	tr.SetNumberOfTrades(3)
+	if s := tr.String(); !strings.HasPrefix(s, "NuamTrade{AAPL") || !strings.Contains(s, "numberOfTrades=3") {
+		t.Errorf("String() = %s", s)
 	}
 }

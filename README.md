@@ -468,6 +468,9 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [x] [OrderImbalance](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/OrderImbalance.html)
   is the imbalance of the buy and sell orders of an auction
 
+- [x] NuamOrder, NuamTimeAndSale and NuamTrade
+  are the order, time and sale and trade events of the Nuam Exchange with its specific fields
+
 - [x] [Trade](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/Trade.html)
   is a snapshot of the price and size of the last trade during regular trading hours and an overall day volume and day
   turnover
