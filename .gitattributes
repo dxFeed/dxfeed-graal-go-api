@@ -1,0 +1,4 @@
+# gofmt requires LF: keep Go sources LF in the working tree whatever core.autocrlf says.
+*.go text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
