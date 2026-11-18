@@ -4,6 +4,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -103,5 +104,101 @@ func TestStateListenerPanicIsRecovered(t *testing.T) {
 			t.Fatalf("the panic was not logged; log: %q", logged.String())
 		}
 		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// TestStateListenersChangeWhileStateChanges adds and removes listeners while the SDK reports state changes; under
+// -race it fails if the listener list is not synchronized.
+func TestStateListenersChangeWhileStateChanges(t *testing.T) {
+	endpoint, err := NewEndpoint(Feed)
+	if err != nil {
+		t.Fatalf("create endpoint: %v", err)
+	}
+	defer func() { _ = endpoint.Close() }()
+	recorder := newStateRecorder()
+	endpoint.AddListener(recorder)
+	removed := newStateRecorder()
+	endpoint.AddListener(removed)
+	endpoint.RemoveListener(removed)
+
+	done := make(chan struct{})
+	var wg sync.WaitGroup
+	defer func() {
+		close(done)
+		wg.Wait()
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-done:
+				return
+			default:
+				l := newStateRecorder()
+				endpoint.AddListener(l)
+				endpoint.RemoveListener(l)
+			}
+		}
+	}()
+	if err := endpoint.Connect("127.0.0.1:1"); err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+	select {
+	case <-recorder.seen:
+	case <-time.After(5 * time.Second):
+		t.Fatalf("no transition to Connecting within 5 s, recorded: %v", recorder.recorded())
+	}
+	if states := removed.recorded(); len(states) != 0 {
+		t.Errorf("a removed listener was called: %v", states)
+	}
+}
+
+// selfRemovingListener removes itself and adds the next listener from UpdateState.
+type selfRemovingListener struct {
+	endpoint *DXEndpoint
+	next     common.ConnectionStateListener
+	calls    atomic.Int32
+}
+
+func (l *selfRemovingListener) UpdateState(common.ConnectionState, common.ConnectionState) {
+	l.calls.Add(1)
+	l.endpoint.RemoveListener(l)
+	l.endpoint.AddListener(l.next)
+}
+
+// TestStateListenerChangesListenersFromCallback checks that a listener may add and remove listeners without a deadlock.
+func TestStateListenerChangesListenersFromCallback(t *testing.T) {
+	endpoint, err := NewEndpoint(Feed)
+	if err != nil {
+		t.Fatalf("create endpoint: %v", err)
+	}
+	defer func() { _ = endpoint.Close() }()
+	next := newStateRecorder()
+	first := &selfRemovingListener{endpoint: endpoint, next: next}
+	endpoint.AddListener(first)
+	if err := endpoint.Connect("127.0.0.1:1"); err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+	// The first transition reaches first, which hands over to next; the transition on Close reaches next.
+	deadline := time.Now().Add(5 * time.Second)
+	for first.calls.Load() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("no state transition within 5 s")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if err := endpoint.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+	deadline = time.Now().Add(5 * time.Second)
+	for len(next.recorded()) == 0 {
+		if time.Now().After(deadline) {
+			t.Fatalf("the listener added from a callback was not called; first called %d times", first.calls.Load())
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if n := first.calls.Load(); n != 1 {
+		t.Errorf("the self-removing listener was called %d times, want 1", n)
 	}
 }
