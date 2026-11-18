@@ -44,28 +44,6 @@ func checkIsolateCall(call func() C.int) error {
 	return nil
 }
 
-func checkCall(call func()) error {
-	call()
-	return getJavaThreadErrorIfExist()
-}
-
-func checkResultCall(call func() C.int32_t) error {
-	result := call()
-	if result == dxfgExecuteSuccessfully {
-		return nil
-	}
-	if err := getJavaThreadErrorIfExist(); err != nil {
-		return err
-	}
-	return fmt.Errorf("native: call failed with code %d without a pending java exception", int32(result))
-}
-
-func getJavaThreadErrorIfExist() error {
-	return executeInIsolateThread(func(thread *isolateThread) error {
-		return takeJavaException(thread.ptr)
-	})
-}
-
 type IsolateError int32
 
 const (

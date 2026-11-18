@@ -14,7 +14,7 @@ type TradeMapper struct {
 }
 
 func (t TradeMapper) GoEvent(native unsafe.Pointer) interface{} {
-	tradeNative := (*C.dxfg_trade_t)(native)
+	tradeNative := (*C.dxfg_v4_trade_t)(native)
 	tradeEvent := trade.NewTrade(C.GoString(tradeNative.trade_base.market_event.event_symbol))
 	tradeEvent.SetEventTime(int64(tradeNative.trade_base.market_event.event_time))
 	tradeEvent.SetTimeSequence(int64(tradeNative.trade_base.time_sequence))
@@ -32,7 +32,7 @@ func (t TradeMapper) GoEvent(native unsafe.Pointer) interface{} {
 
 func (t TradeMapper) CEvent(event interface{}) unsafe.Pointer {
 	tradeEvent := event.(*trade.Trade)
-	q := (*C.dxfg_trade_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_trade_t{}))))
+	q := (*C.dxfg_v4_trade_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_trade_t{}))))
 	q.trade_base.market_event.event_type.clazz = C.DXFG_EVENT_TRADE
 	q.trade_base.market_event.event_symbol = C.CString(*tradeEvent.EventSymbol())
 	q.trade_base.market_event.event_time = C.int64_t(tradeEvent.EventTime())

@@ -16,7 +16,7 @@ type OrderMapper struct {
 func (m OrderMapper) CEvent(event interface{}) unsafe.Pointer {
 	orderEvent := event.(*order.Order)
 
-	q := (*C.dxfg_order_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_order_t{}))))
+	q := (*C.dxfg_v4_order_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_order_t{}))))
 	q.order_base.market_event.event_type.clazz = C.DXFG_EVENT_ORDER
 
 	q.order_base.market_event.event_symbol = C.CString(*orderEvent.EventSymbol())
@@ -46,7 +46,7 @@ func (m OrderMapper) CEvent(event interface{}) unsafe.Pointer {
 }
 
 func (m OrderMapper) GoEvent(native unsafe.Pointer) interface{} {
-	orderNative := (*C.dxfg_order_t)(native)
+	orderNative := (*C.dxfg_v4_order_t)(native)
 	o := order.NewOrder(C.GoString(orderNative.order_base.market_event.event_symbol))
 	o.SetEventTime(int64(orderNative.order_base.market_event.event_time))
 

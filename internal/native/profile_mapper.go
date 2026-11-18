@@ -29,20 +29,15 @@ func convertString(value *C.char) *string {
 
 func getCustomField(
 	thread *isolateThread,
-	customFields *C.dxfg_instrument_profile_custom_fields_t,
+	customFields *C.dxfg_v4_instrument_profile_custom_fields_t,
 	name *C.char,
 ) (string, bool, error) {
 	var value *C.char
 
-	err := checkResultCall(func() C.int32_t {
-		return C.dxfg_InstrumentProfileCustomFields_getField(thread.ptr,
-			customFields,
-			name,
-			&value)
-	})
+	err := checkStatus(thread, C.dxfg_v4_InstrumentProfileCustomFields_getField(thread.ptr, customFields, name, &value))
 
 	if value != nil {
-		defer C.dxfg_String_release(thread.ptr, value)
+		defer C.dxfg_v4_String_release(thread.ptr, value)
 	}
 	if err != nil {
 		return "", false, err
@@ -57,7 +52,7 @@ func getCustomField(
 
 func mapCustomFields(
 	thread *isolateThread,
-	customFields *C.dxfg_instrument_profile_custom_fields_t,
+	customFields *C.dxfg_v4_instrument_profile_custom_fields_t,
 ) (map[string]string, error) {
 	resultMap := make(map[string]string)
 
@@ -65,17 +60,11 @@ func mapCustomFields(
 		return resultMap, nil
 	}
 
-	var fieldNames *C.dxfg_string_list
+	var fieldNames *C.dxfg_v4_string_list
 
-	err := checkResultCall(func() C.int32_t {
-		return C.dxfg_InstrumentProfileCustomFields_getNonEmptyFieldNames(thread.ptr,
-			customFields,
-			&fieldNames)
-	})
-
-	if fieldNames != nil {
-		defer C.dxfg_CList_String_release(thread.ptr, fieldNames)
-	}
+	err := checkStatus(thread, C.dxfg_v4_InstrumentProfileCustomFields_getNonEmptyFieldNames(thread.ptr, customFields,
+		&fieldNames))
+	defer releaseStringList(thread, fieldNames)
 
 	if err != nil {
 		return nil, err
@@ -112,9 +101,9 @@ func mapCustomFields(
 	return resultMap, nil
 }
 
-func (m *profileMapper) goProfiles2(
+func (m *profileMapper) goProfiles(
 	thread *isolateThread,
-	profileList *C.dxfg_instrument_profile2_list_t,
+	profileList *C.dxfg_v4_instrument_profile_data_list,
 ) ([]*events.InstrumentProfile, error) {
 	if profileList == nil ||
 		profileList.elements == nil ||
@@ -135,7 +124,7 @@ func (m *profileMapper) goProfiles2(
 			continue
 		}
 
-		nativeEvent := (*C.dxfg_instrument_profile2_t)(unsafe.Pointer(nativeProfile))
+		nativeEvent := (*C.dxfg_v4_instrument_profile_data_t)(unsafe.Pointer(nativeProfile))
 		profile := events.NewInstrumentProfile()
 
 		profile.SetSymbol(convertString(nativeEvent.symbol))

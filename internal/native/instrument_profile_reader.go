@@ -16,11 +16,9 @@ type InstrumentProfileReader struct {
 }
 
 func NewInstrumentProfileReader() (*InstrumentProfileReader, error) {
-	var ptr *C.dxfg_instrument_profile_reader_t
+	var ptr *C.dxfg_v4_instrument_profile_reader_t
 	err := executeInIsolateThread(func(thread *isolateThread) error {
-		return checkCall(func() {
-			ptr = C.dxfg_InstrumentProfileReader_new(thread.ptr)
-		})
+		return checkStatus(thread, C.dxfg_v4_InstrumentProfileReader_new(thread.ptr, &ptr))
 	})
 	if err != nil {
 		return nil, err
@@ -31,17 +29,18 @@ func NewInstrumentProfileReader() (*InstrumentProfileReader, error) {
 func ResolveSourceURL(address string) (*string, error) {
 	var result *string
 	err := executeInIsolateThread(func(thread *isolateThread) error {
-		return checkCall(func() {
-			addressPtr := C.CString(address)
-			defer C.free(unsafe.Pointer(addressPtr))
-			value := C.dxfg_InstrumentProfileReader_resolveSourceURL(thread.ptr, addressPtr)
-			if value == nil {
-				result = nil
-			} else {
-				temp := C.GoString(value)
-				result = &temp
-			}
-		})
+		addressPtr := C.CString(address)
+		defer C.free(unsafe.Pointer(addressPtr))
+		var value *C.char
+		if err := checkStatus(thread, C.dxfg_v4_InstrumentProfileReader_resolveSourceURL(thread.ptr, addressPtr, &value)); err != nil {
+			return err
+		}
+		if value != nil {
+			defer C.dxfg_v4_String_release(thread.ptr, value)
+			temp := C.GoString(value)
+			result = &temp
+		}
+		return nil
 	})
 	return result, err
 }
@@ -51,23 +50,19 @@ func (r *InstrumentProfileReader) Close() error {
 }
 
 func (r *InstrumentProfileReader) GetLastModified() (int64, error) {
-	var result int64
+	var result C.int64_t
 	err := executeInIsolateThread(func(thread *isolateThread) error {
-		return checkCall(func() {
-			result = int64(C.dxfg_InstrumentProfileReader_getLastModified(thread.ptr, r.ptr()))
-		})
+		return checkStatus(thread, C.dxfg_v4_InstrumentProfileReader_getLastModified(thread.ptr, r.ptr(), &result))
 	})
-	return result, err
+	return int64(result), err
 }
 
 func (r *InstrumentProfileReader) WasComplete() (bool, error) {
-	var result bool
+	var result C.int32_t
 	err := executeInIsolateThread(func(thread *isolateThread) error {
-		return checkCall(func() {
-			result = int32(C.dxfg_InstrumentProfileReader_wasComplete(thread.ptr, r.ptr())) == 1
-		})
+		return checkStatus(thread, C.dxfg_v4_InstrumentProfileReader_wasComplete(thread.ptr, r.ptr(), &result))
 	})
-	return result, err
+	return result == 1, err
 }
 
 func (r *InstrumentProfileReader) ReadFromFile(address string) ([]*events.InstrumentProfile, error) {
@@ -77,24 +72,20 @@ func (r *InstrumentProfileReader) ReadFromFile(address string) ([]*events.Instru
 		addressPtr := C.CString(address)
 		defer C.free(unsafe.Pointer(addressPtr))
 
-		var nativeProfiles *C.dxfg_instrument_profile2_list_t
+		var nativeProfiles *C.dxfg_v4_instrument_profile_data_list
 
-		err := checkResultCall(func() C.int32_t {
-			return C.dxfg_InstrumentProfileReader_readFromFile7(thread.ptr,
-				r.ptr(),
-				addressPtr,
-				&nativeProfiles)
-		})
+		err := checkStatus(thread, C.dxfg_v4_InstrumentProfileReader_readFromFile(thread.ptr, r.ptr(), addressPtr,
+			&nativeProfiles))
 
 		if nativeProfiles != nil {
-			defer C.dxfg_instrument_profile2_list_free(thread.ptr, nativeProfiles)
+			defer C.dxfg_v4_instrument_profile_data_list_release(thread.ptr, nativeProfiles)
 		}
 
 		if err != nil {
 			return err
 		}
 
-		resultList, err = newProfileMapper().goProfiles2(
+		resultList, err = newProfileMapper().goProfiles(
 			thread,
 			nativeProfiles,
 		)
@@ -120,26 +111,20 @@ func (r *InstrumentProfileReader) ReadFromFileWithPassword(
 		defer C.free(unsafe.Pointer(userPtr))
 		defer C.free(unsafe.Pointer(passwordPtr))
 
-		var nativeProfiles *C.dxfg_instrument_profile2_list_t
+		var nativeProfiles *C.dxfg_v4_instrument_profile_data_list
 
-		err := checkResultCall(func() C.int32_t {
-			return C.dxfg_InstrumentProfileReader_readFromFile8(thread.ptr,
-				r.ptr(),
-				addressPtr,
-				userPtr,
-				passwordPtr,
-				&nativeProfiles)
-		})
+		err := checkStatus(thread, C.dxfg_v4_InstrumentProfileReader_readFromFileWithUserAndPassword(thread.ptr, r.ptr(),
+			addressPtr, userPtr, passwordPtr, &nativeProfiles))
 
 		if nativeProfiles != nil {
-			defer C.dxfg_instrument_profile2_list_free(thread.ptr, nativeProfiles)
+			defer C.dxfg_v4_instrument_profile_data_list_release(thread.ptr, nativeProfiles)
 		}
 
 		if err != nil {
 			return err
 		}
 
-		resultList, err = newProfileMapper().goProfiles2(
+		resultList, err = newProfileMapper().goProfiles(
 			thread,
 			nativeProfiles,
 		)
@@ -149,6 +134,6 @@ func (r *InstrumentProfileReader) ReadFromFileWithPassword(
 	return resultList, err
 }
 
-func (r *InstrumentProfileReader) ptr() *C.dxfg_instrument_profile_reader_t {
-	return (*C.dxfg_instrument_profile_reader_t)(r.handle.Ptr())
+func (r *InstrumentProfileReader) ptr() *C.dxfg_v4_instrument_profile_reader_t {
+	return (*C.dxfg_v4_instrument_profile_reader_t)(r.handle.Ptr())
 }
