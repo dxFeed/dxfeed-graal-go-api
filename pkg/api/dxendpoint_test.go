@@ -180,11 +180,18 @@ func TestStateListenerChangesListenersFromCallback(t *testing.T) {
 	if err := endpoint.Connect("127.0.0.1:1"); err != nil {
 		t.Fatalf("connect: %v", err)
 	}
-	// Not connected -> Connecting reaches first, Connecting -> Closed reaches next.
+	// The first transition reaches first, which hands over to next; the transition on Close reaches next.
+	deadline := time.Now().Add(5 * time.Second)
+	for first.calls.Load() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("no state transition within 5 s")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 	if err := endpoint.Close(); err != nil {
 		t.Fatalf("close: %v", err)
 	}
-	deadline := time.Now().Add(5 * time.Second)
+	deadline = time.Now().Add(5 * time.Second)
 	for len(next.recorded()) == 0 {
 		if time.Now().After(deadline) {
 			t.Fatalf("the listener added from a callback was not called; first called %d times", first.calls.Load())
