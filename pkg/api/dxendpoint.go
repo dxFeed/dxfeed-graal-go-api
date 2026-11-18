@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -46,6 +47,13 @@ type DXEndpoint struct {
 	// stateListeners is replaced, never changed in place, so UpdateState can call a snapshot without the lock.
 	stateMu        sync.Mutex
 	stateListeners []common.ConnectionStateListener
+
+	// connectorListeners is replaced, never changed in place, as stateListeners; one native listener, attached on the
+	// first add and removed on Close, passes the changes to them.
+	connectorMu             sync.Mutex
+	connectorListeners      []MessageConnectorListener
+	nativeConnectorListener *native.MessageConnectorListener
+	connectorsClosed        bool
 }
 
 // UpdateState is called by the SDK when the connection state changes and notifies the state listeners; applications
@@ -97,7 +105,7 @@ func (e *DXEndpoint) Connect(address string) error {
 // Close closes the endpoint and its connections and releases its native resources at once, without waiting for
 // pending data.
 func (e *DXEndpoint) Close() error {
-	return e.endpointHandle.Close()
+	return errors.Join(e.closeConnectorListener(), e.endpointHandle.Close())
 }
 
 // Role returns the role of the endpoint.
@@ -248,7 +256,9 @@ func (e *DXEndpoint) AwaitNotConnected(ctx context.Context) error {
 // processed. The endpoint is closed even if ctx is already done; if ctx ends first, the call returns ctx.Err() and the
 // endpoint goes on closing in the background.
 func (e *DXEndpoint) CloseAndAwaitTermination(ctx context.Context) error {
-	return runWithContext(ctx, e.endpointHandle.CloseAndAwaitTermination)
+	return runWithContext(ctx, func() error {
+		return errors.Join(e.closeConnectorListener(), e.endpointHandle.CloseAndAwaitTermination())
+	})
 }
 
 // AwaitProcessed waits until all data that is published or subscribed before the call is processed. If ctx ends first,
