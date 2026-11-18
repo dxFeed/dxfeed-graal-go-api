@@ -14,7 +14,14 @@ One top-level item per file, for the ticket in the file name; further changes of
 ```
 
 - Write for API users: what changed and what they have to do, not how it was implemented.
-- Mark a breaking change with `**BREAKING:**` at the start of the top-level item or the nested item it concerns.
+- Mark a ticket with a breaking change as `**\[MDAPI-NNN]\[GO]\[BREAKING]**`, and start each breaking nested item with
+  `**\[BREAKING]**`:
+
+  ```markdown
+  * **\[MDAPI-NNN]\[GO]\[BREAKING]** What changed for users of the API.
+    * **\[BREAKING]** What users have to change in their code.
+  ```
+
 - No blank lines: they would split the item.
 
 CI checks the fragments on every pull request:

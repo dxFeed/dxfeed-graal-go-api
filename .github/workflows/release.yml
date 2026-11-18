@@ -20,10 +20,12 @@ jobs:
   build:
     name: Build
     uses: ./.github/workflows/build.yml
+    with:
+      tools_version: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
 
   notes:
     name: Release notes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -54,62 +56,12 @@ jobs:
         shell: bash
         run: go run ./internal/cmd/release notes "$VERSION" | tee -a "$GITHUB_STEP_SUMMARY"
 
-  tools:
-    name: Tools for ${{ matrix.OS_NAME }}
-    needs: [ build, notes ]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            OS_NAME: win-x64
-          - os: ubuntu-latest
-            OS_NAME: linux-x64
-          - os: ubuntu-24.04-arm
-            OS_NAME: linux-aarch64
-          - os: macos-15
-            OS_NAME: osx-aarch64
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Go
-        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
-        with:
-          go-version: 'stable'
-          cache: false
-
-      - name: Install dependencies
-        run: |
-          go run .
-          go get .
-
-      - name: Build Tools
-        run: make build
-        shell: bash
-
-      - name: Zip Tools
-        uses: thedoctor0/zip-release@b57d897cb5d60cb78b51a507f63fa184cfe35554 # 0.7.6
-        with:
-          type: 'zip'
-          filename: tools-${{ matrix.OS_NAME }}-${{ env.VERSION }}.zip
-          directory: 'bin/'
-          path: "."
-
-      - name: Upload Tools
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: tools-${{ matrix.OS_NAME }}
-          path: bin/tools-${{ matrix.OS_NAME }}-${{ env.VERSION }}.zip
-          if-no-files-found: error
-
   # One job publishes the release, so the archives of all platforms land in one release at once.
   publish:
     name: Publish
-    needs: [ notes, tools ]
+    needs: [ build, notes ]
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
 
@@ -147,7 +99,7 @@ jobs:
   proxy:
     name: Go module proxy
     needs: [ publish ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Setup Go

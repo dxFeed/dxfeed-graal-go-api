@@ -10,7 +10,8 @@ version, so `go get` sees it at once.
 The module follows [semantic versioning](https://semver.org) and stays at v0 until the API is complete.
 
 - **v0:** a breaking change raises the minor version (`v0.4.0` → `v0.5.0`); other changes raise the minor or the patch
-  version. A breaking change is marked `**BREAKING:**` in its release note.
+  version. A breaking change is marked `[BREAKING]` in its release note
+  ([format](release-notes/README.md#format)).
 - **v1 and later:** a breaking change raises the major version. Go requires a module path ending in `/vN` from v2 on
   (`github.com/dxfeed/dxfeed-graal-go-api/v2`), so a new major version changes the import path.
 
