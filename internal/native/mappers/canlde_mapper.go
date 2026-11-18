@@ -78,7 +78,7 @@ func candleFromC(e *candle.Candle, n *C.dxfg_v4_candle_t) {
 
 // candleToC copies the fields of e to a native candle; the event symbol is allocated with cString.
 func candleToC(e *candle.Candle, n *C.dxfg_v4_candle_t) {
-	n.event_symbol = cString(*e.EventSymbol().Symbol())
+	n.event_symbol = cString(e.EventSymbol().String())
 	n.event_time = C.int64_t(e.EventTime())
 	n.event_flags = C.int32_t(e.EventFlags())
 	n.index = C.int64_t(e.Index())
