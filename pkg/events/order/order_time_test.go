@@ -35,6 +35,29 @@ func TestTimeAndSequenceUseTimeSequence(t *testing.T) {
 	}
 }
 
+func TestSetTimeAndSetSequenceKeepEachOther(t *testing.T) {
+	o := order.NewOrder("AAPL")
+	if err := o.SetSequence(1<<22 - 1); err != nil {
+		t.Fatal(err)
+	}
+	o.SetTime(1_700_000_000_999)
+	if o.Time() != 1_700_000_000_999 || o.Sequence() != 1<<22-1 {
+		t.Errorf("after SetTime: Time, Sequence = %d, %d; want 1700000000999, %d", o.Time(), o.Sequence(), 1<<22-1)
+	}
+	if err := o.SetSequence(3); err != nil {
+		t.Fatal(err)
+	}
+	if o.Time() != 1_700_000_000_999 || o.Sequence() != 3 {
+		t.Errorf("after SetSequence: Time, Sequence = %d, %d; want 1700000000999, 3", o.Time(), o.Sequence())
+	}
+	if err := o.SetSequence(1 << 22); err == nil {
+		t.Error("SetSequence(1<<22) returned no error")
+	}
+	if o.Sequence() != 3 {
+		t.Errorf("Sequence = %d after a rejected SetSequence, want 3", o.Sequence())
+	}
+}
+
 func TestTimeAndSequenceDecodeTimeSequence(t *testing.T) {
 	for _, tc := range []struct {
 		name string
