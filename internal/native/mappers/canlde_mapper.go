@@ -39,9 +39,9 @@ func (c CandleMapper) GoEvent(nativeEvent unsafe.Pointer) interface{} {
 func (c CandleMapper) CEvent(event interface{}) unsafe.Pointer {
 	candleEvent := event.(*candle.Candle)
 
-	native := (*C.dxfg_v4_candle_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_candle_t{}))))
+	native := (*C.dxfg_v4_candle_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_candle_t{})))
 	native.event_type.clazz = C.DXFG_EVENT_CANDLE
-	native.event_symbol = C.CString(*candleEvent.EventSymbol().Symbol())
+	native.event_symbol = cString(*candleEvent.EventSymbol().Symbol())
 	native.event_time = C.int64_t(candleEvent.EventTime())
 	native.event_flags = C.int32_t(candleEvent.EventFlags())
 	native.index = C.int64_t(candleEvent.Index())
@@ -58,4 +58,11 @@ func (c CandleMapper) CEvent(event interface{}) unsafe.Pointer {
 	native.open_interest = C.double(candleEvent.OpenInterest())
 
 	return unsafe.Pointer(native)
+}
+
+// FreeCEvent frees an event made by CEvent.
+func (CandleMapper) FreeCEvent(event unsafe.Pointer) {
+	n := (*C.dxfg_v4_candle_t)(event)
+	cFree(unsafe.Pointer(n.event_symbol))
+	cFree(event)
 }

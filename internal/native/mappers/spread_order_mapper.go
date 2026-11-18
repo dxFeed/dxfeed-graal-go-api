@@ -16,10 +16,10 @@ type SpreadOrderMapper struct {
 func (m SpreadOrderMapper) CEvent(event interface{}) unsafe.Pointer {
 	orderEvent := event.(*order.SpreadOrder)
 
-	q := (*C.dxfg_v4_spread_order_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_spread_order_t{}))))
+	q := (*C.dxfg_v4_spread_order_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_spread_order_t{})))
 	q.order_base.market_event.event_type.clazz = C.DXFG_EVENT_SPREAD_ORDER
 
-	q.order_base.market_event.event_symbol = C.CString(*orderEvent.EventSymbol())
+	q.order_base.market_event.event_symbol = cString(*orderEvent.EventSymbol())
 	q.order_base.market_event.event_time = C.int64_t(orderEvent.EventTime())
 
 	q.order_base.event_flags = C.int32_t(orderEvent.EventFlags())
@@ -39,7 +39,7 @@ func (m SpreadOrderMapper) CEvent(event interface{}) unsafe.Pointer {
 	q.order_base.trade_size = C.double(orderEvent.TradeSize())
 
 	if orderEvent.SpreadSymbol() != nil {
-		q.spread_symbol = C.CString(*orderEvent.SpreadSymbol())
+		q.spread_symbol = cString(*orderEvent.SpreadSymbol())
 	}
 
 	return unsafe.Pointer(q)
@@ -69,4 +69,12 @@ func (m SpreadOrderMapper) GoEvent(native unsafe.Pointer) interface{} {
 	o.SetSpreadSymbol(convertString(orderNative.spread_symbol))
 
 	return o
+}
+
+// FreeCEvent frees an event made by CEvent.
+func (SpreadOrderMapper) FreeCEvent(event unsafe.Pointer) {
+	n := (*C.dxfg_v4_spread_order_t)(event)
+	cFree(unsafe.Pointer(n.order_base.market_event.event_symbol))
+	cFree(unsafe.Pointer(n.spread_symbol))
+	cFree(event)
 }
