@@ -372,7 +372,7 @@ func (o *OptionSale) String() string {
 		", time=" + formatutil.FormatTime(o.Time()) +
 		", timeNanoPart=" + strconv.FormatInt(int64(o.timeNanoPart), 10) +
 		", sequence=" + strconv.FormatInt(int64(o.Sequence()), 10) +
-		", exchange=" + formatutil.FormatChar(rune(o.exchangeCode)) +
+		", exchange=" + formatutil.FormatChar(rune(uint16(o.exchangeCode))) +
 		", price=" + formatutil.FormatFloat64(o.price) +
 		", size=" + formatutil.FormatFloat64(o.size) +
 		", bid=" + formatutil.FormatFloat64(o.bidPrice) +
