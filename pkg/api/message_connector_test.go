@@ -1,7 +1,9 @@
 package api
 
 import (
+	"context"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -102,5 +104,167 @@ func TestConnectionErrorText(t *testing.T) {
 		if !strings.HasSuffix(s.String(), "(99)") {
 			t.Errorf("String() of an unknown value = %q", s.String())
 		}
+	}
+}
+
+func TestAddMessageConnectorListenerNil(t *testing.T) {
+	endpoint := buildEndpoint(t, NewEndpointBuilder())
+	if err := endpoint.AddMessageConnectorListener(nil); err == nil {
+		t.Error("AddMessageConnectorListener(nil): no error")
+	}
+}
+
+type panickingConnectorListener struct {
+	calls atomic.Int32
+}
+
+func (l *panickingConnectorListener) ConnectorChanged(MessageConnectorInfo) {
+	l.calls.Add(1)
+	panic("connector listener failure")
+}
+
+// TestConnectorListenerPanicIsRecovered checks that a panic of a connector listener is logged and does not end the
+// process or break the endpoint. A listener after the panicking one misses that change, so the recorder goes first.
+func TestConnectorListenerPanicIsRecovered(t *testing.T) {
+	endpoint := buildEndpoint(t, NewEndpointBuilder())
+	recorder := &connectorRecorder{changes: make(chan MessageConnectorInfo, 100)}
+	panicking := &panickingConnectorListener{}
+	for _, l := range []MessageConnectorListener{recorder, panicking} {
+		if err := endpoint.AddMessageConnectorListener(l); err != nil {
+			t.Fatalf("AddMessageConnectorListener: %v", err)
+		}
+	}
+	if err := endpoint.Connect("127.0.0.1:1"); err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	select {
+	case <-recorder.changes:
+	case <-time.After(10 * time.Second):
+		t.Fatal("no connector change within 10 s")
+	}
+	for deadline := time.Now().Add(5 * time.Second); panicking.calls.Load() == 0; time.Sleep(10 * time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatal("the panicking listener was not called within 5 s")
+		}
+	}
+	if _, err := endpoint.Connectors(); err != nil {
+		t.Errorf("Connectors after a listener panic: %v", err)
+	}
+}
+
+// selfRemovingConnectorListener removes itself from ConnectorChanged.
+type selfRemovingConnectorListener struct {
+	endpoint *DXEndpoint
+	calls    atomic.Int32
+}
+
+func (l *selfRemovingConnectorListener) ConnectorChanged(MessageConnectorInfo) {
+	l.calls.Add(1)
+	l.endpoint.RemoveMessageConnectorListener(l)
+}
+
+// TestConnectorListenerRemovesItselfFromCallback checks that a listener may remove itself without a deadlock.
+func TestConnectorListenerRemovesItselfFromCallback(t *testing.T) {
+	endpoint := buildEndpoint(t, NewEndpointBuilder())
+	listener := &selfRemovingConnectorListener{endpoint: endpoint}
+	if err := endpoint.AddMessageConnectorListener(listener); err != nil {
+		t.Fatalf("AddMessageConnectorListener: %v", err)
+	}
+	if err := endpoint.Connect("127.0.0.1:1"); err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	for deadline := time.Now().Add(10 * time.Second); listener.calls.Load() == 0; time.Sleep(10 * time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatal("the listener was not called within 10 s")
+		}
+	}
+	// The endpoint still works after the removal from the callback.
+	if _, err := endpoint.Connectors(); err != nil {
+		t.Errorf("Connectors: %v", err)
+	}
+}
+
+// TestRemoveMessageConnectorListenerKeepsOthers checks that after a removal only the other listener gets the changes.
+func TestRemoveMessageConnectorListenerKeepsOthers(t *testing.T) {
+	endpoint := buildEndpoint(t, NewEndpointBuilder())
+	removed := &connectorRecorder{changes: make(chan MessageConnectorInfo, 100)}
+	kept := &connectorRecorder{changes: make(chan MessageConnectorInfo, 100)}
+	for _, l := range []MessageConnectorListener{removed, kept} {
+		if err := endpoint.AddMessageConnectorListener(l); err != nil {
+			t.Fatalf("AddMessageConnectorListener: %v", err)
+		}
+	}
+	if err := endpoint.Connect("127.0.0.1:1"); err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	for _, r := range []*connectorRecorder{removed, kept} {
+		select {
+		case <-r.changes:
+		case <-time.After(10 * time.Second):
+			t.Fatal("no connector change within 10 s")
+		}
+	}
+
+	endpoint.RemoveMessageConnectorListener(removed)
+	if err := endpoint.Connect("127.0.0.1:2"); err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	for seen := false; !seen; {
+		select {
+		case info := <-kept.changes:
+			seen = info.Address == "127.0.0.1:2"
+		case <-time.After(10 * time.Second):
+			t.Fatal("the kept listener got no change of 127.0.0.1:2 within 10 s")
+		}
+	}
+	for {
+		select {
+		case info := <-removed.changes:
+			if info.Address == "127.0.0.1:2" {
+				t.Fatalf("the removed listener got a change after the removal: %+v", info)
+			}
+		default:
+			return
+		}
+	}
+}
+
+// closingConnectorListener closes the endpoint with CloseAndAwaitTermination from the first ConnectorChanged.
+type closingConnectorListener struct {
+	endpoint *DXEndpoint
+	done     chan error
+	once     atomic.Bool
+}
+
+func (l *closingConnectorListener) ConnectorChanged(MessageConnectorInfo) {
+	if !l.once.CompareAndSwap(false, true) {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	l.done <- l.endpoint.CloseAndAwaitTermination(ctx)
+}
+
+// TestConnectorListenerClosesEndpointFromCallback checks that a listener may call CloseAndAwaitTermination without a
+// deadlock between the release of the native listener and the running callback.
+func TestConnectorListenerClosesEndpointFromCallback(t *testing.T) {
+	endpoint := buildEndpoint(t, NewEndpointBuilder())
+	listener := &closingConnectorListener{endpoint: endpoint, done: make(chan error, 1)}
+	if err := endpoint.AddMessageConnectorListener(listener); err != nil {
+		t.Fatalf("AddMessageConnectorListener: %v", err)
+	}
+	if err := endpoint.Connect("127.0.0.1:1"); err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	select {
+	case err := <-listener.done:
+		if err != nil {
+			t.Errorf("CloseAndAwaitTermination from a listener: %v", err)
+		}
+	case <-time.After(15 * time.Second):
+		t.Fatal("CloseAndAwaitTermination from a listener did not return within 15 s")
+	}
+	if !endpoint.IsClosed() {
+		t.Error("the endpoint is not closed")
 	}
 }

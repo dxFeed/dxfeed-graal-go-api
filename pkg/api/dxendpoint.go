@@ -254,11 +254,12 @@ func (e *DXEndpoint) AwaitNotConnected(ctx context.Context) error {
 
 // CloseAndAwaitTermination closes the endpoint and waits until its connections are closed and its pending data is
 // processed. The endpoint is closed even if ctx is already done; if ctx ends first, the call returns ctx.Err() and the
-// endpoint goes on closing in the background.
+// endpoint goes on closing in the background. It may be called from a listener.
 func (e *DXEndpoint) CloseAndAwaitTermination(ctx context.Context) error {
-	return runWithContext(ctx, func() error {
-		return errors.Join(e.closeConnectorListener(), e.endpointHandle.CloseAndAwaitTermination())
-	})
+	// The native listener is released on the caller's goroutine: the release waits for a running callback unless it is
+	// made from the callback's own thread, and a listener that closes the endpoint is such a callback.
+	listenerErr := e.closeConnectorListener()
+	return errors.Join(listenerErr, runWithContext(ctx, e.endpointHandle.CloseAndAwaitTermination))
 }
 
 // AwaitProcessed waits until all data that is published or subscribed before the call is processed. If ctx ends first,

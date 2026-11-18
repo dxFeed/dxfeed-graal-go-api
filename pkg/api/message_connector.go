@@ -259,7 +259,8 @@ func (e *DXEndpoint) LastConnectionError() (*ConnectionError, error) {
 // AddMessageConnectorListener adds a listener of the state changes of the message connectors of the endpoint, also of
 // those that a later Connect creates. The listeners are called on one SDK thread, one call at a time, so a listener
 // should return quickly; it may call the methods of the endpoint, Connect included. The current states are not passed
-// to a new listener: call Connectors after adding it. It may be called from any goroutine, also from a listener.
+// to a new listener: call Connectors after adding it. It may be called from any goroutine, also from a listener, which
+// may also close the endpoint. A listener that panics is logged and the other listeners miss that change.
 func (e *DXEndpoint) AddMessageConnectorListener(listener MessageConnectorListener) error {
 	if listener == nil {
 		return errors.New("dxfeed: the message connector listener is nil")
