@@ -105,3 +105,50 @@ func TestStateListenerPanicIsRecovered(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 }
+
+// TestStateListenersChangeWhileStateChanges adds and removes listeners while the SDK reports state changes; under
+// -race it fails if the listener list is not synchronized.
+func TestStateListenersChangeWhileStateChanges(t *testing.T) {
+	endpoint, err := NewEndpoint(Feed)
+	if err != nil {
+		t.Fatalf("create endpoint: %v", err)
+	}
+	recorder := newStateRecorder()
+	endpoint.AddListener(recorder)
+	removed := newStateRecorder()
+	endpoint.AddListener(removed)
+	endpoint.RemoveListener(removed)
+
+	done := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-done:
+				return
+			default:
+				l := newStateRecorder()
+				endpoint.AddListener(l)
+				endpoint.RemoveListener(l)
+			}
+		}
+	}()
+	if err := endpoint.Connect("127.0.0.1:1"); err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+	select {
+	case <-recorder.seen:
+	case <-time.After(5 * time.Second):
+		t.Fatalf("no transition to Connecting within 5 s, recorded: %v", recorder.recorded())
+	}
+	if err := endpoint.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+	close(done)
+	wg.Wait()
+	if states := removed.recorded(); len(states) != 0 {
+		t.Errorf("a removed listener was called: %v", states)
+	}
+}

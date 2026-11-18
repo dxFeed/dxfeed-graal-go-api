@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"io"
+	"sync"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
@@ -39,13 +40,18 @@ type DXEndpoint struct {
 	feedHandle      *DXFeed
 	publisherHandle *DXPublisher
 
-	stateListenerList []common.ConnectionStateListener
+	// stateListeners is replaced, never changed in place, so UpdateState can call a snapshot without the lock.
+	stateMu        sync.Mutex
+	stateListeners []common.ConnectionStateListener
 }
 
 // UpdateState is called by the SDK when the connection state changes and notifies the state listeners; applications
 // do not call it.
 func (e *DXEndpoint) UpdateState(old common.ConnectionState, new common.ConnectionState) {
-	for _, listener := range e.stateListenerList {
+	e.stateMu.Lock()
+	listeners := e.stateListeners
+	e.stateMu.Unlock()
+	for _, listener := range listeners {
 		listener.UpdateState(old, new)
 	}
 }
@@ -153,24 +159,25 @@ func runWithContext(ctx context.Context, wait func() error) error {
 	}
 }
 
-// AddListener adds a listener of connection state changes. It is not safe to call concurrently with the other listener
-// methods.
+// AddListener adds a listener of connection state changes. It may be called from any goroutine, also from a listener;
+// a state change that is being reported may or may not reach the new listener.
 func (e *DXEndpoint) AddListener(listener common.ConnectionStateListener) {
-	e.stateListenerList = append(e.stateListenerList, listener)
+	e.stateMu.Lock()
+	defer e.stateMu.Unlock()
+	listeners := make([]common.ConnectionStateListener, 0, len(e.stateListeners)+1)
+	e.stateListeners = append(append(listeners, e.stateListeners...), listener)
 }
 
-// RemoveListener removes a listener added with AddListener.
+// RemoveListener removes a listener added with AddListener. It may be called from any goroutine, also from a listener;
+// a state change that is being reported may still reach the removed listener.
 func (e *DXEndpoint) RemoveListener(listener common.ConnectionStateListener) {
-	e.stateListenerList = removeStateListenerFromSlice(e.stateListenerList, listener)
-}
-
-func removeStateListenerFromSlice(list []common.ConnectionStateListener, observerToRemove common.ConnectionStateListener) []common.ConnectionStateListener {
-	listLength := len(list)
-	for i, observer := range list {
-		if observerToRemove == observer {
-			list[listLength-1], list[i] = list[i], list[listLength-1]
-			return list[:listLength-1]
+	e.stateMu.Lock()
+	defer e.stateMu.Unlock()
+	for i, l := range e.stateListeners {
+		if l == listener {
+			listeners := make([]common.ConnectionStateListener, 0, len(e.stateListeners)-1)
+			e.stateListeners = append(append(listeners, e.stateListeners[:i]...), e.stateListeners[i+1:]...)
+			return
 		}
 	}
-	return list
 }
