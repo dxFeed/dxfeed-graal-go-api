@@ -164,6 +164,18 @@ jobs:
       - name: Test
         run: go test -v ./...
 
+      # Many goroutines calling the API at once attach their OS threads to the isolate; each run is a new process, so
+      # that every run attaches its threads anew. Attaching and detaching on every call used to hang here on Linux.
+      - name: Concurrent calls in new processes
+        if: runner.os == 'Linux'
+        run: |
+          go test -c -o "$RUNNER_TEMP/api.test" ./pkg/api
+          cd pkg/api
+          for i in $(seq 1 10); do
+            timeout 120 "$RUNNER_TEMP/api.test" -test.run '^TestConcurrentGetSetSystemProperty$' -test.timeout 100s ||
+              { echo "run $i failed or hung"; exit 1; }
+          done
+
       # The archives are built in the tested job, so a release waits for each runner once.
       - name: Build Tools
         if: inputs.tools_version != '' && matrix.go == 'stable'

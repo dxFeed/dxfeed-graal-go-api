@@ -5,6 +5,7 @@ package native
 
 import (
 	"errors"
+	"runtime"
 	"sync"
 	"testing"
 	"unsafe"
@@ -35,17 +36,32 @@ func TestMultipleAttachIsolateThreadInSameThread(t *testing.T) {
 	})
 }
 
-func TestDoubleDetachIsolateThread(t *testing.T) {
-	thread, err := attachCurrentThread()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := thread.detach(); err != nil {
-		t.Fatal(err)
-	}
-	if err := thread.detach(); err != nil {
-		t.Fatalf("second detach: %v", err)
-	}
+// TestThreadStaysAttached checks that an OS thread stays attached after a call, and that the next call on the thread
+// gets the same IsolateThread.
+func TestThreadStaysAttached(t *testing.T) {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		// Both calls and the check run on the same OS thread.
+		runtime.LockOSThread()
+		defer runtime.UnlockOSThread()
+		var first, second *isolateThread
+		if err := executeInIsolateThread(func(thread *isolateThread) error { first = thread; return nil }); err != nil {
+			t.Errorf("first call: %v", err)
+			return
+		}
+		if !isAttached() {
+			t.Error("the thread is not attached after a call")
+		}
+		if err := executeInIsolateThread(func(thread *isolateThread) error { second = thread; return nil }); err != nil {
+			t.Errorf("second call: %v", err)
+			return
+		}
+		if first.ptr != second.ptr {
+			t.Errorf("the second call got another IsolateThread: %p, %p", first.ptr, second.ptr)
+		}
+	}()
+	<-done
 }
 
 // TestIsolateErrorIsReturned checks that a failure of the isolate creation is returned by every call instead of a
@@ -76,12 +92,11 @@ func TestIsolateErrorIsReturned(t *testing.T) {
 	}
 }
 
-// attachCurrentThread pins its goroutine to an OS thread for the duration of
-// the call, so every in-flight iteration costs one real thread. Keep the
-// concurrency modest: with too many goroutines at once the runtime hits the
-// process thread limit and cgo aborts with
-// "pthread_create failed: Resource temporarily unavailable".
-func TestConcurrentAttachDetachIsolateThread(t *testing.T) {
+// TestConcurrentAttachIsolateThread calls from many goroutines at once. executeInIsolateThread pins its goroutine to
+// an OS thread for the duration of the call, so every call in progress
+// costs one real thread. Keep the concurrency modest: with too many goroutines at once the runtime hits the process
+// thread limit and cgo aborts with "pthread_create failed: Resource temporarily unavailable".
+func TestConcurrentAttachIsolateThread(t *testing.T) {
 	const goroutines = 1000
 
 	var wg sync.WaitGroup
@@ -111,6 +126,6 @@ func TestConcurrentAttachDetachIsolateThread(t *testing.T) {
 	}
 	// All attaches must share the single process-wide isolate.
 	if isolate, err := getOrCreateIsolate(); err != nil || isolate.ptr == nil {
-		t.Error("isolate pointer is nil after concurrent attach/detach")
+		t.Error("isolate pointer is nil after concurrent attaches")
 	}
 }
