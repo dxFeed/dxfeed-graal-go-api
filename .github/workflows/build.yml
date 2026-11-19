@@ -67,6 +67,34 @@ jobs:
       - name: Race tests
         run: go test -race ./...
 
+  # gorelease compares the exported API with the latest release tag; an incompatible change that a pull request adds
+  # needs a [BREAKING] release note fragment in it. A release checks its version instead (release.yml).
+  api:
+    name: API compatibility
+    if: inputs.tools_version == ''
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: 'stable'
+          cache: false
+
+      # gorelease loads the packages with cgo, as a build does.
+      - name: Install the native SDK
+        run: |
+          dir=$(go run ./cmd/install-sdk -print-dir)
+          echo "CGO_LDFLAGS=-L$dir" >> "$GITHUB_ENV"
+
+      - name: Compare the API with the latest release
+        run: go run ./internal/cmd/release api
+
   build_and_test:
     name: Build & Test on ${{ matrix.platform.OS_NAME }}, Go ${{ matrix.go }}
     runs-on: ${{ matrix.platform.os }}

@@ -51,6 +51,16 @@ jobs:
             exit 1
           fi
 
+      # gorelease loads the packages with cgo, as a build does.
+      - name: Install the native SDK
+        run: |
+          dir=$(go run ./cmd/install-sdk -print-dir)
+          echo "CGO_LDFLAGS=-L$dir" >> "$GITHUB_ENV"
+
+      # An incompatible API change since the previous release tag needs a new minor version (major from v1 on).
+      - name: Check the version against the API changes
+        run: go run ./internal/cmd/release api "$VERSION"
+
       # Explicit bash runs with pipefail, so a failing command is not hidden by tee.
       - name: Release notes
         shell: bash

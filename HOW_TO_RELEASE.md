@@ -25,6 +25,10 @@ Breaking, for packages outside `internal/`:
 Not breaking: anything under `internal/`, a newer Graal Native SDK with the same API, a higher minimum Go version
 (still mentioned in the release notes).
 
+gorelease finds the incompatible changes of the exported API (the first two kinds above): CI fails a pull request
+with one unless a fragment is marked `[BREAKING]`, and the Release workflow refuses a version that is too low for
+them. The other kinds are up to the author of the change.
+
 Tags `0.0.1`…`0.3.0` were made without the `v` prefix; they stay, and Go tools see them only as pseudo-versions.
 
 ## Steps
@@ -36,8 +40,13 @@ Tags `0.0.1`…`0.3.0` were made without the `v` prefix; they stay, and Go tools
    ```bash
    git switch main
    git pull --ff-only
+   git fetch --tags
+   go run ./internal/cmd/release api v0.5.0
    go run ./internal/cmd/release prepare v0.5.0 --dry-run
    ```
+
+   `release api` compares the API with the previous release tag, as the Release workflow does, and fails when the
+   version is too low for an incompatible change; it needs cgo set up as for a build.
 
 3. Prepare it: the command moves the fragments into `ReleaseNotes.md` under `## v0.5.0`, commits `Release v0.5.0` and
    creates the tag `v0.5.0` locally.
