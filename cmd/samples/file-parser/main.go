@@ -20,20 +20,6 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 )
 
-// eventTypes maps the names of the event types to their codes.
-var eventTypes = map[string]eventcodes.EventCode{
-	"Quote": eventcodes.Quote, "Profile": eventcodes.Profile, "Summary": eventcodes.Summary,
-	"Greeks": eventcodes.Greeks, "Candle": eventcodes.Candle, "Underlying": eventcodes.Underlying,
-	"TheoPrice": eventcodes.TheoPrice, "Trade": eventcodes.Trade, "TradeETH": eventcodes.TradeETH,
-	"Configuration": eventcodes.Configuration, "Message": eventcodes.Message, "TimeAndSale": eventcodes.TimeAndSale,
-	"Order": eventcodes.Order, "AnalyticOrder": eventcodes.AnalyticOrder, "OtcMarketsOrder": eventcodes.OtcMarketsOrder,
-	"SpreadOrder": eventcodes.SpreadOrder, "Series": eventcodes.Series, "OptionSale": eventcodes.OptionSale,
-	"TextMessage": eventcodes.TextMessage, "MarketMaker": eventcodes.MarketMaker,
-	"TextConfiguration": eventcodes.TextConfiguration, "NuamOrder": eventcodes.NuamOrder,
-	"NuamTimeAndSale": eventcodes.NuamTimeAndSale, "NuamTrade": eventcodes.NuamTrade,
-	"OrderImbalance": eventcodes.OrderImbalance,
-}
-
 // eventListener adapts a function to common.EventListener.
 type eventListener func(events []interface{})
 
@@ -50,8 +36,8 @@ func main() {
 	}
 	var codes []eventcodes.EventCode
 	for _, name := range strings.Split(*types, ",") {
-		code, ok := eventTypes[strings.TrimSpace(name)]
-		if !ok {
+		code, ok := eventcodes.ByName(strings.TrimSpace(name))
+		if !ok || code == eventcodes.OrderBase {
 			fmt.Fprintf(os.Stderr, "unknown event type %q\n", name)
 			os.Exit(2)
 		}
@@ -109,11 +95,14 @@ func main() {
 	}
 }
 
-// typeNames returns the names of the event types, sorted and separated by commas.
+// typeNames returns the names of the event types, sorted and separated by commas. OrderBase is left out: it has no
+// events of its own.
 func typeNames() string {
-	names := make([]string, 0, len(eventTypes))
-	for name := range eventTypes {
-		names = append(names, name)
+	var names []string
+	for _, code := range eventcodes.All() {
+		if code != eventcodes.OrderBase {
+			names = append(names, code.String())
+		}
 	}
 	sort.Strings(names)
 	return strings.Join(names, ",")

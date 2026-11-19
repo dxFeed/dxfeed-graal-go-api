@@ -44,7 +44,9 @@ func TestParseEventTypesUnknown(t *testing.T) {
 		"Qoute":             `unknown event type "Qoute"`,
 		"Quote,Qoute,Trdae": `unknown event type "Qoute", "Trdae"`,
 		"Quote,":            `unknown event type ""`,
-		"":                  `unknown event type ""`,
+		"":                  `no event types`,
+		" ":                 `no event types`,
+		"OrderBase":         `unknown event type "OrderBase"`,
 	} {
 		got, err := ParseEventTypes(value)
 		if err == nil || err.Error() != want {

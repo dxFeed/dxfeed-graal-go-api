@@ -28,9 +28,12 @@ func ParseSymbols(value string) ([]osub.Symbol, error) {
 }
 
 // ParseEventTypes parses a comma-separated list of event types, such as Quote,TimeAndSale; the names are
-// case-insensitive, and "all" is every event type except OrderBase, which has no events of its own. An unknown name is
-// an error that names it.
+// case-insensitive, and "all" is every event type except OrderBase, which has no events of its own. An unknown name,
+// OrderBase included, is an error that names it; so is an empty list.
 func ParseEventTypes(value string) ([]eventcodes.EventCode, error) {
+	if strings.TrimSpace(value) == "" {
+		return nil, fmt.Errorf("no event types")
+	}
 	if strings.EqualFold(strings.TrimSpace(value), "all") {
 		var codes []eventcodes.EventCode
 		for _, code := range eventcodes.All() {
@@ -57,15 +60,17 @@ func ParseEventTypes(value string) ([]eventcodes.EventCode, error) {
 	return codes, nil
 }
 
-// eventTypeByName finds the event code by the name of its type, ignoring the case.
+// eventTypeByName finds the event code by the name of its type, ignoring the case. OrderBase is not found: it has no
+// events of its own.
 func eventTypeByName(name string) (eventcodes.EventCode, bool) {
 	for _, code := range eventcodes.All() {
-		if strings.EqualFold(code.String(), name) {
+		if code != eventcodes.OrderBase && strings.EqualFold(code.String(), name) {
 			return code, true
 		}
 	}
 	return 0, false
 }
+
 func ParseTime(time string) (int64, error) {
 	value, err := native.ParseTime(time)
 	return value, err

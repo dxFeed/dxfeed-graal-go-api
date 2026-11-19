@@ -43,7 +43,7 @@ func main() {
 	var codes []eventcodes.EventCode
 	for _, name := range strings.Split(*types, ",") {
 		code, ok := eventcodes.ByName(strings.TrimSpace(name))
-		if !ok {
+		if !ok || code == eventcodes.OrderBase {
 			fmt.Fprintf(os.Stderr, "unknown event type %q\n", name)
 			os.Exit(2)
 		}
