@@ -585,6 +585,10 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   passes the complete transactions of the indexed events of a symbol, such as the orders of an order book, to its
   listener ([sample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/inc-order-snapshot/main.go))
 
+- [x] [TimeSeriesTxModel](https://github.com/dxFeed/dxfeed-graal-cxx-api/blob/main/include/dxfeed_graal_cpp_api/model/TimeSeriesTxModel.hpp)
+  passes the complete transactions of the time series events of a symbol from a time, such as candles, to its
+  listener
+
 ### IPF & Schedule
 
 - [x] [InstrumentProfile](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ipf/InstrumentProfile.html)
