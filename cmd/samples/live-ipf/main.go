@@ -49,6 +49,8 @@ func main() {
 }
 
 func run(address string, duration time.Duration) error {
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
 	collector, err := live.NewInstrumentProfileCollector()
 	if err != nil {
 		return err
@@ -80,8 +82,6 @@ func run(address string, duration time.Duration) error {
 	}
 	fmt.Printf("%d profiles read; waiting for updates\n", len(profiles))
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
 	var timeout <-chan time.Time
 	if duration > 0 {
 		timeout = time.After(duration)

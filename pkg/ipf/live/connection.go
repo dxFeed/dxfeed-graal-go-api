@@ -3,7 +3,6 @@ package live
 import (
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
@@ -58,12 +57,10 @@ type stateListenerEntry struct {
 // collector and keeps them up to date: a server pushes live updates, a file or a URL is checked again every update
 // period. Create it with CreateConnection, then Start it; Close it when it is no longer needed.
 type InstrumentProfileConnection struct {
-	// mu guards the handle: the calls hold it for reading, the release in Close for writing.
-	mu        sync.RWMutex
+	guard     guard
 	handle    *native.InstrumentProfileConnectionHandle
 	collector *InstrumentProfileCollector
-	closed    bool
-	listeners []stateListenerEntry
+	listeners []stateListenerEntry // guarded by guard.mu
 }
 
 var errConnectionClosed = errors.New("live: the instrument profile connection is closed")
@@ -77,7 +74,7 @@ func CreateConnection(address string, collector *InstrumentProfileCollector) (*I
 		return nil, errors.New("live: nil collector")
 	}
 	var handle *native.InstrumentProfileConnectionHandle
-	err := collector.read(func(h *native.InstrumentProfileCollectorHandle) (err error) {
+	err := collector.call(func(h *native.InstrumentProfileCollectorHandle) (err error) {
 		handle, err = native.NewInstrumentProfileConnection(address, h)
 		return err
 	})
@@ -87,12 +84,11 @@ func CreateConnection(address string, collector *InstrumentProfileCollector) (*I
 	return &InstrumentProfileConnection{handle: handle, collector: collector}, nil
 }
 
-func (c *InstrumentProfileConnection) read(f func(h *native.InstrumentProfileConnectionHandle) error) error {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	if c.closed {
+func (c *InstrumentProfileConnection) call(f func(h *native.InstrumentProfileConnectionHandle) error) error {
+	if !c.guard.enter() {
 		return errConnectionClosed
 	}
+	defer c.guard.exit()
 	return f(c.handle)
 }
 
@@ -104,7 +100,7 @@ func (c *InstrumentProfileConnection) Collector() *InstrumentProfileCollector {
 // Address returns the address of the connection without its options, such as [update=30s].
 func (c *InstrumentProfileConnection) Address() (string, error) {
 	var address string
-	err := c.read(func(h *native.InstrumentProfileConnectionHandle) (err error) {
+	err := c.call(func(h *native.InstrumentProfileConnectionHandle) (err error) {
 		address, err = h.Address()
 		return err
 	})
@@ -114,7 +110,7 @@ func (c *InstrumentProfileConnection) Address() (string, error) {
 // UpdatePeriod returns the period of the update checks of a source without live updates, and of the reconnections.
 func (c *InstrumentProfileConnection) UpdatePeriod() (time.Duration, error) {
 	var millis int64
-	err := c.read(func(h *native.InstrumentProfileConnectionHandle) (err error) {
+	err := c.call(func(h *native.InstrumentProfileConnectionHandle) (err error) {
 		millis, err = h.UpdatePeriod()
 		return err
 	})
@@ -126,26 +122,29 @@ func (c *InstrumentProfileConnection) SetUpdatePeriod(period time.Duration) erro
 	if period < 0 {
 		return fmt.Errorf("live: negative update period %v", period)
 	}
-	return c.read(func(h *native.InstrumentProfileConnectionHandle) error {
+	return c.call(func(h *native.InstrumentProfileConnectionHandle) error {
 		return h.SetUpdatePeriod(period.Milliseconds())
 	})
 }
 
 // State returns the state of the connection; it is Closed after Close.
 func (c *InstrumentProfileConnection) State() (State, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	if c.closed {
+	state := Closed
+	err := c.call(func(h *native.InstrumentProfileConnectionHandle) error {
+		s, err := h.State()
+		state = State(s)
+		return err
+	})
+	if errors.Is(err, errConnectionClosed) {
 		return Closed, nil
 	}
-	state, err := c.handle.State()
-	return State(state), err
+	return state, err
 }
 
 // LastModified returns the modification time of the last data read, or the zero time if it is unknown.
 func (c *InstrumentProfileConnection) LastModified() (time.Time, error) {
 	var millis int64
-	err := c.read(func(h *native.InstrumentProfileConnectionHandle) (err error) {
+	err := c.call(func(h *native.InstrumentProfileConnectionHandle) (err error) {
 		millis, err = h.LastModified()
 		return err
 	})
@@ -158,7 +157,7 @@ func (c *InstrumentProfileConnection) LastModified() (time.Time, error) {
 // Start starts the connection, which connects in the background; it fails unless the state is NotConnected. The
 // listeners receive the change to Connecting before Start returns.
 func (c *InstrumentProfileConnection) Start() error {
-	return c.read(func(h *native.InstrumentProfileConnectionHandle) error {
+	return c.call(func(h *native.InstrumentProfileConnectionHandle) error {
 		return h.Start()
 	})
 }
@@ -167,7 +166,7 @@ func (c *InstrumentProfileConnection) Start() error {
 // timeout elapses; it reports whether the profiles were read.
 func (c *InstrumentProfileConnection) WaitUntilCompleted(timeout time.Duration) (bool, error) {
 	var completed bool
-	err := c.read(func(h *native.InstrumentProfileConnectionHandle) (err error) {
+	err := c.call(func(h *native.InstrumentProfileConnectionHandle) (err error) {
 		completed, err = h.WaitUntilCompleted(timeout)
 		return err
 	})
@@ -176,75 +175,86 @@ func (c *InstrumentProfileConnection) WaitUntilCompleted(timeout time.Duration) 
 
 // AddStateChangeListener adds a listener of the state changes. The listeners are called on the thread that changes
 // the state: the goroutine of Start and Close for Connecting and Closed, a thread of the connection for the others. A
-// listener must not block and must not call Close; a listener that panics is logged. Adding a listener that is already
-// added does nothing.
+// listener must not block; a listener that panics is logged. The listener is found by ==, so its type must be
+// comparable, such as a pointer; adding a listener that is already added does nothing.
 func (c *InstrumentProfileConnection) AddStateChangeListener(listener StateChangeListener) error {
-	if listener == nil {
-		return errors.New("live: nil state change listener")
-	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.closed {
-		return errConnectionClosed
-	}
-	for _, e := range c.listeners {
-		if e.listener == listener {
-			return nil
-		}
-	}
-	l, err := c.handle.AttachStateListener(func(oldState, newState int32) {
-		listener.StateChanged(State(oldState), State(newState))
-	})
-	if err != nil {
+	if err := checkListener(listener); err != nil {
 		return err
 	}
-	listeners := make([]stateListenerEntry, 0, len(c.listeners)+1)
-	c.listeners = append(append(listeners, c.listeners...), stateListenerEntry{listener, l})
-	return nil
-}
-
-// RemoveStateChangeListener removes a listener; a change that is being delivered may still reach it. The listener is
-// found by ==, so its dynamic type must be comparable.
-func (c *InstrumentProfileConnection) RemoveStateChangeListener(listener StateChangeListener) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for i, e := range c.listeners {
-		if e.listener == listener {
-			listeners := make([]stateListenerEntry, 0, len(c.listeners)-1)
-			c.listeners = append(append(listeners, c.listeners[:i]...), c.listeners[i+1:]...)
-			if c.closed {
+	return c.call(func(h *native.InstrumentProfileConnectionHandle) error {
+		c.guard.mu.Lock()
+		for _, e := range c.listeners {
+			if e.listener == listener {
+				c.guard.mu.Unlock()
 				return nil
 			}
-			return c.handle.DetachStateListener(e.native)
 		}
-	}
-	return nil
+		c.guard.mu.Unlock()
+		l, err := h.AttachStateListener(func(oldState, newState int32) {
+			listener.StateChanged(State(oldState), State(newState))
+		})
+		if err != nil {
+			return err
+		}
+		// The listener is detached without the lock: a callback in progress may need it.
+		c.guard.mu.Lock()
+		if c.guard.closed {
+			c.guard.mu.Unlock()
+			return errors.Join(errConnectionClosed, h.DetachStateListener(l))
+		}
+		for _, e := range c.listeners {
+			if e.listener == listener {
+				c.guard.mu.Unlock()
+				return h.DetachStateListener(l)
+			}
+		}
+		listeners := make([]stateListenerEntry, 0, len(c.listeners)+1)
+		c.listeners = append(append(listeners, c.listeners...), stateListenerEntry{listener, l})
+		c.guard.mu.Unlock()
+		return nil
+	})
 }
 
-// Close closes the connection: the listeners receive the change to Closed, nothing more reaches the collector, and
-// the native connection and listeners are released. A WaitUntilCompleted in progress returns false. The collector is
-// not closed. Later calls do nothing.
-func (c *InstrumentProfileConnection) Close() error {
-	c.mu.RLock()
-	if c.closed {
-		c.mu.RUnlock()
+// RemoveStateChangeListener removes a listener; a change that is being delivered may still reach it.
+func (c *InstrumentProfileConnection) RemoveStateChangeListener(listener StateChangeListener) error {
+	if checkListener(listener) != nil {
 		return nil
 	}
-	// Close without the write lock: it wakes up a WaitUntilCompleted that holds the read lock.
-	err := c.handle.Close()
-	c.mu.RUnlock()
+	return c.call(func(h *native.InstrumentProfileConnectionHandle) error {
+		c.guard.mu.Lock()
+		var removed *native.IpfStateListener
+		for i, e := range c.listeners {
+			if e.listener == listener {
+				removed = e.native
+				listeners := make([]stateListenerEntry, 0, len(c.listeners)-1)
+				c.listeners = append(append(listeners, c.listeners[:i]...), c.listeners[i+1:]...)
+				break
+			}
+		}
+		c.guard.mu.Unlock()
+		if removed == nil {
+			return nil
+		}
+		return h.DetachStateListener(removed)
+	})
+}
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.closed {
-		return err
+// Close closes the connection: the listeners receive the change to Closed, nothing more reaches the collector, and a
+// WaitUntilCompleted in progress returns false. The native connection and listeners are released after the calls in
+// progress end. The collector is not closed. Later calls do nothing; Close must not be called from a state listener.
+func (c *InstrumentProfileConnection) Close() error {
+	var listeners []stateListenerEntry
+	if !c.guard.close(func() {
+		listeners, c.listeners = c.listeners, nil
+	}) {
+		return nil
 	}
-	c.closed = true
-	errs := []error{err}
-	for _, e := range c.listeners {
+	// The calls in progress still hold the handle, so it is valid; the native close wakes up WaitUntilCompleted.
+	errs := []error{c.handle.Close()}
+	for _, e := range listeners {
 		errs = append(errs, c.handle.DetachStateListener(e.native))
 	}
-	c.listeners = nil
+	c.guard.wait()
 	errs = append(errs, c.handle.Free())
 	return errors.Join(errs...)
 }

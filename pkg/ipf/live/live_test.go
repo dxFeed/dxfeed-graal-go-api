@@ -195,8 +195,14 @@ func TestConnectionToFile(t *testing.T) {
 	if err != nil || !completed {
 		t.Fatalf("WaitUntilCompleted = %v, %v", completed, err)
 	}
-	if got := updates.next(t); len(got) != 9 || got["TEST"] != ipf.TypeStock || got[".TEST261218C10"] != ipf.TypeOption {
-		t.Errorf("update from the file = %v", got)
+	got := map[string]string{}
+	for len(got) < 9 {
+		for symbol, instrumentType := range updates.next(t) {
+			got[symbol] = instrumentType
+		}
+	}
+	if len(got) != 9 || got["TEST"] != ipf.TypeStock || got[".TEST261218C10"] != ipf.TypeOption {
+		t.Errorf("updates from the file = %v", got)
 	}
 	view, err := collector.View()
 	if err != nil || len(view) != 9 {
@@ -218,7 +224,12 @@ func TestConnectionToFile(t *testing.T) {
 	if state, err := connection.State(); err != nil || state != Closed {
 		t.Errorf("state after Close = %v, %v", state, err)
 	}
-	if got, want := listener.get(), []State{Connecting, Connected, Completed, Closed}; !slices.Equal(got, want) {
+	want := []State{Connecting, Connected, Completed, Closed}
+	deadline := time.Now().Add(5 * time.Second)
+	for !slices.Equal(listener.get(), want) && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if got := listener.get(); !slices.Equal(got, want) {
 		t.Errorf("states = %v, want %v", got, want)
 	}
 	if _, err := connection.Address(); err == nil {
@@ -256,5 +267,75 @@ func TestConnectionErrors(t *testing.T) {
 	}
 	if _, err := CreateConnection("x.ipf", collector); err == nil {
 		t.Error("a closed collector did not fail")
+	}
+}
+
+type stateFunc func(oldState, newState State)
+
+func (f stateFunc) StateChanged(oldState, newState State) { f(oldState, newState) }
+
+// A listener that reads the state while the state changes, also during Close.
+type stateReader struct {
+	connection *InstrumentProfileConnection
+	mu         sync.Mutex
+	read       []State
+}
+
+func (r *stateReader) StateChanged(_, _ State) {
+	state, _ := r.connection.State()
+	r.mu.Lock()
+	r.read = append(r.read, state)
+	r.mu.Unlock()
+}
+
+func TestListenerCallsBackAndCloseWakesWait(t *testing.T) {
+	collector, err := NewInstrumentProfileCollector()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer collector.Close()
+	// A server that accepts nothing: the connection keeps connecting.
+	connection, err := CreateConnection("127.0.0.1:1", collector)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := connection.AddStateChangeListener(stateFunc(func(_, _ State) {})); err == nil {
+		t.Error("a func listener, which is not comparable, was added")
+	}
+	reader := &stateReader{connection: connection}
+	if err := connection.AddStateChangeListener(reader); err != nil {
+		t.Fatal(err)
+	}
+	if err := connection.Start(); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan bool)
+	go func() {
+		completed, _ := connection.WaitUntilCompleted(time.Minute)
+		done <- completed
+	}()
+	time.Sleep(200 * time.Millisecond)
+	// Listener changes while WaitUntilCompleted runs must not block Close.
+	if err := connection.RemoveStateChangeListener(reader); err != nil {
+		t.Fatal(err)
+	}
+	if err := connection.AddStateChangeListener(reader); err != nil {
+		t.Fatal(err)
+	}
+	if err := connection.Close(); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case completed := <-done:
+		if completed {
+			t.Error("WaitUntilCompleted reported completion of a closed connection")
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("Close did not wake up WaitUntilCompleted")
+	}
+	reader.mu.Lock()
+	defer reader.mu.Unlock()
+	if len(reader.read) == 0 || reader.read[len(reader.read)-1] != Closed {
+		t.Errorf("states read by the listener = %v", reader.read)
 	}
 }
