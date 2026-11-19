@@ -21,7 +21,14 @@ const testSymbol = "TEST-SYMBOL"
 
 var snapshotBeginEnd = events.SnapshotBegin.Flag() | events.SnapshotEnd.Flag()
 
-type fixture struct {
+// testEvent is an event that the fixture checks.
+type testEvent interface {
+	events.IndexedEvent
+	EventSymbol() *string
+	Size() float64
+}
+
+type fixture[E testEvent] struct {
 	t         *testing.T
 	executor  *api.InPlaceExecutor
 	feed      *api.DXFeed
@@ -30,10 +37,10 @@ type fixture struct {
 	mu            sync.Mutex
 	notifications int
 	snapshots     int
-	received      []*order.Order
+	received      []E
 }
 
-func newFixture(t *testing.T) *fixture {
+func newFixture[E testEvent](t *testing.T) *fixture[E] {
 	t.Helper()
 	executor, err := api.NewInPlaceExecutor()
 	if err != nil {
@@ -53,20 +60,27 @@ func newFixture(t *testing.T) *fixture {
 	if err != nil {
 		t.Fatalf("GetPublisher: %v", err)
 	}
-	return &fixture{t: t, executor: executor, feed: feed, publisher: publisher}
+	return &fixture[E]{t: t, executor: executor, feed: feed, publisher: publisher}
 }
 
-// builder returns a builder of a model of the orders of testSymbol whose listener counts the notifications.
-func (f *fixture) builder(withFeed bool) *model.IndexedTxModelBuilder[*order.Order] {
+// listen counts a notification of the listener.
+func (f *fixture[E]) listen(received []E, isSnapshot bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.notifications++
+	if isSnapshot {
+		f.snapshots++
+	}
+	f.received = append(f.received, received...)
+}
+
+type orderFixture = fixture[*order.Order]
+
+// orderBuilder returns a builder of a model of the orders of testSymbol whose listener counts the notifications.
+func orderBuilder(f *orderFixture, withFeed bool) *model.IndexedTxModelBuilder[*order.Order] {
 	b := model.NewIndexedTxModelBuilder[*order.Order]().WithSymbol(testSymbol).
 		WithListener(func(_ events.IndexedEventSourceInterface, orders []*order.Order, isSnapshot bool) {
-			f.mu.Lock()
-			defer f.mu.Unlock()
-			f.notifications++
-			if isSnapshot {
-				f.snapshots++
-			}
-			f.received = append(f.received, orders...)
+			f.listen(orders, isSnapshot)
 		})
 	if withFeed {
 		b = b.WithFeed(f.feed)
@@ -74,7 +88,7 @@ func (f *fixture) builder(withFeed bool) *model.IndexedTxModelBuilder[*order.Ord
 	return b
 }
 
-func (f *fixture) build(b *model.IndexedTxModelBuilder[*order.Order]) *model.IndexedTxModel[*order.Order] {
+func buildOrders(f *orderFixture, b *model.IndexedTxModelBuilder[*order.Order]) *model.IndexedTxModel[*order.Order] {
 	f.t.Helper()
 	m, err := b.Build()
 	if err != nil {
@@ -98,11 +112,11 @@ func newOrder(t *testing.T, index int64, source *order.Source, size float64, fla
 	return o
 }
 
-func (f *fixture) publish(orders ...*order.Order) {
+func (f *fixture[E]) publish(published ...E) {
 	f.t.Helper()
-	list := make([]interface{}, len(orders))
-	for i, o := range orders {
-		list[i] = o
+	list := make([]interface{}, len(published))
+	for i, e := range published {
+		list[i] = e
 	}
 	if err := f.publisher.Publish(list); err != nil {
 		f.t.Fatalf("Publish: %v", err)
@@ -110,7 +124,7 @@ func (f *fixture) publish(orders ...*order.Order) {
 	f.process()
 }
 
-func (f *fixture) process() {
+func (f *fixture[E]) process() {
 	f.t.Helper()
 	if err := f.executor.ProcessAllPendingTasks(); err != nil {
 		f.t.Fatalf("ProcessAllPendingTasks: %v", err)
@@ -119,7 +133,7 @@ func (f *fixture) process() {
 
 // assertChanged checks whether the listener was notified since the last check. A notification is awaited for up to
 // 10 s and the rest of them for 100 ms more; their absence is checked for 400 ms.
-func (f *fixture) assertChanged(changed bool) {
+func (f *fixture[E]) assertChanged(changed bool) {
 	f.t.Helper()
 	wait := 300 * time.Millisecond
 	if changed {
@@ -147,7 +161,7 @@ func (f *fixture) assertChanged(changed bool) {
 	f.notifications = 0
 }
 
-func (f *fixture) assertSnapshots(count int) {
+func (f *fixture[E]) assertSnapshots(count int) {
 	f.t.Helper()
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -157,7 +171,7 @@ func (f *fixture) assertSnapshots(count int) {
 	f.snapshots = 0
 }
 
-func (f *fixture) assertReceived(count int) {
+func (f *fixture[E]) assertReceived(count int) {
 	f.t.Helper()
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -167,18 +181,18 @@ func (f *fixture) assertReceived(count int) {
 }
 
 // assertEvent checks the oldest received event that was not checked yet.
-func (f *fixture) assertEvent(index int64, size float64, flags int32) {
+func (f *fixture[E]) assertEvent(index int64, size float64, flags int32) {
 	f.t.Helper()
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if len(f.received) == 0 {
 		f.t.Fatal("no event received")
 	}
-	o := f.received[0]
+	e := f.received[0]
 	f.received = f.received[1:]
-	if o.EventSymbol() == nil || *o.EventSymbol() != testSymbol || o.Index() != index || o.Size() != size ||
-		o.EventFlags() != flags {
-		f.t.Fatalf("event %v, want index %d, size %v, flags %#x", o, index, size, flags)
+	if e.EventSymbol() == nil || *e.EventSymbol() != testSymbol || e.Index() != index || e.Size() != size ||
+		e.EventFlags() != flags {
+		f.t.Fatalf("event %v, want index %d, size %v, flags %#x", e, index, size, flags)
 	}
 }
 
@@ -223,11 +237,11 @@ func TestIndexedTxModelInitialState(t *testing.T) {
 }
 
 func TestIndexedTxModelChangeSources(t *testing.T) {
-	f := newFixture(t)
+	f := newFixture[*order.Order](t)
 	dex := newOrder(t, 0, order.DexL3(), 1, snapshotBeginEnd)
 	ntvLower := newOrder(t, 0, order.NtvL2(), 2, snapshotBeginEnd)
 	ntv := newOrder(t, 0, order.NtvL3(), 3, snapshotBeginEnd)
-	m := f.build(f.builder(true).
+	m := buildOrders(f, orderBuilder(f, true).
 		WithSources(order.AgregateAsk(), order.AgregateBid()).
 		WithSources(order.NtvL2(), order.NtvL3())) // the later sources replace the earlier ones
 	if got, want := sourceIDs(t, m), sortedIDs(order.NtvL2(), order.NtvL3()); fmt.Sprint(got) != fmt.Sprint(want) {
@@ -254,8 +268,8 @@ func TestIndexedTxModelChangeSources(t *testing.T) {
 }
 
 func TestIndexedTxModelEmptySourcesSubscribeToAll(t *testing.T) {
-	f := newFixture(t)
-	m := f.build(f.builder(true))
+	f := newFixture[*order.Order](t)
+	m := buildOrders(f, orderBuilder(f, true))
 	if got := sourceIDs(t, m); len(got) != 0 {
 		t.Fatalf("Sources: %v, want none", got)
 	}
@@ -267,24 +281,24 @@ func TestIndexedTxModelEmptySourcesSubscribeToAll(t *testing.T) {
 }
 
 // forEachProcessingMode runs the scenario for each combination of the batch and snapshot processing modes.
-func forEachProcessingMode(t *testing.T, scenario func(t *testing.T, f *fixture, batch, snapshot bool)) {
+func forEachProcessingMode[E testEvent](t *testing.T, scenario func(t *testing.T, f *fixture[E], batch, snapshot bool)) {
 	for _, batch := range []bool{false, true} {
 		for _, snapshot := range []bool{false, true} {
 			batch, snapshot := batch, snapshot
 			t.Run(fmt.Sprintf("batch=%v,snapshot=%v", batch, snapshot), func(t *testing.T) {
-				scenario(t, newFixture(t), batch, snapshot)
+				scenario(t, newFixture[E](t), batch, snapshot)
 			})
 		}
 	}
 }
 
 func TestIndexedTxModelAttachDetach(t *testing.T) {
-	forEachProcessingMode(t, func(t *testing.T, f *fixture, batch, snapshot bool) {
+	forEachProcessingMode(t, func(t *testing.T, f *orderFixture, batch, snapshot bool) {
 		expectedFlags := snapshotBeginEnd
 		if snapshot {
 			expectedFlags = 0
 		}
-		m := f.build(f.builder(false).WithBatchProcessing(batch).WithSnapshotProcessing(snapshot))
+		m := buildOrders(f, orderBuilder(f, false).WithBatchProcessing(batch).WithSnapshotProcessing(snapshot))
 		f.publish(newOrder(t, 0, order.Default(), 1, snapshotBeginEnd))
 		f.assertChanged(false) // not attached
 
@@ -313,8 +327,8 @@ func TestIndexedTxModelAttachDetach(t *testing.T) {
 }
 
 func TestIndexedTxModelNoNotificationsAfterClose(t *testing.T) {
-	forEachProcessingMode(t, func(t *testing.T, f *fixture, batch, snapshot bool) {
-		m := f.build(f.builder(true).WithBatchProcessing(batch).WithSnapshotProcessing(snapshot))
+	forEachProcessingMode(t, func(t *testing.T, f *orderFixture, batch, snapshot bool) {
+		m := buildOrders(f, orderBuilder(f, true).WithBatchProcessing(batch).WithSnapshotProcessing(snapshot))
 		f.publish(newOrder(t, 0, order.Default(), 12.34, snapshotBeginEnd))
 		f.assertChanged(true)
 		f.assertSnapshots(1)
@@ -339,8 +353,8 @@ func TestIndexedTxModelNoNotificationsAfterClose(t *testing.T) {
 // TestIndexedTxModelSnapshotThenIncremental checks that a snapshot comes first and then the incremental updates, and
 // that a pending transaction is passed only when it completes.
 func TestIndexedTxModelSnapshotThenIncremental(t *testing.T) {
-	f := newFixture(t)
-	f.build(f.builder(true).WithSnapshotProcessing(true))
+	f := newFixture[*order.Order](t)
+	buildOrders(f, orderBuilder(f, true).WithSnapshotProcessing(true))
 	f.publish(newOrder(t, 2, order.Default(), 20, events.SnapshotBegin.Flag()),
 		newOrder(t, 1, order.Default(), 10, 0),
 		newOrder(t, 0, order.Default(), 0, events.SnapshotEnd.Flag()|events.RemoveEvent.Flag()))
@@ -362,7 +376,7 @@ func TestIndexedTxModelSnapshotThenIncremental(t *testing.T) {
 
 // TestIndexedTxModelCloseInListener checks that the model can be closed from its listener.
 func TestIndexedTxModelCloseInListener(t *testing.T) {
-	f := newFixture(t)
+	f := newFixture[*order.Order](t)
 	var m *model.IndexedTxModel[*order.Order]
 	closed := make(chan error, 1)
 	m, err := model.NewIndexedTxModelBuilder[*order.Order]().WithFeed(f.feed).WithSymbol(testSymbol).

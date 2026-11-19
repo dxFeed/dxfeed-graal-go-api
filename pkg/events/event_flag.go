@@ -80,6 +80,14 @@ type IndexedEvent interface {
 	Index() int64
 }
 
+// TimeSeriesEvent is implemented by the indexed events of a time series, whose index carries their time: Candle,
+// TimeAndSale, Greeks, Series, TheoPrice, Underlying, OptionSale and others.
+type TimeSeriesEvent interface {
+	IndexedEvent
+	// Time returns the time of the event in milliseconds since the epoch.
+	Time() int64
+}
+
 // IsSnapshotBegin reports whether the event starts a snapshot.
 func IsSnapshotBegin(event IndexedEvent) bool {
 	return SnapshotBegin.In(event.EventFlags())

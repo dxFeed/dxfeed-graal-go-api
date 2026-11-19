@@ -37,16 +37,14 @@ func OnTxModelEventsReceived(thread *C.graal_isolatethread_t, source *C.dxfg_ind
 	listener(goSource, goEvents, isSnapshot != 0)
 }
 
-// IndexedTxModelOptions are the settings of a new IndexedTxModel.
-type IndexedTxModelOptions struct {
+// TxModelOptions are the settings common to the transaction models.
+type TxModelOptions struct {
 	// EventType is the native code of the event type; required.
 	EventType int32
 	// Symbol is the symbol of the model, as newCSymbol accepts it; required.
 	Symbol any
 	// Feed is the feed to attach the model to; nil leaves the model detached.
 	Feed *DXFeedHandle
-	// Sources are the sources of the events; empty means all the sources.
-	Sources []events.IndexedEventSourceInterface
 	// Listener receives the transactions; nil means none.
 	Listener TxModelListenerFunc
 	// BatchProcessing and SnapshotProcessing are passed to the builder as they are.
@@ -56,15 +54,54 @@ type IndexedTxModelOptions struct {
 	Executor *ExecutorHandle
 }
 
-// IndexedTxModelHandle is a native IndexedTxModel with its listener.
-type IndexedTxModelHandle struct {
-	model    Handler
-	listener *nativeListener
+// txModelBuilder is a native builder of a transaction model. Each step replaces the builder with the one that the SDK
+// returns and releases the previous one.
+type txModelBuilder[B any] struct {
+	thread *isolateThread
+	cur    *B
 }
 
-// NewIndexedTxModel builds a native IndexedTxModel with the options.
-func NewIndexedTxModel(o IndexedTxModelOptions) (*IndexedTxModelHandle, error) {
-	h := &IndexedTxModelHandle{}
+// step passes the current builder to f and replaces it with the one that f returns.
+func (b *txModelBuilder[B]) step(f func(cur *B, out **B) C.int32_t) error {
+	var next *B
+	if err := checkStatus(b.thread, f(b.cur, &next)); err != nil {
+		return err
+	}
+	err := b.release()
+	b.cur = next
+	return err
+}
+
+func (b *txModelBuilder[B]) release() error {
+	if b.cur == nil {
+		return nil
+	}
+	err := checkStatus(b.thread, C.dxfg_v4_JavaObjectHandler_release(b.thread.ptr,
+		(*C.dxfg_v4_java_object_handler)(unsafe.Pointer(b.cur))))
+	b.cur = nil
+	return err
+}
+
+// txModelSteps are the native calls of the builder of one kind of model. C functions are not values in Go, so each
+// field wraps one.
+type txModelSteps[B any] struct {
+	newBuilder   func(thread *isolateThread, eventType C.dxfg_v4_event_clazz_t, out **B) C.int32_t
+	withSymbol   func(thread *isolateThread, cur *B, symbol *C.dxfg_v4_symbol_t, out **B) C.int32_t
+	withBatch    func(thread *isolateThread, cur *B, value C.int32_t, out **B) C.int32_t
+	withSnapshot func(thread *isolateThread, cur *B, value C.int32_t, out **B) C.int32_t
+	withListener func(thread *isolateThread, cur *B, listener *C.dxfg_v4_tx_model_listener_t, out **B) C.int32_t
+	withExecutor func(thread *isolateThread, cur *B, executor *C.dxfg_v4_executor_t, out **B) C.int32_t
+	withFeed     func(thread *isolateThread, cur *B, feed *C.dxfg_v4_feed_t, out **B) C.int32_t
+	build        func(thread *isolateThread, cur *B) (unsafe.Pointer, C.int32_t)
+	// configure applies the options of the kind of model after the common ones; nil means none.
+	configure func(b *txModelBuilder[B]) error
+	// close closes a model of the kind.
+	close func(thread *isolateThread, model unsafe.Pointer) C.int32_t
+}
+
+// newTxModel builds a native model with the options and its listener.
+func newTxModel[B any](o TxModelOptions, s txModelSteps[B]) (*txModelHandle, error) {
+	h := &txModelHandle{close: s.close}
 	if o.Listener != nil {
 		listener, err := newTxModelListener(o.Listener)
 		if err != nil {
@@ -73,39 +110,21 @@ func NewIndexedTxModel(o IndexedTxModelOptions) (*IndexedTxModelHandle, error) {
 		h.listener = listener
 	}
 	err := executeInIsolateThread(func(thread *isolateThread) error {
-		var builder *C.dxfg_v4_indexed_tx_model_builder_t
-		if err := checkStatus(thread, C.dxfg_v4_IndexedTxModel_newBuilder(thread.ptr,
-			C.dxfg_v4_event_clazz_t(o.EventType), &builder)); err != nil {
+		// The out parameter is a variable of its own: cgo refuses a pointer into a struct that holds Go pointers.
+		var cur *B
+		if err := checkStatus(thread, s.newBuilder(thread, C.dxfg_v4_event_clazz_t(o.EventType), &cur)); err != nil {
 			return err
 		}
-		release := func() error {
-			if builder == nil {
-				return nil
-			}
-			err := checkStatus(thread, C.dxfg_v4_JavaObjectHandler_release(thread.ptr,
-				(*C.dxfg_v4_java_object_handler)(unsafe.Pointer(builder))))
-			builder = nil
-			return err
-		}
-		// step passes the current builder to f, replaces it with the one that f returns and releases the previous one.
-		step := func(f func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t) error {
-			var next *C.dxfg_v4_indexed_tx_model_builder_t
-			if err := checkStatus(thread, f(builder, &next)); err != nil {
-				return err
-			}
-			err := release()
-			builder = next
-			return err
-		}
-		err := configureIndexedTxModel(thread, step, o, h)
+		b := &txModelBuilder[B]{thread: thread, cur: cur}
+		err := configureTxModel(b, s, o, h)
 		if err == nil {
-			var model *C.dxfg_v4_indexed_tx_model_t
-			err = checkStatus(thread, C.dxfg_v4_IndexedTxModel_Builder_build(thread.ptr, builder, &model))
+			model, status := s.build(thread, b.cur)
+			err = checkStatus(thread, status)
 			if model != nil {
-				h.model = NewJavaHandle(unsafe.Pointer(model))
+				h.model = NewJavaHandle(model)
 			}
 		}
-		return errors.Join(err, release())
+		return errors.Join(err, b.release())
 	})
 	if err != nil || h.model == nil {
 		if err == nil {
@@ -116,49 +135,32 @@ func NewIndexedTxModel(o IndexedTxModelOptions) (*IndexedTxModelHandle, error) {
 	return h, nil
 }
 
-// configureIndexedTxModel applies the options to the builder, one step at a time.
-func configureIndexedTxModel(thread *isolateThread,
-	step func(f func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t) error,
-	o IndexedTxModelOptions, h *IndexedTxModelHandle) error {
+// configureTxModel applies the options to the builder, one step at a time.
+func configureTxModel[B any](b *txModelBuilder[B], s txModelSteps[B], o TxModelOptions, h *txModelHandle) error {
+	thread := b.thread
 	symbol, err := newCSymbol(o.Symbol)
 	if err != nil {
 		return err
 	}
 	defer freeCSymbol(symbol)
-	if err := step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-		return C.dxfg_v4_IndexedTxModel_Builder_withSymbol(thread.ptr, cur, symbol, out)
-	}); err != nil {
+	if err := b.step(func(cur *B, out **B) C.int32_t { return s.withSymbol(thread, cur, symbol, out) }); err != nil {
 		return err
 	}
-	if err := step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-		return C.dxfg_v4_IndexedTxModel_Builder_withBatchProcessing(thread.ptr, cur, cBool(o.BatchProcessing), out)
-	}); err != nil {
+	batch, snapshot := cBool(o.BatchProcessing), cBool(o.SnapshotProcessing)
+	if err := b.step(func(cur *B, out **B) C.int32_t { return s.withBatch(thread, cur, batch, out) }); err != nil {
 		return err
 	}
-	if err := step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-		return C.dxfg_v4_IndexedTxModel_Builder_withSnapshotProcessing(thread.ptr, cur,
-			cBool(o.SnapshotProcessing), out)
-	}); err != nil {
+	if err := b.step(func(cur *B, out **B) C.int32_t { return s.withSnapshot(thread, cur, snapshot, out) }); err != nil {
 		return err
 	}
-	if len(o.Sources) > 0 {
-		sources, err := newCIndexedEventSourceList(o.Sources)
-		if err != nil {
-			return err
-		}
-		err = step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-			return C.dxfg_v4_IndexedTxModel_Builder_withSources(thread.ptr, cur, sources, out)
-		})
-		freeCIndexedEventSourceList(sources)
-		if err != nil {
+	if s.configure != nil {
+		if err := s.configure(b); err != nil {
 			return err
 		}
 	}
 	if h.listener != nil {
 		listener := (*C.dxfg_v4_tx_model_listener_t)(h.listener.handle.Ptr())
-		if err := step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-			return C.dxfg_v4_IndexedTxModel_Builder_withListener(thread.ptr, cur, listener, out)
-		}); err != nil {
+		if err := b.step(func(cur *B, out **B) C.int32_t { return s.withListener(thread, cur, listener, out) }); err != nil {
 			return err
 		}
 	}
@@ -167,9 +169,7 @@ func configureIndexedTxModel(thread *isolateThread,
 		if executor == nil {
 			return errors.New("native: the executor of the model is closed")
 		}
-		if err := step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-			return C.dxfg_v4_IndexedTxModel_Builder_withExecutor(thread.ptr, cur, executor, out)
-		}); err != nil {
+		if err := b.step(func(cur *B, out **B) C.int32_t { return s.withExecutor(thread, cur, executor, out) }); err != nil {
 			return err
 		}
 	}
@@ -178,9 +178,7 @@ func configureIndexedTxModel(thread *isolateThread,
 		if feed == nil {
 			return errors.New("native: the feed of the model is closed")
 		}
-		if err := step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-			return C.dxfg_v4_IndexedTxModel_Builder_withFeed(thread.ptr, cur, feed, out)
-		}); err != nil {
+		if err := b.step(func(cur *B, out **B) C.int32_t { return s.withFeed(thread, cur, feed, out) }); err != nil {
 			return err
 		}
 	}
@@ -208,15 +206,22 @@ func newTxModelListener(listener TxModelListenerFunc) (*nativeListener, error) {
 	return nl, nil
 }
 
-func (h *IndexedTxModelHandle) ptr() (*C.dxfg_v4_indexed_tx_model_t, error) {
+// txModelHandle is a native transaction model with its listener.
+type txModelHandle struct {
+	model    Handler
+	listener *nativeListener
+	close    func(thread *isolateThread, model unsafe.Pointer) C.int32_t
+}
+
+func (h *txModelHandle) ptr() (unsafe.Pointer, error) {
 	if h.model == nil || h.model.Ptr() == nil {
 		return nil, errors.New("native: the transaction model is closed")
 	}
-	return (*C.dxfg_v4_indexed_tx_model_t)(h.model.Ptr()), nil
+	return h.model.Ptr(), nil
 }
 
 // call runs f with the model, or fails if the model is released.
-func (h *IndexedTxModelHandle) call(f func(thread *isolateThread, model *C.dxfg_v4_indexed_tx_model_t) error) error {
+func (h *txModelHandle) call(f func(thread *isolateThread, model unsafe.Pointer) error) error {
 	model, err := h.ptr()
 	if err != nil {
 		return err
@@ -226,76 +231,36 @@ func (h *IndexedTxModelHandle) call(f func(thread *isolateThread, model *C.dxfg_
 	})
 }
 
-// Attach attaches the model to the feed.
-func (h *IndexedTxModelHandle) Attach(feed *DXFeedHandle) error {
-	return h.withFeed(feed, func(thread *isolateThread, model *C.dxfg_v4_indexed_tx_model_t, f *C.dxfg_v4_feed_t) C.int32_t {
-		return C.dxfg_v4_IndexedTxModel_attach(thread.ptr, model, f)
-	})
-}
-
-// Detach detaches the model from the feed.
-func (h *IndexedTxModelHandle) Detach(feed *DXFeedHandle) error {
-	return h.withFeed(feed, func(thread *isolateThread, model *C.dxfg_v4_indexed_tx_model_t, f *C.dxfg_v4_feed_t) C.int32_t {
-		return C.dxfg_v4_IndexedTxModel_detach(thread.ptr, model, f)
-	})
-}
-
-func (h *IndexedTxModelHandle) withFeed(feed *DXFeedHandle,
-	f func(thread *isolateThread, model *C.dxfg_v4_indexed_tx_model_t, feed *C.dxfg_v4_feed_t) C.int32_t) error {
+// withFeed runs f with the model and the feed.
+func (h *txModelHandle) withFeed(feed *DXFeedHandle,
+	f func(thread *isolateThread, model unsafe.Pointer, feed *C.dxfg_v4_feed_t) C.int32_t) error {
 	if feed == nil || feed.ptr() == nil {
 		return errors.New("native: the feed is nil or closed")
 	}
-	return h.call(func(thread *isolateThread, model *C.dxfg_v4_indexed_tx_model_t) error {
+	return h.call(func(thread *isolateThread, model unsafe.Pointer) error {
 		return checkStatus(thread, f(thread, model, feed.ptr()))
 	})
 }
 
-// Sources returns the sources of the model; empty means all the sources.
-func (h *IndexedTxModelHandle) Sources() ([]events.IndexedEventSourceInterface, error) {
-	var result []events.IndexedEventSourceInterface
-	err := h.call(func(thread *isolateThread, model *C.dxfg_v4_indexed_tx_model_t) error {
-		var list *C.dxfg_v4_indexed_event_source_list
-		if err := checkStatus(thread, C.dxfg_v4_IndexedTxModel_getSources(thread.ptr, model, &list)); err != nil {
-			return err
-		}
-		var err error
-		result, err = takeIndexedEventSourceList(thread, list)
-		return err
-	})
-	return result, err
-}
-
-// SetSources sets the sources of the model; empty means all the sources.
-func (h *IndexedTxModelHandle) SetSources(sources []events.IndexedEventSourceInterface) error {
-	list, err := newCIndexedEventSourceList(sources)
-	if err != nil {
-		return err
-	}
-	defer freeCIndexedEventSourceList(list)
-	return h.call(func(thread *isolateThread, model *C.dxfg_v4_indexed_tx_model_t) error {
-		return checkStatus(thread, C.dxfg_v4_IndexedTxModel_setSources(thread.ptr, model, list))
-	})
-}
-
 // Close closes the model: it is detached from all the feeds for good. Later calls do nothing.
-func (h *IndexedTxModelHandle) Close() error {
+func (h *txModelHandle) Close() error {
 	model, err := h.ptr()
 	if err != nil {
 		return nil
 	}
 	return executeInIsolateThread(func(thread *isolateThread) error {
-		return checkStatus(thread, C.dxfg_v4_IndexedTxModel_close(thread.ptr, model))
+		return checkStatus(thread, h.close(thread, model))
 	})
 }
 
 // Free closes the model, releases it and then its listener, so the listener is not called after Free returns
 // (except when Free runs in the listener itself). Later calls do nothing.
-func (h *IndexedTxModelHandle) Free() error {
+func (h *txModelHandle) Free() error {
 	return errors.Join(h.FreeModel(), h.FreeListener())
 }
 
 // FreeModel closes and releases the model. Later calls do nothing.
-func (h *IndexedTxModelHandle) FreeModel() error {
+func (h *txModelHandle) FreeModel() error {
 	if h.model == nil {
 		return nil
 	}
@@ -304,7 +269,7 @@ func (h *IndexedTxModelHandle) FreeModel() error {
 
 // FreeListener releases the listener: it is not called after FreeListener returns, except when FreeListener runs in
 // the listener itself. Later calls do nothing.
-func (h *IndexedTxModelHandle) FreeListener() error {
+func (h *txModelHandle) FreeListener() error {
 	if h.listener == nil {
 		return nil
 	}
@@ -316,65 +281,4 @@ func cBool(value bool) C.int32_t {
 		return 1
 	}
 	return 0
-}
-
-// newCIndexedEventSourceList builds a list of the sources in C memory; free it with freeCIndexedEventSourceList.
-func newCIndexedEventSourceList(sources []events.IndexedEventSourceInterface) (*C.dxfg_v4_indexed_event_source_list,
-	error) {
-	list := (*C.dxfg_v4_indexed_event_source_list)(C.calloc(1,
-		C.size_t(unsafe.Sizeof(C.dxfg_v4_indexed_event_source_list{}))))
-	if len(sources) == 0 {
-		return list, nil
-	}
-	list.elements = (**C.dxfg_indexed_event_source_t)(C.calloc(C.size_t(len(sources)),
-		C.size_t(unsafe.Sizeof((*C.dxfg_indexed_event_source_t)(nil)))))
-	elements := unsafe.Slice(list.elements, len(sources))
-	for i, source := range sources {
-		s, err := newCIndexedEventSource(source)
-		if err != nil {
-			freeCIndexedEventSourceList(list)
-			return nil, err
-		}
-		elements[i] = (*C.dxfg_indexed_event_source_t)(unsafe.Pointer(s))
-		list.size = C.int32_t(i + 1)
-	}
-	return list, nil
-}
-
-func freeCIndexedEventSourceList(list *C.dxfg_v4_indexed_event_source_list) {
-	if list == nil {
-		return
-	}
-	if list.elements != nil {
-		for _, s := range unsafe.Slice(list.elements, int(list.size)) {
-			freeCIndexedEventSource((*C.dxfg_v4_indexed_event_source_t)(unsafe.Pointer(s)))
-		}
-		C.free(unsafe.Pointer(list.elements))
-	}
-	C.free(unsafe.Pointer(list))
-}
-
-// takeIndexedEventSourceList copies the sources of a list that the SDK returned and releases the list.
-func takeIndexedEventSourceList(thread *isolateThread,
-	list *C.dxfg_v4_indexed_event_source_list) ([]events.IndexedEventSourceInterface, error) {
-	if list == nil {
-		return nil, nil
-	}
-	var result []events.IndexedEventSourceInterface
-	var err error
-	if list.size > 0 && list.elements != nil {
-		for _, s := range unsafe.Slice(list.elements, int(list.size)) {
-			source, sourceErr := goIndexedEventSource((*C.dxfg_v4_indexed_event_source_t)(unsafe.Pointer(s)))
-			if sourceErr != nil {
-				err = sourceErr
-				break
-			}
-			result = append(result, source)
-		}
-	}
-	err = errors.Join(err, checkStatus(thread, C.dxfg_v4_indexed_event_source_list_release(thread.ptr, list)))
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
 }
