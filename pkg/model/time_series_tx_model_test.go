@@ -3,6 +3,7 @@ package model_test
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
@@ -193,6 +194,36 @@ func TestTimeSeriesTxModelNoNotificationsAfterClose(t *testing.T) {
 			t.Error("SetFromTime after Close: no error")
 		}
 	})
+}
+
+func TestTimeSeriesTxModelCloseInListener(t *testing.T) {
+	f := newFixture[*timeandsale.TimeAndSale](t)
+	var m *model.TimeSeriesTxModel[*timeandsale.TimeAndSale]
+	closed := make(chan error, 1)
+	m, err := model.NewTimeSeriesTxModelBuilder[*timeandsale.TimeAndSale]().WithFeed(f.feed).WithSymbol(testSymbol).
+		WithFromTime(0).WithListener(func([]*timeandsale.TimeAndSale, bool) {
+		select {
+		case closed <- m.Close():
+		default:
+		}
+	}).Build()
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	defer m.Close()
+	f.publish(newTns(0, 1, snapshotBeginEnd))
+	for deadline := time.Now().Add(10 * time.Second); len(closed) == 0 && time.Now().Before(deadline); {
+		f.process()
+		time.Sleep(10 * time.Millisecond)
+	}
+	select {
+	case err := <-closed:
+		if err != nil {
+			t.Fatalf("Close in the listener: %v", err)
+		}
+	default:
+		t.Fatal("the listener was not called")
+	}
 }
 
 // TestTimeSeriesTxModelSnapshotThenIncremental checks that a snapshot comes first and then the incremental updates.
