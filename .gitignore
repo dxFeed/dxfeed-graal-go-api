@@ -23,3 +23,6 @@ go.work
 # IntelliJ
 .idea/
 bin/
+
+# The cache of the on-demand data replay, written to the working directory
+mdrcache
