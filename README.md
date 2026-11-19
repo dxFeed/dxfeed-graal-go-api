@@ -389,6 +389,9 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   is a simple demonstration of how to request the price levels and the quotes from the ORCS price level service
 - [x] [PrintLastEvents](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/print-last-events/main.go)
   is a simple demonstration of how to request the last events and a time series with promises and wait for them
+- [x] [IncOrderSnapshot](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/inc-order-snapshot/main.go)
+  is a simple demonstration of how to receive the snapshot and the incremental updates of the orders of a source
+  with `IndexedTxModel`
 - [ ] WriteTapeFile is a simple demonstration of how to write events to a tape file
 - [x] [DxFeedIpfConnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/feed-ipf-connect/main.go)
   is a simple demonstration of how to get Instrument Profiles and subscribe to their symbols
@@ -577,6 +580,10 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [ ] [OrderBookModel](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/model/market/OrderBookModel.html)
   is a model of convenient Order Book management
   ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/ui/swing/DXFeedMarketDepth.java))
+
+- [x] [IndexedTxModel](https://github.com/dxFeed/dxfeed-graal-cxx-api/blob/main/include/dxfeed_graal_cpp_api/model/IndexedTxModel.hpp)
+  passes the complete transactions of the indexed events of a symbol, such as the orders of an order book, to its
+  listener ([sample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/inc-order-snapshot/main.go))
 
 ### IPF & Schedule
 
