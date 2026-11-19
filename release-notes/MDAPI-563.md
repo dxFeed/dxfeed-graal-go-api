@@ -7,3 +7,5 @@
     listeners, a promise and snapshots of quotes and trades; `fetch-daily-candles` fetches the daily candles of the
     last 20 days; `last-event-console` keeps the last events of many symbols in memory and prints those of the symbols
     typed in the console.
+  * Order book samples: `multiple-market-depth` keeps the order books of several symbols; `price-level-book`
+    aggregates the orders of a source into price levels. `cmd/samples/README.md` lists all the samples by topic.

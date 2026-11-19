@@ -362,11 +362,15 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 
 ## Samples
 
-- [ ] ConvertTapeFile demonstrates how to convert one tape file to another tape file with optional intermediate
-  processing or filtering
-- [ ] DxFeedFileParser is a simple demonstration of how events are read form a tape file
-- [ ] DxFeedSample is a simple demonstration of how to create multiple event listeners and subscribe to `Quote`
-  and `Trade` events
+[cmd/samples/README.md](cmd/samples/README.md) lists the samples by topic and tells which of them need no network.
+The C++ samples and their Go ports:
+
+- [x] [ConvertTapeFile](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/convert-tape-file/main.go)
+  demonstrates how to convert one tape file to another tape file with optional intermediate processing or filtering
+- [x] [DxFeedFileParser](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/file-parser/main.go)
+  is a simple demonstration of how events are read from a tape file
+- [x] [DxFeedSample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/quote-and-trade/main.go)
+  is a simple demonstration of how to create multiple event listeners and subscribe to `Quote` and `Trade` events
 - [x] [QuickStart](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/quick-start/main.go)
   is the program shown in this README: it subscribes to `Quote` events of AAPL and IBM and prints them
 - [x] [PrintQuoteEvents](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/print-quote-events/main.go)
@@ -396,17 +400,29 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   is a simple demonstration of how to print the order book of a symbol with `MarketDepthModel`
 - [x] [SimpleOrderBook](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/simple-order-book/main.go)
   is a simple demonstration of how to build an order book from the transactions of `IndexedTxModel`
-- [ ] WriteTapeFile is a simple demonstration of how to write events to a tape file
+- [x] [WriteTapeFile](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/write-tape-file/main.go)
+  is a simple demonstration of how to write events to a tape file
 - [x] [DxFeedIpfConnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/feed-ipf-connect/main.go)
   is a simple demonstration of how to get Instrument Profiles and subscribe to their symbols
 - [x] [DXFeedLiveIpfSample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/live-ipf/main.go)
   is a simple demonstration of how to get live updates for Instrument Profiles
 - [x] [DXFeedOptionChain](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/option-chain/main.go)
   is a simple demonstration of how to build option chains and print their series and strikes
-- [ ] DxFeedPublishProfiles is a simple demonstration of how to publish market events
+- [x] [DxFeedPublishProfiles](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/publish-profiles/main.go)
+  is a simple demonstration of how to publish market events; [RequestProfile](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/request-profile/main.go)
+  requests them
 - [x] [ScheduleSample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/schedule/main.go)
   is a simple demonstration of how to get various scheduling information for instruments
-- [ ] DXFeedconnect is a simple demonstration of how to subscribe to different events using TimeSeriesSubscription
+- [x] [DXFeedconnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/connect/main.go)
+  is a simple demonstration of how to subscribe to different events using TimeSeriesSubscription
+- [x] [FetchDailyCandles](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/fetch-daily-candles/main.go)
+  is a simple demonstration of how to fetch the daily candles of a period as a time series promise
+- [x] [LastEventConsole](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/last-event-console/main.go)
+  is a simple demonstration of how to keep the last events of many symbols in memory and look them up
+- [x] [MultipleMarketDepth](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/multiple-market-depth/main.go)
+  is a simple demonstration of how to keep the order books of several symbols
+- [x] [PriceLevelBook](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/price-level-book/main.go)
+  is a simple demonstration of how to aggregate orders into price levels
 
 ## Current State
 
