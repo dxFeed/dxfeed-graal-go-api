@@ -22,9 +22,8 @@ func TestMain(m *testing.M) {
 		if tool, status := selectTool(args, os.Stdout, os.Stderr); tool == nil {
 			os.Exit(status)
 		} else {
-			tool.Run(args)
+			os.Exit(tool.Run(args[2:]))
 		}
-		os.Exit(0)
 	}
 	os.Exit(m.Run())
 }
@@ -104,6 +103,54 @@ func TestRunExitStatus(t *testing.T) {
 		}
 		if !strings.Contains(out, "Usage: tools <tool>") {
 			t.Errorf("tools %s: no usage:\n%s", test.args, out)
+		}
+	}
+}
+
+// TestToolArgumentErrors checks that a wrong argument of a tool prints the error and the help of the tool and exits
+// with the status 2, without a panic and before the tool connects anywhere.
+func TestToolArgumentErrors(t *testing.T) {
+	for _, test := range []struct{ args, want string }{
+		{"connect a Quote AAPL -p", "connect: option -p needs a value"},
+		{"connect a Quote AAPL --bogus", "connect: unknown option --bogus"},
+		{"connect a Quote AAPL -p x", `connect: option --properties: "x" is not name=value`},
+		{"dump a Quote AAPL -t", "dump: option -t needs a value"},
+		{"dump a Quote AAPL extra", "dump: unexpected argument extra"},
+		{"dump a --quiet --bogus", "dump: unknown option --bogus"},
+		{"perftest a Quote AAPL -q", "perftest: unknown option -q"},
+		{"latencytest a TimeAndSale AAPL --ignore-exchanges", "latency test: option --ignore-exchanges needs a value"},
+	} {
+		status, out := runTools(t, test.args)
+		if status != 2 {
+			t.Errorf("tools %s: status %d, want 2:\n%s", test.args, status, out)
+		}
+		if !strings.HasPrefix(out, test.want+"\n\n") || !strings.Contains(out, "\nUsage:\n") || strings.Contains(out, "panic") {
+			t.Errorf("tools %s: output does not start with %q and the help:\n%s", test.args, test.want, out)
+		}
+	}
+}
+
+// TestToolRunError checks that an error of a run is printed with a newline and gives the exit status 1.
+func TestToolRunError(t *testing.T) {
+	status, out := runTools(t, "connect localhost:notaport Quote AAPL -q")
+	if status != 1 {
+		t.Errorf("status %d, want 1:\n%s", status, out)
+	}
+	// The log of the SDK comes before the error.
+	lines := strings.Split(strings.TrimSuffix(out, "\n"), "\n")
+	if last := lines[len(lines)-1]; !strings.HasSuffix(out, "\n") ||
+		!strings.HasPrefix(last, "Error during connect: Connect to localhost:notaport: ") {
+		t.Errorf("output does not end with the error line:\n%s", out)
+	}
+}
+
+// TestToolHelp checks that -h, --help and -help after the name of a tool print its help to stdout with the status 0,
+// wherever they stand.
+func TestToolHelp(t *testing.T) {
+	for _, args := range []string{"connect -h", "dump a Quote AAPL --help", "perftest --bogus -help", "latencytest -h"} {
+		status, out := runTools(t, args)
+		if status != 0 || !strings.Contains(out, "\nUsage:\n  tools "+strings.Fields(args)[0]+" ") {
+			t.Errorf("tools %s: status %d, want 0 and the help:\n%s", args, status, out)
 		}
 	}
 }

@@ -6,13 +6,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/dxfeed/dxfeed-graal-go-api/internal/parser"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"os"
 )
 
 type Dump struct{}
@@ -21,31 +19,19 @@ func (c Dump) ShortDescription() string {
 	return "Dumps all data and subscription information received from address."
 }
 
-func (c Dump) Run(args []string) {
-	dxarguments := DXArguments{args}
-
-	arguments := dxarguments.arguments()
-
-	properties := dxarguments.properties()
-	isQuite := dxarguments.isQuite()
-	tape := dxarguments.tape()
-
-	if len(arguments) < 3 {
-		fmt.Print(dumpHelp)
-		os.Exit(0)
-	}
-	inputFile := arguments[0]
-	symbols, err := parser.ParseSymbols(arguments[2])
-	if err != nil {
-		fmt.Printf("Error parsing symbols: %v\n", err)
-		os.Exit(1)
-	}
-	types := parser.ParseEventTypes(arguments[1])
-
-	err = dump(inputFile, tape, symbols, types, properties, isQuite)
-	if err != nil {
-		fmt.Printf("Error during dump: %v", err)
-	}
+func (c Dump) Run(args []string) int {
+	return runTool("dump", args, dumpHelp, []option{tapeOption, propertiesOption, quietOption},
+		func(a toolArguments) error {
+			properties, err := a.properties()
+			if err != nil {
+				return usageError{err}
+			}
+			address, types, symbols, err := parseCommon(a)
+			if err != nil {
+				return err
+			}
+			return dump(address, a.value(tapeOption), symbols, types, properties, a.has(quietOption))
+		})
 }
 
 func dump(
@@ -54,7 +40,7 @@ func dump(
 	symbols []osub.Symbol,
 	types []eventcodes.EventCode,
 	properties map[string]string,
-	isQuite bool,
+	quiet bool,
 ) error {
 	for key, value := range properties {
 		if err := api.SetSystemProperty(key, value); err != nil {
@@ -63,7 +49,7 @@ func dump(
 	}
 	var listeners []common.EventListener
 
-	if !isQuite {
+	if !quiet {
 		listeners = append(listeners, DumpEvents(func(eventsList []interface{}) {
 			for _, event := range eventsList {
 				switch v := event.(type) {

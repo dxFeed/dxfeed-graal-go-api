@@ -3,8 +3,8 @@
 
 package main
 
-// The help of the tools. A tool prints it when it gets fewer than three arguments. The arguments come first and the
-// options after them, since the value of an option is not told apart from an argument.
+// The help of the tools. A tool prints it when it gets fewer than three arguments or -h, --help or -help, and with an
+// error of its arguments. The options may stand anywhere; an option with a value takes the next argument.
 
 const addressArgument = `  <address>  The address to connect to: host:port, a dxLink URL or a tape file, such as demo.dxfeed.com:7300.
              To pass an authorization token, add it to the address: demo.dxfeed.com:7300[login=entitle:<token>].
@@ -29,7 +29,7 @@ Options:
   -f, --from-time <time>  Subscribe to the time series from the time, such as 20230901Z or 2023-09-01T10:00:00Z.
   -p, --properties <name=value,...>
                           Set the properties of the endpoint, such as dxfeed.experimental.dxlink.enable=true.
-  -q, --quite             Do not print the events.
+  -q, --quiet             Do not print the events.
   --force-stream          Enforce a streaming contract for the subscription: the StreamFeed role instead of Feed.
 
 Samples:
@@ -50,7 +50,7 @@ Options:
   -t, --tape <file>       Write the events to the tape file, such as out.txt[format=text].
   -p, --properties <name=value,...>
                           Set the properties of the endpoints, such as dxfeed.wildcard.enable=true for the symbol all.
-  -q, --quite             Do not print the events.
+  -q, --quiet             Do not print the events.
 
 Samples:
   tools dump demo.dxfeed.com:7300 Quote AAPL,IBM -t out.txt[format=text] -q
@@ -64,8 +64,7 @@ Usage:
   tools perftest <address> <types> <symbols> [<options>]
 
 Where:
-` + addressArgument + `  <types>    Quote, TimeAndSale or Quote,TimeAndSale, case-insensitive; the Quote events are also printed.
-` + symbolsArgument + `
+` + addressArgument + allTypesArgument + symbolsArgument + `
 Options:
   --force-stream          Enforce a streaming contract for the subscription: the StreamFeed role instead of Feed.
 
