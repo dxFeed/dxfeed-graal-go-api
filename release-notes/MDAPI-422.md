@@ -3,5 +3,5 @@
   * `DXFeed.GetLastEvent`, `GetLastEvents`, `GetLastEventIfSubscribed`, `GetIndexedEventsIfSubscribed` and
     `GetTimeSeriesIfSubscribed` read the local cache of the feed.
   * `DXFeed.GetLastEventPromise`, `GetLastEventsPromises`, `GetIndexedEventsPromise` and `GetTimeSeriesPromise`
-    return a `Promise` that `Await(ctx)` waits for; a done context cancels the request. The `print-last-events`
-    sample shows them.
+    return a `Promise` that `Await(ctx)` waits for; a done context or closing the endpoint cancels the request. The
+    `print-last-events` sample shows them.

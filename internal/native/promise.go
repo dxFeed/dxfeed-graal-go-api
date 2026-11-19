@@ -57,12 +57,59 @@ func (o *promiseOwner) done() {
 	}()
 }
 
+// promiseSet holds the pending promises of a feed, so that closing the endpoint cancels them: the SDK cancels them too,
+// but its executor is shut down by then and their handlers are never called.
+type promiseSet struct {
+	mu      sync.Mutex
+	pending map[*PromiseHandle]struct{}
+	closed  bool
+}
+
+// add adds the promises; it reports false, adding nothing, when the endpoint is closed.
+func (s *promiseSet) add(promises []*PromiseHandle) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return false
+	}
+	if s.pending == nil {
+		s.pending = make(map[*PromiseHandle]struct{})
+	}
+	for _, p := range promises {
+		s.pending[p] = struct{}{}
+	}
+	return true
+}
+
+func (s *promiseSet) remove(p *PromiseHandle) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.pending, p)
+}
+
+// close cancels the pending promises; later promises are cancelled at once.
+func (s *promiseSet) close() {
+	s.mu.Lock()
+	s.closed = true
+	pending := s.pending
+	s.pending = nil
+	s.mu.Unlock()
+	for p := range pending {
+		p.finishCancelled()
+	}
+}
+
 // PromiseHandle is a native promise of the result of a feed request. The result is read once, when the promise is
 // done; after that the native promise is released.
 type PromiseHandle struct {
 	ptr   *C.dxfg_v4_promise_t
 	kind  promiseKind
 	owner *promiseOwner
+	set   *promiseSet
+
+	// finished is set by the first of the handler, a failed start and the closing of the endpoint; only that one
+	// finishes the promise. The handler that comes later touches nothing: the memory may be released by then.
+	finished atomic.Bool
 
 	// mu guards the calls to the native promise against its release; released is set under it. The handler never
 	// takes it, so Cancel may hold it while the SDK runs the handler.
@@ -80,13 +127,38 @@ func OnPromiseDone(thread *C.graal_isolatethread_t, _ *C.dxfg_promise_t, userDat
 	defer recoverCallback("promise handler")
 	p, ok := Restore(userData).(*PromiseHandle)
 	Unref(userData)
-	if !ok {
+	if !ok || !p.claim() {
 		return
 	}
 	p.complete(&isolateThread{ptr: thread})
 }
 
-// complete reads the outcome of the promise, marks it done and lets the owner release the memory.
+// claim reports whether the caller is the one to finish the promise.
+func (p *PromiseHandle) claim() bool {
+	if !p.finished.CompareAndSwap(false, true) {
+		return false
+	}
+	p.set.remove(p)
+	return true
+}
+
+// finish marks the claimed promise done with the error and lets the owner release the memory.
+func (p *PromiseHandle) finish(err error) {
+	p.err = err
+	close(p.done)
+	p.owner.done()
+}
+
+// finishCancelled finishes the promise as cancelled unless it is finished already. A handler that the SDK never calls
+// keeps its user data saved: freeing it is not safe while the handler may still come.
+func (p *PromiseHandle) finishCancelled() {
+	if p.claim() {
+		p.cancelled = true
+		p.finish(ErrPromiseCancelled)
+	}
+}
+
+// complete reads the outcome of the claimed promise, marks it done and lets the owner release the memory.
 func (p *PromiseHandle) complete(thread *isolateThread) {
 	defer p.owner.done()
 	defer close(p.done)
@@ -161,19 +233,35 @@ func (p *PromiseHandle) IsCancelled() bool {
 
 // Cancel cancels the promise; it does nothing if the promise is done.
 func (p *PromiseHandle) Cancel() error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.released {
-		return nil
-	}
-	return executeInIsolateThread(func(thread *isolateThread) error {
-		return checkStatus(thread, C.dxfg_v4_Promise_cancel(thread.ptr, p.ptr))
-	})
+	return executeInIsolateThread(p.cancel)
 }
 
-// newPromises wraps the native promises that owner releases and adds the handler to each of them. On an error the
-// promises that got no handler are cancelled with it, so that the owner still releases the memory.
-func newPromises(thread *isolateThread, ptrs []*C.dxfg_v4_promise_t, kind promiseKind,
+// cancel cancels the promise on the given isolate thread unless it is finished or its memory is released. The lock
+// keeps the release away from the native call.
+func (p *PromiseHandle) cancel(thread *isolateThread) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.released || p.finished.Load() {
+		return nil
+	}
+	return checkStatus(thread, C.dxfg_v4_Promise_cancel(thread.ptr, p.ptr))
+}
+
+// whenDone adds the handler unless the promise is finished or released already, which the closing of the endpoint
+// does. The lock keeps the release away from the native call; a handler run here takes no lock.
+func (p *PromiseHandle) whenDone(thread *isolateThread, userData unsafe.Pointer) (status C.int32_t, skipped bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.released || p.finished.Load() {
+		return 0, true
+	}
+	return C.dxfg_v4_Promise_whenDone(thread.ptr, p.ptr, (*[0]byte)(C.OnPromiseDone), userData), false
+}
+
+// newPromises wraps the native promises that owner releases, adds them to the pending promises of the feed and adds the
+// handler to each of them. On an error the promises that got no handler fail with it, so that the owner still releases
+// the memory. When the endpoint is closed, the promises are cancelled at once.
+func newPromises(thread *isolateThread, set *promiseSet, ptrs []*C.dxfg_v4_promise_t, kind promiseKind,
 	release func(thread *isolateThread) error) ([]*PromiseHandle, error) {
 	owner := &promiseOwner{release: release}
 	if len(ptrs) == 0 {
@@ -184,23 +272,35 @@ func newPromises(thread *isolateThread, ptrs []*C.dxfg_v4_promise_t, kind promis
 	owner.pending.Store(int32(len(ptrs)))
 	promises := make([]*PromiseHandle, len(ptrs))
 	for i, ptr := range ptrs {
-		promises[i] = &PromiseHandle{ptr: ptr, kind: kind, owner: owner, done: make(chan struct{})}
+		promises[i] = &PromiseHandle{ptr: ptr, kind: kind, owner: owner, set: set, done: make(chan struct{})}
 	}
 	owner.promises = promises
+	if !set.add(promises) {
+		for _, p := range promises {
+			p.finishCancelled()
+		}
+		return promises, nil
+	}
 	for i, p := range promises {
 		userData := Save(p)
-		status := C.dxfg_v4_Promise_whenDone(thread.ptr, p.ptr, (*[0]byte)(C.OnPromiseDone), userData)
+		status, skipped := p.whenDone(thread, userData)
+		if skipped {
+			// The endpoint was closed meanwhile: the promise is cancelled and may be released.
+			Unref(userData)
+			continue
+		}
 		if err := checkStatus(thread, status); err != nil {
 			Unref(userData)
-			// The promises without a handler are done here, failed with the error; the ones with a handler are
-			// cancelled, so that their handlers run and the owner releases the memory.
-			for _, rest := range promises[i:] {
-				rest.err = err
-				close(rest.done)
-				owner.done()
-			}
+			// The promises with a handler are cancelled first, so that their handlers run. The promises without a
+			// handler are still pending for the owner then, so it cannot release the memory under the cancel calls;
+			// they are done after them, failed with the error.
 			for _, started := range promises[:i] {
-				_ = checkStatus(thread, C.dxfg_v4_Promise_cancel(thread.ptr, started.ptr))
+				_ = started.cancel(thread)
+			}
+			for _, rest := range promises[i:] {
+				if rest.claim() {
+					rest.finish(err)
+				}
 			}
 			return nil, err
 		}
@@ -209,12 +309,13 @@ func newPromises(thread *isolateThread, ptrs []*C.dxfg_v4_promise_t, kind promis
 }
 
 // newPromise wraps one native promise whose handle is released on its own.
-func newPromise(thread *isolateThread, ptr *C.dxfg_v4_promise_t, kind promiseKind) (*PromiseHandle, error) {
+func newPromise(thread *isolateThread, set *promiseSet, ptr *C.dxfg_v4_promise_t,
+	kind promiseKind) (*PromiseHandle, error) {
 	release := func(thread *isolateThread) error {
 		return checkStatus(thread, C.dxfg_v4_JavaObjectHandler_release(thread.ptr,
 			(*C.dxfg_v4_java_object_handler)(unsafe.Pointer(ptr))))
 	}
-	promises, err := newPromises(thread, []*C.dxfg_v4_promise_t{ptr}, kind, release)
+	promises, err := newPromises(thread, set, []*C.dxfg_v4_promise_t{ptr}, kind, release)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +336,7 @@ func (f *DXFeedHandle) GetLastEventPromise(eventType int32, symbol osub.Symbol) 
 				return err
 			}
 			var err error
-			result, err = newPromise(thread, &ptr.handler, promiseOfEvent)
+			result, err = newPromise(thread, &f.promises, &ptr.handler, promiseOfEvent)
 			return err
 		})
 	})
@@ -270,7 +371,7 @@ func (f *DXFeedHandle) GetLastEventsPromises(eventType int32, symbols []osub.Sym
 			}
 		}
 		var err error
-		result, err = newPromises(thread, ptrs, promiseOfEvent, release)
+		result, err = newPromises(thread, &f.promises, ptrs, promiseOfEvent, release)
 		return err
 	})
 	return result, err
@@ -300,7 +401,7 @@ func (f *DXFeedHandle) GetIndexedEventsPromise(eventType int32, symbol osub.Symb
 				return err
 			}
 			var err error
-			result, err = newPromise(thread, &ptr.base, promiseOfEvents)
+			result, err = newPromise(thread, &f.promises, &ptr.base, promiseOfEvents)
 			return err
 		})
 	})
@@ -328,7 +429,7 @@ func (f *DXFeedHandle) GetTimeSeriesPromise(eventType int32, symbol osub.Symbol,
 				return err
 			}
 			var err error
-			result, err = newPromise(thread, &ptr.base, promiseOfEvents)
+			result, err = newPromise(thread, &f.promises, &ptr.base, promiseOfEvents)
 			return err
 		})
 	})

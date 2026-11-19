@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
@@ -11,6 +12,9 @@ import (
 
 // ErrPromiseCancelled is the error of a promise that was cancelled, by Cancel or by the context of Await.
 var ErrPromiseCancelled = native.ErrPromiseCancelled
+
+// ErrPromiseNotDone is returned by Promise.Result for a promise that is not done yet.
+var ErrPromiseNotDone = errors.New("dxfeed: the promise is not done")
 
 // Promise is the result of a feed request that arrives later: an event (Promise[interface{}], nil if there is none)
 // or a list of events (Promise[[]interface{}]). It completes once, normally, exceptionally or by cancellation, and
@@ -108,7 +112,7 @@ func (f *DXFeed) GetLastEventsPromises(eventType eventcodes.EventCode,
 // ordered by index. The symbol must not be an *osub.IndexedEventSubscriptionSymbol.
 func (f *DXFeed) GetIndexedEventsPromise(eventType eventcodes.EventCode, symbol osub.Symbol,
 	source events.IndexedEventSourceInterface) (*Promise[[]interface{}], error) {
-	if source == nil || isNilPointer(source) {
+	if !hasSource(source) {
 		return nil, errNoSource
 	}
 	p, err := f.feed.GetIndexedEventsPromise(eventType.NativeCode(), symbol, source)

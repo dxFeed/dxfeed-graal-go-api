@@ -13,7 +13,8 @@ import (
 )
 
 type DXFeedHandle struct {
-	handle Handler
+	handle   Handler
+	promises promiseSet
 }
 
 func NewDXFeedHandle(ptr *C.dxfg_v4_feed_t) *DXFeedHandle {

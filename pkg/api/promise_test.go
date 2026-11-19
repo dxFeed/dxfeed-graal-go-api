@@ -10,7 +10,9 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/side"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 )
 
@@ -77,6 +79,35 @@ func TestPromiseAwaitCancelsOnContext(t *testing.T) {
 	}
 }
 
+func TestPromiseCancelledOnClose(t *testing.T) {
+	endpoint, err := NewEndpoint(LocalHub)
+	if err != nil {
+		t.Fatalf("create endpoint: %v", err)
+	}
+	feed, err := endpoint.GetFeed()
+	if err != nil {
+		t.Fatalf("get feed: %v", err)
+	}
+	promise, err := feed.GetLastEventPromise(eventcodes.Quote, osub.String("PROMISE/CLOSE"))
+	if err != nil {
+		t.Fatalf("GetLastEventPromise: %v", err)
+	}
+	if err := endpoint.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+	select {
+	case <-promise.Done():
+	case <-time.After(10 * time.Second):
+		t.Fatal("the promise is not done 10 s after the endpoint was closed")
+	}
+	if _, err := promise.Result(); !errors.Is(err, ErrPromiseCancelled) || !promise.IsCancelled() {
+		t.Fatalf("Result = %v, IsCancelled = %v; want ErrPromiseCancelled, true", err, promise.IsCancelled())
+	}
+	if err := promise.Cancel(); err != nil {
+		t.Fatalf("Cancel of a promise of a closed endpoint: %v", err)
+	}
+}
+
 func TestGetLastEventsPromises(t *testing.T) {
 	feed, publisher := newLocalHub(t)
 	symbols := []string{"PROMISE/B", "PROMISE/C"}
@@ -139,5 +170,66 @@ func TestGetTimeSeriesPromise(t *testing.T) {
 		if ts, ok := e.(*timeandsale.TimeAndSale); !ok || ts.Time() != base+int64(i)*1000 {
 			t.Fatalf("event %d = %v, want time %d", i, e, base+int64(i)*1000)
 		}
+	}
+}
+
+func TestGetIndexedEventsPromise(t *testing.T) {
+	feed, publisher := newLocalHub(t)
+	const symbol = "PROMISE/INDEXED"
+	// A snapshot goes in descending order of index and ends with index 0.
+	published := make([]interface{}, 3)
+	for i := range published {
+		o := order.NewOrder(symbol)
+		if err := o.SetIndex(int64(len(published) - 1 - i)); err != nil {
+			t.Fatalf("set index: %v", err)
+		}
+		o.SetSide(side.Buy)
+		o.SetPrice(float64(10 + i))
+		o.SetSize(1)
+		published[i] = o
+	}
+	published[0].(*order.Order).SetEventFlags(events.SnapshotBegin.Flag())
+	published[2].(*order.Order).SetEventFlags(events.SnapshotEnd.Flag())
+
+	promise, err := feed.GetIndexedEventsPromise(eventcodes.Order, osub.String(symbol), order.Default())
+	if err != nil {
+		t.Fatalf("GetIndexedEventsPromise: %v", err)
+	}
+	subscribeAndPublish(t, feed, publisher, eventcodes.Order,
+		[]osub.Symbol{osub.NewIndexedEventSubscriptionSymbol(symbol, order.Default())}, published, len(published))
+	got, err := promise.Await(awaitContext(t))
+	if err != nil {
+		t.Fatalf("Await: %v", err)
+	}
+	if len(got) != len(published) {
+		t.Fatalf("%d events, want %d: %v", len(got), len(published), got)
+	}
+	for i, e := range got {
+		if o, ok := e.(*order.Order); !ok || o.Index() != int64(i) {
+			t.Fatalf("event %d = %v, want the order with index %d", i, e, i)
+		}
+	}
+}
+
+func TestGetIndexedEventsPromiseGuards(t *testing.T) {
+	feed, _ := newLocalHub(t)
+	const symbol = "PROMISE/INDEXED/GUARD"
+	cases := []struct {
+		name   string
+		symbol osub.Symbol
+		source events.IndexedEventSourceInterface
+	}{
+		{"nil source", osub.String(symbol), nil},
+		{"typed nil source", osub.String(symbol), (*order.Source)(nil)},
+		{"indexed event subscription symbol", osub.NewIndexedEventSubscriptionSymbol(symbol, order.Default()),
+			order.Default()},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			promise, err := feed.GetIndexedEventsPromise(eventcodes.Order, c.symbol, c.source)
+			if err == nil || promise != nil {
+				t.Fatalf("GetIndexedEventsPromise = %v, %v; want an error and no promise", promise, err)
+			}
+		})
 	}
 }
