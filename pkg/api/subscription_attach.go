@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	errNilFeed         = errors.New("the feed is nil")
-	errNilSubscription = errors.New("the subscription is nil")
+	errNilFeed         = errors.New("dxfeed: the feed is nil")
+	errNilSubscription = errors.New("dxfeed: the subscription is nil")
 )
 
 // DXFeedTimeSeriesSubscription is a subscription to time series events, such as candle.Candle or

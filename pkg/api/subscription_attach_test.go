@@ -61,6 +61,13 @@ func TestDetachedSubscriptionAttachAndDetach(t *testing.T) {
 
 	publish()
 	expectNoEvent(t, collector, "a detached subscription")
+	// Detaching a subscription that is not attached does nothing.
+	if err := feed.DetachSubscription(sub); err != nil {
+		t.Fatalf("DetachSubscription of a detached subscription: %v", err)
+	}
+	if err := sub.Detach(feed); err != nil {
+		t.Fatalf("Detach of a detached subscription: %v", err)
+	}
 
 	steps := []struct {
 		name   string
