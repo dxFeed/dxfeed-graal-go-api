@@ -4,6 +4,7 @@ package samples_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"os/exec"
@@ -11,6 +12,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -106,49 +108,65 @@ func TestPublishAndRequestProfile(t *testing.T) {
 
 	server := exec.Command(publisher, "-address", ":"+port)
 	server.Dir = dir
-	var serverOut bytes.Buffer
-	server.Stdout, server.Stderr = &serverOut, &serverOut
+	serverOut := &syncBuffer{}
+	server.Stdout, server.Stderr = serverOut, serverOut
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
 	exited := make(chan struct{})
+	var exitErr error
 	go func() {
-		_ = server.Wait()
+		exitErr = server.Wait()
 		close(exited)
 	}()
-	// stop stops the server and returns its output, which is complete only after Wait.
+	// stop stops the server and describes how it ended and its output, which is complete only after Wait.
 	stop := func() string {
+		select {
+		case <-exited:
+			return fmt.Sprintf("exited by itself: %v\n%s", exitErr, serverOut)
+		default:
+		}
 		_ = server.Process.Kill()
 		<-exited
 		return serverOut.String()
 	}
 	defer stop()
 
-	// Wait until the server listens, so that the client does not wait for a reconnect. The port is in the ephemeral
-	// range, so on Linux a dial to it may connect to itself while nothing listens: such a connection does not count.
+	// Wait until the server listens, so that the client does not wait for a reconnect. The log tells it: a probe
+	// connection is not used, since the server writes to the connection that the probe has closed.
 	deadline := time.Now().Add(30 * time.Second)
-	for {
-		conn, err := net.DialTimeout("tcp", "127.0.0.1:"+port, time.Second)
-		if err == nil {
-			self := conn.LocalAddr().String() == conn.RemoteAddr().String()
-			_ = conn.Close()
-			if !self {
-				break
-			}
-		}
+	for !strings.Contains(serverOut.String(), "Listening at") {
 		select {
 		case <-exited:
-			t.Fatalf("publish-profiles exited:\n%s", stop())
+			t.Fatalf("publish-profiles: %s", stop())
 		default:
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("publish-profiles does not listen on %s: %v\n%s", port, err, stop())
+			t.Fatalf("publish-profiles does not listen on %s:\n%s", port, stop())
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
 
 	out, err := tryRun(dir, requester, "-address", "127.0.0.1:"+port, "-symbol", "A:TEST", "-timeout", "20s")
 	if err != nil || !strings.Contains(out, "A:TEST") || !strings.Contains(out, "Test symbol") {
-		t.Errorf("request-profile: %v\n%s\npublish-profiles:\n%s", err, out, stop())
+		t.Errorf("request-profile: %v\n%s\npublish-profiles: %s", err, out, stop())
 	}
+}
+
+// syncBuffer is a bytes.Buffer that a process writes while the test reads it.
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
 }
