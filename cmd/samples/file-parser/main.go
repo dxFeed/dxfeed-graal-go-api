@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command file-parser reads the events of some types and symbols from a tape file and prints them.
 //
 //	go run ./cmd/samples/file-parser -file WriteTapeFile.out.txt -types Quote -symbols TEST1,TEST2

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command last-event-console subscribes to the last events of a large set of symbols, which the process keeps in
 // memory, and prints the last Quote, Trade, Summary and Profile of each symbol typed in the console. An empty line,
 // "exit", "quit" or "q" ends it.

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package misc provides the miscellaneous events: Message and TextMessage carry application messages,
 // Configuration and TextConfiguration carry the configuration of a symbol.
 package misc

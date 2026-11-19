@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package side defines the order side enumeration.
 package side
 

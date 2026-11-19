@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package ipf reads and writes instrument profiles, the descriptions of instruments, in the Instrument Profile Format
 // (IPF).
 //

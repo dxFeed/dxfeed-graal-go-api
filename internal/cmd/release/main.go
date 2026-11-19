@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command release checks release note fragments, prints the notes of a version and prepares a release.
 //
 // Run it from the repository root:

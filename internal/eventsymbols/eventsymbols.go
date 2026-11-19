@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package eventsymbols works with the string form of market event symbols: a base symbol, an optional exchange code
 // ("IBM&N") and optional attributes in curly braces ("IBM{price=bid,tho=true}"). It is the Go port of
 // MarketEventSymbols of the Java and C++ APIs, so that every event with such symbols can reuse it.

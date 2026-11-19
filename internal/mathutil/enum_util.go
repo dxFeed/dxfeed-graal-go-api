@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package mathutil
 
 func CreateEnumBitMaskArrayByValue(defaultValue int64, allCases []int64) []int64 {

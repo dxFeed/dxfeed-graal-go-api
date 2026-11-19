@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // The endpoint-reconnect sample builds a named endpoint, watches its message connectors and their connection errors,
 // and reconnects it on a timer.
 //

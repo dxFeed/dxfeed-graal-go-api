@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command price-level-service-client requests the price levels (orders) and the quotes of a candle symbol from the
 // ORCS price level service, prints the order sources available to the client and, with -validate, checks the price
 // levels with orcs.ValidatePriceLevels. The service needs an authorization token in the address:

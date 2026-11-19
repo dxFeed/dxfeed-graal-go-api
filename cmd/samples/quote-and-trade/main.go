@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command quote-and-trade shows several ways to get the quotes and trades of a symbol: a Quote listener that prints the
 // mid price, a promise of the last quote, a listener of quotes and trades, and snapshots of the last trade every
 // second until Ctrl+C.

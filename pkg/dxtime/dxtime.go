@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package dxtime formats and parses the times and the time periods the way the dxFeed API does.
 //
 // The SDK takes times in the strings of its addresses and properties, for example the "fromTime" of a

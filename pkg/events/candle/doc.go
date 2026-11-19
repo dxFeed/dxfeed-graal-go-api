@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package candle provides the [Candle] and [DailyCandle] events, the open, high, low and close prices and the volume of
 // a symbol over a period.
 //

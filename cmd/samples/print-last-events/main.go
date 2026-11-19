@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command print-last-events requests the last Quote of several symbols and the time and sales of the last minute of
 // one of them with promises, waits for the results and prints them.
 //

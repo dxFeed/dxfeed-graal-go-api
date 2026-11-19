@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command install-sdk installs the dxFeed Graal Native SDK library that this version of the API needs into a per-user
 // directory and prints the settings that let cgo link it and the program find it at run time.
 //

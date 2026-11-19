@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package profile
 
 import "github.com/dxfeed/dxfeed-graal-go-api/internal/mathutil"

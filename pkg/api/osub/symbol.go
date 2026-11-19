@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package osub
 
 // Symbol is a subscription symbol. It is implemented only by the types of this package: String, *CandleSymbol,

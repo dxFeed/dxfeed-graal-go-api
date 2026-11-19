@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command auth connects to an address that takes an authorization token, renews the token every 10 seconds and
 // prints the quotes of a symbol until Ctrl+C. The demo feed accepts any token; this sample makes random ones.
 //

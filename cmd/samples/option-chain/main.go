@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command option-chain reads instrument profiles, builds the option chain of a symbol and prints its nearest series
 // with the strikes around a price, and the call and put symbols at each strike. The dxFeed demo service is the default
 // source of the profiles:

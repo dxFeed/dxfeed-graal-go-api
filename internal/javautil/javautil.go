@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package javautil reproduces the text conversions of numbers that the Java API uses in candle symbols:
 // Double.parseDouble, Double.toString and the (long) cast.
 package javautil

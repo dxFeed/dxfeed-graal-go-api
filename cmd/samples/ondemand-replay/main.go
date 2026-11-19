@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command ondemand-replay replays the quotes of Accenture (ACN), which dropped under $1 in the "Flash Crash" of
 // May 6, 2010 from 14:47:48 to 14:48:02 EST, from the dxFeed on-demand history data replay service. The service needs
 // the credentials of a dxFeed account with access to it; Ctrl+C stops the replay.

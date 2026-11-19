@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command market-depth-model prints the order book of a symbol with model.MarketDepthModel: the best buy and sell
 // orders of the sources, up to the depth limit, at most once per aggregation period.
 //

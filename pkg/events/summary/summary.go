@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package summary provides the Summary event: a snapshot of the trading session summary of a symbol (day and previous day prices, open interest).
 package summary
 

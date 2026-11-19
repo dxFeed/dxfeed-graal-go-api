@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package schedule tells the trading days and sessions of an instrument: a [Schedule] comes from the trading hours of
 // an instrument profile or from a schedule definition, and splits time into [Day]s, each made of [Session]s of a
 // [SessionType]. [DayFilter] and [SessionFilter] choose the days and sessions to find, such as the next trading day.

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package option groups option instrument profiles into chains: an [OptionChain] of a product or an underlying holds
 // its [OptionSeries], and a series holds the calls and puts of one expiration and contract terms by strike.
 //

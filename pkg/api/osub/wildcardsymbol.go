@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package osub
 
 // WildcardSymbol subscribes to all symbols of an event type; use it only where the data source allows it.

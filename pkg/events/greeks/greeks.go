@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package greeks provides the Greeks event: option price, volatility and sensitivities (delta, gamma, theta, rho, vega).
 package greeks
 

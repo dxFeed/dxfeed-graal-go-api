@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package order provides the order book events: [Order] (an order or a price level of a source), [AnalyticOrder] (an
 // order with the iceberg information) and [SpreadOrder] (an order of a spread), and their attributes: [Source],
 // [Action], [Scope], [IcebergType].

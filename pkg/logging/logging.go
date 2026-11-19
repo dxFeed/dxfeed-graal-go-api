@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package logging configures the logging of the dxFeed Graal SDK and delivers its log records to Go code.
 //
 // The SDK logs the connections of the endpoints, the errors of the connectors and other events of its Java code. By

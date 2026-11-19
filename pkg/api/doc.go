@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package api connects to dxFeed: an endpoint ([DXEndpoint]) gives a feed ([DXFeed]) to subscribe to market events
 // and a publisher ([DXPublisher]) to publish them. It wraps the dxFeed Graal Native SDK, the Java API of dxFeed
 // compiled to a native library, and follows the dxFeed Java and C++ APIs.

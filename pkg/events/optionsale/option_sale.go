@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package optionsale provides the OptionSale event: a trade of an option, with the option analytics at its time.
 package optionsale
 

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command write-tape-file publishes two quotes into a tape file in the text format.
 //
 //	go run ./cmd/samples/write-tape-file -address "tape:WriteTapeFile.out.txt[format=text]"

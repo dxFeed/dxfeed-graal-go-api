@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package quote provides the Quote event: the best bid and ask prices and sizes of a symbol.
 package quote
 
