@@ -55,7 +55,7 @@ func (f *DXFeed) GetLastEventIfSubscribed(eventType eventcodes.EventCode, symbol
 func (f *DXFeed) GetIndexedEventsIfSubscribed(eventType eventcodes.EventCode, symbol osub.Symbol,
 	source events.IndexedEventSourceInterface) ([]interface{}, error) {
 	if source == nil || isNilPointer(source) || source.Name() == nil {
-		return nil, errors.New("cannot get the indexed events: no source")
+		return nil, errNoSource
 	}
 	return f.feed.GetIndexedEventsIfSubscribed(eventType.NativeCode(), symbol, *source.Name())
 }
@@ -69,6 +69,12 @@ func (f *DXFeed) GetTimeSeriesIfSubscribed(eventType eventcodes.EventCode, symbo
 	toTime int64) ([]interface{}, error) {
 	return f.feed.GetTimeSeriesIfSubscribed(eventType.NativeCode(), symbol, fromTime, toTime)
 }
+
+// errNoSource is returned for a request of indexed events without a source.
+var errNoSource = errors.New("dxfeed: no indexed event source")
+
+// ErrPromiseNotDone is returned by Promise.Result for a promise that is not done yet.
+var ErrPromiseNotDone = errors.New("dxfeed: the promise is not done")
 
 // isNilPointer reports whether the interface holds a nil pointer, such as a nil *order.Source.
 func isNilPointer(value interface{}) bool {

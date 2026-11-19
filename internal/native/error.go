@@ -31,6 +31,11 @@ func takeJavaException(thread *C.graal_isolatethread_t) error {
 		return nil
 	}
 	defer C.dxfg_v4_Exception_release(thread, ptr)
+	return javaError(ptr)
+}
+
+// javaError converts an exception of the SDK; the caller keeps and releases it.
+func javaError(ptr *C.dxfg_v4_exception_t) error {
 	return common.JavaError{
 		ClassName:  C.GoString(ptr.class_name),
 		Message:    C.GoString(ptr.message),
