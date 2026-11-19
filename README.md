@@ -264,6 +264,10 @@ then set `CGO_LDFLAGS` (and `PATH` on Windows) as the installer prints. [docs/qu
 describes each step for Windows, Linux and macOS, and [docs/troubleshooting.md](docs/troubleshooting.md) the usual
 errors.
 
+Without cgo the build fails with `undefined: dxfeed_graal_go_api_requires_cgo_set_CGO_ENABLED_1_and_install_a_C_compiler`:
+cgo is off when `CGO_ENABLED=0` is set or when Go finds no C compiler. For the same reason the examples on
+pkg.go.dev do not run in the Go Playground; run them locally.
+
 ## Usage
 
 ### How to connect to QD endpoint

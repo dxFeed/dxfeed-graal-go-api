@@ -8,6 +8,10 @@
 // it with the install-sdk command of the module and set CGO_LDFLAGS and the library path it prints. The guide
 // docs/quick-start.md of the module describes the steps for Windows, Linux and macOS.
 //
+// Without cgo (CGO_ENABLED=0, or no C compiler found) the build fails with the undefined identifier
+// dxfeed_graal_go_api_requires_cgo_set_CGO_ENABLED_1_and_install_a_C_compiler. The examples of this documentation
+// do not run in the Go Playground, which has no cgo: run them locally.
+//
 // # A minimal program
 //
 //	endpoint, err := api.NewEndpoint(api.Feed)
