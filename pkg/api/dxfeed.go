@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"reflect"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
@@ -53,7 +54,7 @@ func (f *DXFeed) GetLastEventIfSubscribed(eventType eventcodes.EventCode, symbol
 // it is not a consistent snapshot. It reads the local cache of the feed.
 func (f *DXFeed) GetIndexedEventsIfSubscribed(eventType eventcodes.EventCode, symbol osub.Symbol,
 	source events.IndexedEventSourceInterface) ([]interface{}, error) {
-	if source == nil || source.Name() == nil {
+	if source == nil || isNilPointer(source) || source.Name() == nil {
 		return nil, errors.New("cannot get the indexed events: no source")
 	}
 	return f.feed.GetIndexedEventsIfSubscribed(eventType.NativeCode(), symbol, *source.Name())
@@ -67,4 +68,10 @@ func (f *DXFeed) GetIndexedEventsIfSubscribed(eventType eventcodes.EventCode, sy
 func (f *DXFeed) GetTimeSeriesIfSubscribed(eventType eventcodes.EventCode, symbol osub.Symbol, fromTime,
 	toTime int64) ([]interface{}, error) {
 	return f.feed.GetTimeSeriesIfSubscribed(eventType.NativeCode(), symbol, fromTime, toTime)
+}
+
+// isNilPointer reports whether the interface holds a nil pointer, such as a nil *order.Source.
+func isNilPointer(value interface{}) bool {
+	v := reflect.ValueOf(value)
+	return v.Kind() == reflect.Ptr && v.IsNil()
 }

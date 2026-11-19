@@ -117,6 +117,12 @@ func TestGetLastEventRejectsNonEvents(t *testing.T) {
 	if _, err := feed.GetLastEvents([]interface{}{quote.NewQuote("X"), 42}); err == nil {
 		t.Fatal("GetLastEvents accepted an int")
 	}
+	if _, err := feed.GetLastEvent((*quote.Quote)(nil)); err == nil {
+		t.Fatal("GetLastEvent accepted a nil quote")
+	}
+	if _, err := feed.GetLastEvents([]interface{}{quote.NewQuote("X"), &quote.Quote{}}); err == nil {
+		t.Fatal("GetLastEvents accepted a quote without a symbol")
+	}
 }
 
 func TestGetIndexedEventsIfSubscribed(t *testing.T) {
@@ -155,6 +161,10 @@ func TestGetIndexedEventsIfSubscribed(t *testing.T) {
 	}
 	if _, err := feed.GetIndexedEventsIfSubscribed(eventcodes.Order, osub.String(symbol), nil); err == nil {
 		t.Fatal("GetIndexedEventsIfSubscribed accepted a nil source")
+	}
+	if _, err := feed.GetIndexedEventsIfSubscribed(eventcodes.Order, osub.String(symbol),
+		(*order.Source)(nil)); err == nil {
+		t.Fatal("GetIndexedEventsIfSubscribed accepted a typed nil source")
 	}
 }
 

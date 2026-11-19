@@ -8,6 +8,7 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"unsafe"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
@@ -15,7 +16,8 @@ import (
 	goevents "github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 )
 
-// checkEvents checks that every value is an event of a type with a Go mapper; verb names the operation in the error.
+// checkEvents checks that every value is a non-nil event of a type with a Go mapper and with an event symbol; verb
+// names the operation in the error.
 func checkEvents(verb string, events []interface{}) error {
 	available := mappers.AvailableMappers()
 	for _, event := range events {
@@ -23,8 +25,14 @@ func checkEvents(verb string, events []interface{}) error {
 		if !ok {
 			return fmt.Errorf("cannot %s %T: not an event type", verb, event)
 		}
+		if rv := reflect.ValueOf(event); rv.Kind() == reflect.Ptr && rv.IsNil() {
+			return fmt.Errorf("cannot %s %T: nil event", verb, event)
+		}
 		if available[e.Type().NativeCode()] == nil {
 			return fmt.Errorf("cannot %s %T: event code %d is not supported yet", verb, event, e.Type())
+		}
+		if s, ok := event.(interface{ EventSymbol() *string }); ok && s.EventSymbol() == nil {
+			return fmt.Errorf("cannot %s %T: event symbol is not set", verb, event)
 		}
 	}
 	return nil
