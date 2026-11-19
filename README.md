@@ -12,6 +12,7 @@ and [dxFeed Java API](https://docs.dxfeed.com/dxfeed/api/overview-summary.html) 
 :warning: It’s a **beta** version and still under active development.
 
 ![Build](https://github.com/dxFeed/dxfeed-graal-go-api/actions/workflows/build.yml/badge.svg)
+[![Go Reference](https://pkg.go.dev/badge/github.com/dxfeed/dxfeed-graal-go-api.svg)](https://pkg.go.dev/github.com/dxfeed/dxfeed-graal-go-api)
 ![Platform](https://img.shields.io/badge/platform-win--x64%20%7C%20linux--x64%20%7C%20linux--arm64%20%7C%20osx--x64%20%7C%20osx--arm64-lightgrey)
 [![Go](https://img.shields.io/badge/go_version-1.21-blueviolet)](https://go.dev/dl/)
 [![License](https://img.shields.io/badge/license-MPL--2.0-orange)](LICENSE)
