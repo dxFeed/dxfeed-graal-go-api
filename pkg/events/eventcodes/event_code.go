@@ -4,6 +4,8 @@
 // Package eventcodes defines the codes that identify dxFeed event types.
 package eventcodes
 
+import "strconv"
+
 // EventCode identifies an event type; each value equals the matching dxfg_event_clazz_t constant of the native SDK.
 type EventCode int32
 
@@ -63,6 +65,67 @@ const (
 	// OrderImbalance is the event code of the OrderImbalance event.
 	OrderImbalance EventCode = 26
 )
+
+// names holds the name of each event type, which is the name of its constant, by the code.
+var names = [...]string{
+	Quote:             "Quote",
+	Profile:           "Profile",
+	Summary:           "Summary",
+	Greeks:            "Greeks",
+	Candle:            "Candle",
+	DailyCandle:       "DailyCandle",
+	Underlying:        "Underlying",
+	TheoPrice:         "TheoPrice",
+	Trade:             "Trade",
+	TradeETH:          "TradeETH",
+	Configuration:     "Configuration",
+	Message:           "Message",
+	TimeAndSale:       "TimeAndSale",
+	OrderBase:         "OrderBase",
+	Order:             "Order",
+	AnalyticOrder:     "AnalyticOrder",
+	OtcMarketsOrder:   "OtcMarketsOrder",
+	SpreadOrder:       "SpreadOrder",
+	Series:            "Series",
+	OptionSale:        "OptionSale",
+	TextMessage:       "TextMessage",
+	MarketMaker:       "MarketMaker",
+	TextConfiguration: "TextConfiguration",
+	NuamOrder:         "NuamOrder",
+	NuamTimeAndSale:   "NuamTimeAndSale",
+	NuamTrade:         "NuamTrade",
+	OrderImbalance:    "OrderImbalance",
+}
+
+// String returns the name of the event type, such as "Quote" or "TimeAndSale", or "EventCode(N)" for a value that is
+// not an event code.
+func (e EventCode) String() string {
+	if e >= 0 && int(e) < len(names) {
+		return names[e]
+	}
+	return "EventCode(" + strconv.Itoa(int(e)) + ")"
+}
+
+// All returns every event code in the order of the values. OrderBase is the common base of the order events and has
+// no events of its own, so a subscription to it fails.
+func All() []EventCode {
+	codes := make([]EventCode, len(names))
+	for i := range names {
+		codes[i] = EventCode(i)
+	}
+	return codes
+}
+
+// ByName returns the event code of the event type with the name, such as "Quote" or "TimeAndSale"; the name is
+// case-sensitive. It reports false for an unknown name.
+func ByName(name string) (EventCode, bool) {
+	for i, n := range names {
+		if n == name {
+			return EventCode(i), true
+		}
+	}
+	return 0, false
+}
 
 // NativeCode returns the numeric event class constant of the native SDK.
 func (e EventCode) NativeCode() int32 {
