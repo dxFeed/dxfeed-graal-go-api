@@ -116,7 +116,6 @@ type MarketDepthModel[E OrderEvent] struct {
 	sell              orderBook[E]
 	indexed           *IndexedTxModel[E]
 	listener          MarketDepthModelListener[E]
-	depthLimit        int
 	aggregationPeriod time.Duration
 	// timer runs the aggregated notification; taskScheduled reports whether one is pending.
 	timer         *time.Timer
