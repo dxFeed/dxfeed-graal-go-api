@@ -1,11 +1,13 @@
-// Package osub holds the subscription symbols: [String] for a plain symbol such as "AAPL", the wildcard
-// ([WildcardSymbol]), and the time series ([TimeSeriesSubscriptionSymbol]) and indexed event
+// Package osub holds the subscription symbols: [String] for a plain symbol such as "AAPL", [CandleSymbol] for a
+// candle symbol, the wildcard ([WildcardSymbol]), and the time series ([TimeSeriesSubscriptionSymbol]) and indexed event
 // ([IndexedEventSubscriptionSymbol]) symbols. They all implement [Symbol], the type that
 // [github.com/dxfeed/dxfeed-graal-go-api/pkg/api.DXFeedSubscription.AddSymbols] and the other subscription methods take.
 //
 // # Symbol kinds
 //
 //   - [String]: a symbol of the dxFeed symbology, such as "AAPL", "ETH/USD:GDAX" or a candle symbol "AAPL{=1d}".
+//   - [CandleSymbol]: a [github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle.CandleSymbol] made with [Candle],
+//     such as osub.Candle(candle.NewCandleSymbol("AAPL{=5m}")).
 //   - [WildcardSymbol]: all the symbols of the subscribed event types; it is accepted by some feeds only.
 //   - [TimeSeriesSubscriptionSymbol]: a symbol and the time from which the history of a time series event is wanted.
 //   - [IndexedEventSubscriptionSymbol]: a symbol and the source of an indexed event, such as the orders of one exchange.
