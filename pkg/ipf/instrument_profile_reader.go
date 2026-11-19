@@ -1,4 +1,3 @@
-// Package ipf reads instrument profiles, the descriptions of instruments, from IPF files and services.
 package ipf
 
 import "C"
@@ -6,6 +5,7 @@ import (
 	"io"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/auth"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 )
 
@@ -60,4 +60,21 @@ func (r *InstrumentProfileReader) ReadFromFile(address string) ([]*events.Instru
 // ReadFromFileWithPassword reads the profiles from a URL that needs a user and a password.
 func (r *InstrumentProfileReader) ReadFromFileWithPassword(address string, user string, password string) ([]*events.InstrumentProfile, error) {
 	return r.reader.ReadFromFileWithPassword(address, user, password)
+}
+
+// ReadFromFileWithToken reads the profiles from a URL that needs an authorization token; a nil token reads without
+// authorization, like ReadFromFile.
+func (r *InstrumentProfileReader) ReadFromFileWithToken(address string, token *auth.Token) ([]*events.InstrumentProfile, error) {
+	if token == nil {
+		return r.reader.ReadFromFile(address)
+	}
+	return r.reader.ReadFromFileWithToken(address, token.Scheme(), token.Value())
+}
+
+// WriteToFile writes the profiles to a file in the IPF format; a name ending with .gz or .zip compresses the file.
+// An existing file is replaced, and an I/O error may leave an incomplete file. The profiles are not validated beyond
+// a nil profile, a NUL character and the int32 range of ICB, SIC and the dates. The file can be read back with
+// InstrumentProfileReader.ReadFromFile.
+func WriteToFile(path string, profiles []*events.InstrumentProfile) error {
+	return native.WriteProfilesToFile(path, profiles)
 }

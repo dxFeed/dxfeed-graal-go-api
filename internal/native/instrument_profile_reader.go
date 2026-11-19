@@ -134,6 +134,49 @@ func (r *InstrumentProfileReader) ReadFromFileWithPassword(
 	return resultList, err
 }
 
+// ReadFromFileWithToken reads the profiles from a URL with an authorization token given by its scheme and value.
+func (r *InstrumentProfileReader) ReadFromFileWithToken(
+	address string,
+	scheme string,
+	value string,
+) ([]*events.InstrumentProfile, error) {
+	if err := checkNoNul(address, scheme, value); err != nil {
+		return nil, err
+	}
+	var resultList []*events.InstrumentProfile
+
+	err := executeInIsolateThread(func(thread *isolateThread) error {
+		addressPtr, freeAddress := cString(address)
+		defer freeAddress()
+		schemePtr, freeScheme := cString(scheme)
+		defer freeScheme()
+		valuePtr, freeValue := cString(value)
+		defer freeValue()
+
+		var token *C.dxfg_v4_auth_token_t
+		if err := checkStatus(thread, C.dxfg_v4_AuthToken_createCustomToken(thread.ptr, schemePtr, valuePtr,
+			&token)); err != nil {
+			return err
+		}
+		defer releaseJavaObject(thread, unsafe.Pointer(token))
+
+		var nativeProfiles *C.dxfg_v4_instrument_profile_data_list
+		err := checkStatus(thread, C.dxfg_v4_InstrumentProfileReader_readFromFileWithToken(thread.ptr, r.ptr(),
+			addressPtr, token, &nativeProfiles))
+		if nativeProfiles != nil {
+			defer C.dxfg_v4_instrument_profile_data_list_release(thread.ptr, nativeProfiles)
+		}
+		if err != nil {
+			return err
+		}
+
+		resultList, err = newProfileMapper().goProfiles(thread, nativeProfiles)
+		return err
+	})
+
+	return resultList, err
+}
+
 func (r *InstrumentProfileReader) ptr() *C.dxfg_v4_instrument_profile_reader_t {
 	return (*C.dxfg_v4_instrument_profile_reader_t)(r.handle.Ptr())
 }
