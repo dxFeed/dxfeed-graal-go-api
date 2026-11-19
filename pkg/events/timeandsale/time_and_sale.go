@@ -333,13 +333,18 @@ func (t *TimeAndSale) Flags() int32 {
 
 // String returns a string representation of this event.
 func (t *TimeAndSale) String() string {
-	return "TimeAndSale{" + formatutil.FormatString(t.EventSymbol()) +
+	return "TimeAndSale{" + t.fieldsString() + "}"
+}
+
+// fieldsString returns the fields of the event for String, without the type name and the braces.
+func (t *TimeAndSale) fieldsString() string {
+	return formatutil.FormatString(t.EventSymbol()) +
 		", eventTime=" + formatutil.FormatTime(t.EventTime()) +
 		", eventFlags=" + formatutil.HexFormat(int64(t.EventFlags())) +
 		", time=" + formatutil.FormatTime(t.Time()) +
 		", timeNanoPart=" + strconv.FormatInt(int64(t.timeNanoPart), 10) +
 		", sequence=" + strconv.FormatInt(int64(t.Sequence()), 10) +
-		", exchange=" + formatutil.FormatChar(rune(t.exchangeCode)) +
+		", exchange=" + formatutil.FormatChar(rune(uint16(t.exchangeCode))) +
 		", price=" + formatutil.FormatFloat64(t.Price()) +
 		", size=" + formatutil.FormatFloat64(t.Size()) +
 		", bid=" + formatutil.FormatFloat64(t.BidPrice()) +
@@ -352,6 +357,5 @@ func (t *TimeAndSale) String() string {
 		", validTick=" + formatutil.FormatBool(t.IsValidTick()) +
 		", type=" + formatutil.FormatInt64(int64(t.TimeAndSaleType())) +
 		formatutil.FormatNullableString(", buyer=%s", t.Buyer(), "") +
-		formatutil.FormatNullableString(", seller=%s", t.Seller(), "") +
-		"}"
+		formatutil.FormatNullableString(", seller=%s", t.Seller(), "")
 }

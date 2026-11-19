@@ -233,7 +233,7 @@ func (t *TradeBase) String() string {
 		", time=" + formatutil.FormatTime(t.Time()) +
 		", sequence=" + strconv.FormatInt(t.Sequence(), 10) +
 		", timeNanoPart=" + strconv.FormatInt(int64(t.TimeNanoPart()), 10) +
-		", exchange=" + formatutil.FormatChar(rune(t.ExchangeCode())) +
+		", exchange=" + formatutil.FormatChar(rune(uint16(t.ExchangeCode()))) +
 		", price=" + formatutil.FormatFloat64(t.Price()) +
 		", change=" + formatutil.FormatFloat64(t.Change()) +
 		", size=" + formatutil.FormatFloat64(t.Size()) +

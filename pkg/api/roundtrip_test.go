@@ -264,6 +264,50 @@ func TestPublishSubscribeRoundTrip(t *testing.T) {
 			e.SetAuctionType(orderimbalance.AuctionTypeClosing)
 			return e
 		}},
+		{eventcodes.NuamOrder, func(symbol string) events.EventType {
+			e := order.NewNuamOrder(symbol)
+			e.SetSide(side.Buy)
+			e.SetPrice(26.5)
+			e.SetSize(11)
+			e.SetActorId(1)
+			e.SetParticipantId(2)
+			e.SetSubmitterId(3)
+			e.SetOnBehalfOfSubmitterId(4)
+			e.SetClientOrderId(&description)
+			e.SetCustomerAccount(&description)
+			e.SetCustomerInfo(&description)
+			e.SetExchangeInfo(&description)
+			e.SetTimeInForce(order.NuamTimeInForceTypeGtc)
+			e.SetTimeInForceData(5)
+			e.SetTriggerOrderBookId(6)
+			e.SetTriggerPrice(27.5)
+			e.SetTriggerSessionType(7)
+			e.SetNuamOrderType(order.NuamOrderTypeLimit)
+			e.SetOrderQuantity(12)
+			e.SetDisplayQuantity(13)
+			e.SetRefreshQuantity(14)
+			e.SetLeavesQuantity(15)
+			e.SetMatchedQuantity(16)
+			return e
+		}},
+		{eventcodes.NuamTimeAndSale, func(symbol string) events.EventType {
+			e := timeandsale.NewNuamTimeAndSale(symbol)
+			e.SetPrice(28.5)
+			e.SetSize(17)
+			e.SetMatchId(18)
+			return e
+		}},
+		{eventcodes.NuamTrade, func(symbol string) events.EventType {
+			e := trade.NewNuamTrade(symbol)
+			e.SetPrice(29.5)
+			e.SetSize(19)
+			e.SetTradeStatTime(roundTripTime)
+			e.SetLastSignificantPrice(29.25)
+			e.SetLastPriceForAll(29.75)
+			e.SetNumberOfTrades(20)
+			e.SetVwap(29.4)
+			return e
+		}},
 	}
 
 	covered := map[int32]bool{}

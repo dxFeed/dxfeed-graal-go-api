@@ -33,6 +33,9 @@ func AvailableMappers() map[int32]MapperInterface {
 		C.DXFG_EVENT_MARKET_MAKER:       MarketMakerMapper{},
 		C.DXFG_EVENT_OTC_MARKETS_ORDER:  OtcMarketsOrderMapper{},
 		C.DXFG_EVENT_ORDER_IMBALANCE:    OrderImbalanceMapper{},
+		C.DXFG_EVENT_NUAM_ORDER:         NuamOrderMapper{},
+		C.DXFG_EVENT_NUAM_TIME_AND_SALE: NuamTimeAndSaleMapper{},
+		C.DXFG_EVENT_NUAM_TRADE:         NuamTradeMapper{},
 	}
 	return eventMappers
 }

@@ -67,11 +67,28 @@ func eventsWithAllStrings() []events.EventType {
 	oi.SetSource(ntv)
 	oi.SetImbalanceSide(orderimbalance.ImbalanceSideSell)
 	oi.SetAuctionType(orderimbalance.AuctionTypeClosing)
+	no := order.NewNuamOrder("NUAM_ORDER")
+	no.SetMarketMaker(str("MM"))
+	no.SetClientOrderId(str("client"))
+	no.SetCustomerAccount(str("account"))
+	no.SetCustomerInfo(str("customer"))
+	no.SetExchangeInfo(str("exchange"))
+	no.SetNuamOrderType(order.NuamOrderTypeMarketToLimit)
+	no.SetTimeInForce(order.NuamTimeInForceTypeNumberOfDays)
+	no.SetTimeInForceData(5)
+	nts := timeandsale.NewNuamTimeAndSale("NUAM_TNS")
+	nts.SetExchangeSaleConditions(str("conditions"))
+	nts.SetBuyer(str("buyer"))
+	nts.SetSeller(str("seller"))
+	nts.SetMatchId(42)
+	nt := trade.NewNuamTrade("NUAM_TRADE")
+	nt.SetNumberOfTrades(7)
+	nt.SetVwap(10.5)
 	return []events.EventType{
 		candle.NewCandle("CANDLE{=d}"), greeks.NewGreeks("GREEKS"), ao, o, so, p, quote.NewQuote("QUOTE"),
 		summary.NewSummary("SUMMARY"), ts, trade.NewTrade("TRADE"), trade.NewTradeETH("TRADE_ETH"),
 		underlying.NewUnderlying("UNDERLYING"), candle.NewDailyCandle("DAILY{=d}"), series.NewSeries("SERIES"),
-		theoprice.NewTheoPrice("THEO"), msg, tm, cfg, tc, os, mm, otc, oi,
+		theoprice.NewTheoPrice("THEO"), msg, tm, cfg, tc, os, mm, otc, oi, no, nts, nt,
 	}
 }
 
