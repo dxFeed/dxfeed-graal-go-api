@@ -474,6 +474,82 @@ func TestMarketDepthModelCloseWaitsForListener(t *testing.T) {
 	}
 }
 
+// TestMarketDepthModelListenerCallsModel checks that the listener may call the methods of the model that notify the
+// listener again, and that the model goes on working afterwards.
+func TestMarketDepthModelListenerCallsModel(t *testing.T) {
+	f := newDepthFixture(t)
+	var calls atomic.Int32
+	var m *model.MarketDepthModel[*order.Order]
+	var limitSet atomic.Bool // not sync.Once: the nested listener call would wait for the Do in progress
+	setErr := make(chan error, 1)
+	m = buildDepth(f, depthBuilder(f).WithListener(func(_, _ []*order.Order) {
+		calls.Add(1)
+		if limitSet.CompareAndSwap(false, true) {
+			setErr <- m.SetDepthLimit(2)
+		}
+	}))
+	f.publish(newBookOrder(t, 0, side.Buy, 1, 1, 0))
+	waitFor(t, func() bool { f.process(); return calls.Load() >= 2 })
+	if err := <-setErr; err != nil {
+		t.Fatalf("SetDepthLimit in the listener: %v", err)
+	}
+	if got := m.DepthLimit(); got != 2 {
+		t.Fatalf("DepthLimit: %d, want 2", got)
+	}
+	f.publish(newBookOrder(t, 1, side.Buy, 2, 1, 0))
+	waitFor(t, func() bool { f.process(); return calls.Load() >= 3 })
+}
+
+// TestMarketDepthModelCloseStopsWaitingNotification checks that a notification that waits for the listener call in
+// progress is dropped by Close, and that Close returns after the call in progress.
+func TestMarketDepthModelCloseStopsWaitingNotification(t *testing.T) {
+	f := newDepthFixture(t)
+	entered, release := make(chan struct{}), make(chan struct{})
+	var once sync.Once
+	var calls atomic.Int32
+	m := buildDepth(f, depthBuilder(f).WithAggregationPeriod(50*time.Millisecond).
+		WithListener(func(_, _ []*order.Order) {
+			calls.Add(1)
+			once.Do(func() {
+				close(entered)
+				<-release
+			})
+		}))
+	f.publish(newBookOrder(t, 0, side.Buy, 1, 1, 0))
+	select {
+	case <-entered:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the listener was not called")
+	}
+	// The notification of the new limit waits for the call in progress.
+	limitSet := make(chan error, 1)
+	go func() { limitSet <- m.SetDepthLimit(5) }()
+	time.Sleep(100 * time.Millisecond)
+	closeReturned := make(chan error, 1)
+	go func() { closeReturned <- m.Close() }()
+	select {
+	case err := <-limitSet:
+		if err != nil {
+			t.Fatalf("SetDepthLimit: %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the waiting notification was not dropped by Close")
+	}
+	select {
+	case <-closeReturned:
+		t.Fatal("Close returned during the listener call")
+	case <-time.After(100 * time.Millisecond):
+	}
+	close(release)
+	if err := <-closeReturned; err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	time.Sleep(100 * time.Millisecond)
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("listener calls: %d, want 1", got)
+	}
+}
+
 func TestMarketDepthModelSnapshotKeepsOtherSources(t *testing.T) {
 	f := newDepthFixture(t)
 	buildDepth(f, depthBuilder(f).WithSources(order.Default(), order.NtvL3()))

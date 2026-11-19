@@ -84,7 +84,6 @@ func (b *MarketDepthModelBuilder[E]) Build() (*MarketDepthModel[E], error) {
 		buy:               newOrderBook(compareBuyOrders[E], b.depthLimit),
 		sell:              newOrderBook(compareSellOrders[E], b.depthLimit),
 		listener:          b.listener,
-		depthLimit:        b.depthLimit,
 		aggregationPeriod: b.aggregationPeriod,
 	}
 	indexed, err := b.builder.WithListener(m.eventsReceived).Build()
@@ -226,7 +225,7 @@ func (m *MarketDepthModel[E]) cancelTask() bool {
 func (m *MarketDepthModel[E]) DepthLimit() int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.depthLimit
+	return m.buy.depthLimit
 }
 
 // SetDepthLimit sets the maximum number of the orders of each side that the listener gets; 0 means no limit. The
@@ -236,11 +235,10 @@ func (m *MarketDepthModel[E]) SetDepthLimit(depthLimit int) error {
 		return err
 	}
 	m.mu.Lock()
-	if depthLimit == m.depthLimit {
+	if depthLimit == m.buy.depthLimit {
 		m.mu.Unlock()
 		return nil
 	}
-	m.depthLimit = depthLimit
 	m.buy.setDepthLimit(depthLimit)
 	m.sell.setDepthLimit(depthLimit)
 	m.cancelTask()
