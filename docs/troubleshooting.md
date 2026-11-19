@@ -48,3 +48,13 @@ The endpoint is created and the subscription has a listener, but no events come:
   the address ([configuration.md](configuration.md#addresses)).
 - **The program ends**: the events come to the listener while the program runs; a `main` that returns right after
   `AddSymbols` receives nothing. Wait for a signal or a timer.
+
+## Threads
+
+Each OS thread that calls the API is attached to the isolate of the SDK on its first call and stays attached until the
+process exits; Go runs other goroutines on it, and their calls find it attached. A goroutine that locks itself to its
+OS thread with `runtime.LockOSThread`, calls the API and exits without `runtime.UnlockOSThread` ends that OS thread
+while it is still attached: the isolate keeps its record of the thread until the process exits. Unlock the goroutine
+before it exits, or keep such goroutines alive.
+
+The first calls of thousands of goroutines at once attach as many OS threads; on Linux this takes seconds.

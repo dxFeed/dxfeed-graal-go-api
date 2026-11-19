@@ -138,55 +138,45 @@ func checkSdkVersion(thread *C.graal_isolatethread_t) error {
 }
 
 type isolateThread struct {
-	ptr          *C.graal_isolatethread_t
-	shouldDetach bool
+	ptr *C.graal_isolatethread_t
 }
 
-// executeInIsolateThread runs call on an OS thread attached to the isolate. An error of creating the isolate or of
-// attaching or detaching the thread is returned, the error of call joined with a detach failure.
-func executeInIsolateThread(call func(thread *isolateThread) error) (err error) {
-	thread, err := attachCurrentThread()
+// executeInIsolateThread runs call on the OS thread of the goroutine, attached to the isolate. An error of creating
+// the isolate or of attaching the thread is returned, otherwise the error of call.
+//
+// An OS thread is attached on its first call and stays attached until the process exits: Go keeps its OS threads and
+// runs other goroutines on them, and the next call on the thread finds it attached. GraalVM keeps the attached threads
+// in one list under a global lock, so graal_get_current_thread of a thread that is not attached and
+// graal_detach_thread take time that grows with the number of attached threads; attaching and detaching on every call
+// of many goroutines at once made the calls hang on Linux for minutes.
+//
+// Go ends an OS thread only when a goroutine locked to it with runtime.LockOSThread exits without unlocking; such a
+// thread, if it called the API, leaves its IsolateThread in the isolate until the process exits.
+func executeInIsolateThread(call func(thread *isolateThread) error) error {
+	// The goroutine stays on the attached thread for the call.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	thread, err := currentThread()
 	if err != nil {
 		return err
 	}
-	defer func() {
-		// The error of call is kept as it is unless detaching fails too.
-		if detachErr := thread.detach(); detachErr != nil {
-			err = errors.Join(err, detachErr)
-		}
-	}()
 	return call(thread)
 }
 
-func attachCurrentThread() (*isolateThread, error) {
-	runtime.LockOSThread()
+// currentThread returns the IsolateThread of the current OS thread and attaches the thread if it is not attached. The
+// goroutine must be locked to its OS thread.
+func currentThread() (*isolateThread, error) {
 	isolate, err := getOrCreateIsolate()
 	if err != nil {
-		runtime.UnlockOSThread()
 		return nil, err
 	}
-	thread := &isolateThread{ptr: C.graal_get_current_thread(isolate.ptr), shouldDetach: false}
+	thread := &isolateThread{ptr: C.graal_get_current_thread(isolate.ptr)}
 	if thread.ptr == nil {
-		err := checkIsolateCall(func() C.int {
+		if err := checkIsolateCall(func() C.int {
 			return C.graal_attach_thread(isolate.ptr, &thread.ptr)
-		})
-		if err != nil {
-			runtime.UnlockOSThread()
+		}); err != nil {
 			return nil, err
 		}
-		thread.shouldDetach = true
 	}
 	return thread, nil
-}
-
-func (t *isolateThread) detach() error {
-	defer runtime.UnlockOSThread()
-	var err error
-	if t.ptr != nil && t.shouldDetach {
-		err = checkIsolateCall(func() C.int {
-			return C.graal_detach_thread(t.ptr)
-		})
-	}
-	t.ptr = nil
-	return err
 }
