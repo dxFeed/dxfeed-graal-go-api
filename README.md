@@ -411,6 +411,8 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   an `IndexedEventSubscriptionSymbol` and to track the connection state
 - [x] [EndpointReconnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/endpoint-reconnect/main.go)
   is a simple demonstration of how to watch the connectors and the connection errors of an endpoint and to reconnect it
+- [x] [Auth](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/auth/main.go)
+  is a simple demonstration of how to connect with an authorization token and renew it periodically
 - [ ] WriteTapeFile is a simple demonstration of how to write events to a tape file
 - [x] [DxFeedIpfConnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/feed-ipf-connect/main.go)
   is a simple demonstration of how to get Instrument Profiles and subscribe to their symbols

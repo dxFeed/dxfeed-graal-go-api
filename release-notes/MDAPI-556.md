@@ -3,3 +3,7 @@
   the SDK and of the Go API (a panic of a listener, events that the Go API skips) to a Go function.
   * `api.SetIsolateArguments` sets the arguments of the Graal isolate, such as `-Xmx512m` or `-Dname=value`, before
     the first call of the API; later it returns `api.ErrIsolateCreated`.
+  * Package `auth` creates, parses and prints the authorization tokens (`Basic`, `Bearer`, custom) for the addresses
+    of the endpoints; the `auth` sample connects with a token and renews it.
+  * Package `dxtime` formats and parses the times as the SDK does (`DefaultFormat`, `GMTFormat`, `NewFormat` of a
+    time zone, with milliseconds, the zone or full ISO 8601) and the time periods (`ParsePeriod`, `FormatPeriod`).
