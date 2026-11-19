@@ -197,6 +197,67 @@ int32_t dxfg_v4_system_shutdown(graal_isolatethread_t *thread);
 #define DXFG_V4_FEATURE_CONNECTION_ERRORS "connection_errors"
 
 /**
+ * @brief The name of the feature "runtime statistics" (dxfg_v4_system_get_runtime_statistics(),
+ * dxfg_v4_runtime_stats_t) for dxfg_v4_system_is_feature_supported().
+ * @since 3.17.0
+ */
+#define DXFG_V4_FEATURE_RUNTIME_STATISTICS "runtime_statistics"
+
+/**
+ * @brief The runtime statistics of the isolate and its process (dxfg_v4_system_get_runtime_statistics()).
+ *
+ * Every field is -1 when the platform or the garbage collector does not give the value, otherwise it is 0 or more.
+ * Each value is read on its own, so the struct is not one atomic snapshot: a heap value and a GC count may come from
+ * moments around one collection. The layout of the struct does not change: new values will come with a new function.
+ *
+ * The heap pool and GC fields follow the Serial GC, the GC of the SDK builds. A build with another GC (G1) has no such
+ * pools and collectors, and these fields are -1 there. `allocated_bytes` is -1 on every platform with GraalVM 25.5.
+ * The values were checked on Linux x64, macOS arm64 and Windows x64.
+ * @since 3.17.0
+ */
+typedef struct dxfg_v4_runtime_stats_t {
+    /** The bytes of the heap of the isolate in use, garbage not yet collected included. */
+    int64_t heap_used_bytes;
+    /** The bytes of the heap of the isolate taken from the system, `heap_used_bytes` or more. */
+    int64_t heap_committed_bytes;
+    /** The bytes the heap of the isolate may grow to (`-Xmx`, by default a part of the physical memory). */
+    int64_t heap_max_bytes;
+    /** The incremental (young generation) collections of the isolate since it started; -1 on G1. */
+    int64_t young_gc_count;
+    /** The total time of the incremental collections, in milliseconds; -1 on G1. */
+    int64_t young_gc_time_ms;
+    /** The collections of the whole heap of the isolate since it started; -1 on G1. */
+    int64_t full_gc_count;
+    /** The total time of the collections of the whole heap, in milliseconds; -1 on G1. */
+    int64_t full_gc_time_ms;
+    /** The live Java threads of the isolate: its own threads and the attached native threads. */
+    int64_t thread_count;
+    /** The peak of `thread_count` since the isolate started. */
+    int64_t peak_thread_count;
+    /**
+     * The CPU time of the whole process, user plus system, in nanoseconds: every isolate of the process reports the
+     * same value. The step is the one of the system (on Windows 15.625 ms).
+     */
+    int64_t process_cpu_time_ns;
+    /** The time since the isolate started, in milliseconds. */
+    int64_t uptime_ms;
+    /** The bytes allocated by all threads of the isolate since it started; -1 with GraalVM 25.5. */
+    int64_t allocated_bytes;
+    /** The bytes in use in the eden space of the young generation; -1 on G1. */
+    int64_t eden_used_bytes;
+    /** The bytes in use in the survivor space of the young generation; -1 on G1. */
+    int64_t survivor_used_bytes;
+    /** The bytes in use in the old generation: its growth across collections shows objects that stay alive; -1 on G1. */
+    int64_t old_used_bytes;
+    /** The live daemon threads of the isolate; the attached native threads count as daemon threads. */
+    int64_t daemon_thread_count;
+    /** The Java threads started or attached in the isolate since it started. */
+    int64_t total_started_thread_count;
+    /** The processors available to the process, container limits considered: divide a CPU load by it per core. */
+    int64_t available_processors;
+} dxfg_v4_runtime_stats_t;
+
+/**
  * @brief Returns the version of the SDK release that the library belongs to, e.g. `3.13.0`.
  *
  * A wrapper that binds the functions by name checks the release before it binds the others. When the function
@@ -242,6 +303,27 @@ int32_t dxfg_v4_system_get_advanced_revision(graal_isolatethread_t *thread, DXFG
  */
 int32_t dxfg_v4_system_is_feature_supported(graal_isolatethread_t *thread, const char *name,
                                             DXFG_OUT int32_t *supported);
+
+/**
+ * @brief Reads the runtime statistics of the isolate and its process: heap, garbage collections, threads, process CPU
+ * time and uptime (see dxfg_v4_runtime_stats_t).
+ *
+ * A value that the platform or the GC does not give is -1, and the call still succeeds. Reading changes nothing:
+ * the counters are cumulative since the isolate started, and the caller computes the change between two calls. The
+ * first call initializes the sources and may take some milliseconds: call it once at start-up to take the cost out of
+ * a measurement. The function works after dxfg_v4_system_close_all_and_await_termination() too.
+ *
+ * Java: `ManagementFactory` (`MemoryMXBean`, `GarbageCollectorMXBean`, `MemoryPoolMXBean`, `ThreadMXBean`,
+ * `RuntimeMXBean`), `ProcessHandle.current().info().totalCpuDuration()` and `Runtime.availableProcessors()`.
+ *
+ * @param[in] thread The current GraalVM Isolate's thread.
+ * @param[out] stats The pointer to the structure that receives the statistics; must not be NULL. It is written on
+ * success only.
+ * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error (also
+ * when `stats` is NULL). Use dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
+ * @since 3.17.0
+ */
+int32_t dxfg_v4_system_get_runtime_statistics(graal_isolatethread_t *thread, DXFG_OUT dxfg_v4_runtime_stats_t *stats);
 
 /** @} */ // end of V4_System
 
