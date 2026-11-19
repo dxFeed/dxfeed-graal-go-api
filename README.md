@@ -392,6 +392,10 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [x] [IncOrderSnapshot](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/inc-order-snapshot/main.go)
   is a simple demonstration of how to receive the snapshot and the incremental updates of the orders of a source
   with `IndexedTxModel`
+- [x] [MarketDepthModel](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/market-depth-model/main.go)
+  is a simple demonstration of how to print the order book of a symbol with `MarketDepthModel`
+- [x] [SimpleOrderBook](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/simple-order-book/main.go)
+  is a simple demonstration of how to build an order book from the transactions of `IndexedTxModel`
 - [ ] WriteTapeFile is a simple demonstration of how to write events to a tape file
 - [x] [DxFeedIpfConnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/feed-ipf-connect/main.go)
   is a simple demonstration of how to get Instrument Profiles and subscribe to their symbols
@@ -588,6 +592,10 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [x] [TimeSeriesTxModel](https://github.com/dxFeed/dxfeed-graal-cxx-api/blob/main/include/dxfeed_graal_cpp_api/model/TimeSeriesTxModel.hpp)
   passes the complete transactions of the time series events of a symbol from a time, such as candles, to its
   listener
+
+- [x] [MarketDepthModel](https://github.com/dxFeed/dxfeed-graal-cxx-api/blob/main/include/dxfeed_graal_cpp_api/model/MarketDepthModel.hpp)
+  keeps the order book of a symbol on top of `IndexedTxModel` and passes its best orders, up to a depth limit, to its
+  listener ([sample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/market-depth-model/main.go))
 
 ### IPF & Schedule
 
