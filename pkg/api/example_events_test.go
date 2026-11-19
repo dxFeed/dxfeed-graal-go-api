@@ -152,15 +152,27 @@ func ExampleDXFeed_CreateSubscription_indexed() {
 	// 2 Sell 100.5 200
 }
 
-// stateLogger is a connection state listener that prints the changes and signals the connection.
+// stateLogger is a connection state listener that prints the changes and passes the new states on.
 type stateLogger struct {
-	connected chan struct{}
+	states chan common.ConnectionState
 }
 
 func (l stateLogger) UpdateState(old, new common.ConnectionState) {
 	fmt.Println("connection:", old, "->", new)
-	if new == common.Connected {
-		close(l.connected)
+	l.states <- new
+}
+
+// waitFor waits until the listener gets the state; the listener is called on a thread of the SDK.
+func (l stateLogger) waitFor(state common.ConnectionState) {
+	for {
+		select {
+		case s := <-l.states:
+			if s == state {
+				return
+			}
+		case <-time.After(10 * time.Second):
+			log.Fatal("no change to ", state)
+		}
 	}
 }
 
@@ -204,19 +216,16 @@ func ExampleDXEndpoint_AddListener() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	logger := stateLogger{connected: make(chan struct{})}
+	logger := stateLogger{states: make(chan common.ConnectionState, 10)}
 	endpoint.AddListener(logger)
 	if err := endpoint.Connect("127.0.0.1:" + port); err != nil {
 		log.Fatal(err)
 	}
-	select {
-	case <-logger.connected:
-	case <-time.After(10 * time.Second):
-		log.Fatal("not connected")
-	}
+	logger.waitFor(common.Connected)
 	if err := endpoint.Close(); err != nil {
 		log.Fatal(err)
 	}
+	logger.waitFor(common.Closed)
 	// Output:
 	// connection: Not connected -> Connecting
 	// connection: Connecting -> Connected
