@@ -102,6 +102,15 @@ func TestSessions(t *testing.T) {
 	found[schedule.Session](t, false)(day.FirstSession(schedule.PreMarketSessions))
 	found[schedule.Session](t, false)(day.FirstSession(schedule.SessionFilter{Type: 9}))
 
+	afterTwo := schedule.SessionFilter{Accept: func(x schedule.Session) bool {
+		return x.Day() == day && !x.StartTime().Before(dayStart(42).Add(2*hour))
+	}}
+	if got := found[schedule.Session](t, true)(regular.NextSession(afterTwo)); got != sessions[2] {
+		t.Errorf("NextSession(custom) = %v", got)
+	}
+	found[schedule.Session](t, false)(day.FirstSession(schedule.SessionFilter{Trading: schedule.Yes,
+		Accept: func(schedule.Session) bool { return false }}))
+
 	nearest := found[schedule.Session](t, true)(s.NearestSessionByTime(dayStart(42).Add(5*hour),
 		schedule.TradingSessions))
 	if nearest != regular {
@@ -136,6 +145,7 @@ func TestDays(t *testing.T) {
 	if even.YearMonthDay() != 19700216 {
 		t.Errorf("NextDay(custom) = %v", even)
 	}
+	found[schedule.Day](t, false)(friday.NextDay(schedule.DayFilter{Weekdays: []time.Weekday{9}}))
 	if got := found[schedule.Session](t, true)(saturday.FirstSession(schedule.AnySession)); got.Type() !=
 		schedule.NoTrading {
 		t.Errorf("weekend session = %v", got)

@@ -8,5 +8,6 @@
 //
 // The schedules, days and sessions are immutable values; they can be compared with == and kept in maps. The default
 // schedule data that the definitions such as NewYorkETH() refer to are built in; DownloadDefaults and SetDefaults change
-// them.
+// them. A schedule refers to its data by its definition, so the days and sessions taken before such a change may
+// not match the new data; take them anew after it.
 package schedule

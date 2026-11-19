@@ -31,7 +31,8 @@ func (c Cond) native() int32 {
 }
 
 // DayFilter chooses days. A day passes when it falls on one of the Weekdays (any day if empty), meets the
-// conditions, and Accept, if set, returns true for it. The zero value accepts any day.
+// conditions, and Accept, if set, returns true for it. The zero value accepts any day. The conditions are checked in
+// the native search; Accept is called for each day that meets them, so a narrow condition keeps the search fast.
 type DayFilter struct {
 	Weekdays                   []time.Weekday
 	Holiday, ShortDay, Trading Cond
@@ -69,9 +70,12 @@ func (f DayFilter) spec(s Schedule) native.DayFilterSpec {
 		if w == time.Sunday {
 			iso = 7
 		}
-		if iso >= 1 && iso <= 7 {
-			spec.DayOfWeekMask |= 1 << iso
+		if iso < 1 || iso > 7 {
+			// An unknown day of the week matches no day.
+			spec.Accept = func(native.DayFields) bool { return false }
+			return spec
 		}
+		spec.DayOfWeekMask |= 1 << iso
 	}
 	if accept := f.Accept; accept != nil {
 		spec.Accept = func(d native.DayFields) bool { return accept(s.day(d)) }
@@ -80,7 +84,8 @@ func (f DayFilter) spec(s Schedule) native.DayFilterSpec {
 }
 
 // SessionFilter chooses sessions. A session passes when it has the Type (any type if zero), meets the condition,
-// and Accept, if set, returns true for it. The zero value accepts any session.
+// and Accept, if set, returns true for it. The zero value accepts any session. Accept is called for each session that
+// meets the conditions and costs several native calls per session, so a narrow condition keeps the search fast.
 type SessionFilter struct {
 	Type    SessionType
 	Trading Cond

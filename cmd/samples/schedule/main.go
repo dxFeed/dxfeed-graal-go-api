@@ -114,7 +114,7 @@ func scheduleOf(address, symbol, definition string) (schedule.Schedule, error) {
 		return schedule.Schedule{}, err
 	}
 	for _, p := range profiles {
-		if *p.Symbol() == symbol {
+		if p.Symbol() != nil && *p.Symbol() == symbol {
 			return schedule.FromProfile(p)
 		}
 	}
