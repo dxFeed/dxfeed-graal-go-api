@@ -61,6 +61,20 @@ jobs:
       - name: Release note fragments
         run: go run ./internal/cmd/release check
 
+      # Without cgo the build must fail with the one error that tells what to do.
+      - name: Build without cgo
+        run: |
+          if out=$(CGO_ENABLED=0 go build ./... 2>&1); then
+            echo "The build without cgo succeeded"
+            exit 1
+          fi
+          echo "$out"
+          errors=$(echo "$out" | grep -c ': undefined: ' || true)
+          if [ "$errors" != 1 ] || ! echo "$out" | grep -q 'undefined: dxfeed_graal_go_api_requires_cgo_set_CGO_ENABLED_1_and_install_a_C_compiler'; then
+            echo "The build without cgo must fail with the one undefined identifier of internal/native/nocgo.go"
+            exit 1
+          fi
+
       - name: Staticcheck
         run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.2 ./...
 
