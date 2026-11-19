@@ -27,19 +27,7 @@ func (c PerfTest) Run(args []string) {
 	dxarguments := DXArguments{args}
 	arguments := dxarguments.arguments()
 	if len(arguments) < 3 {
-		fmt.Println(`
-		Connects to the specified address(es) and calculates performance counters (events per second, cpu usage, etc).
-		
-		Usage:
-		path_to_app <address> <types> <symbols> [<options>]
-		
-		Where:
-		
-		address (pos. 0)  Required. The address(es) to connect to retrieve data (see "Help address").
-					For Token-Based Authorization, use the following format: "<address>:<port>[login=entitle:<token>]".
-		types (pos. 1)    Required. Comma-separated list of dxfeed event types (e.g. Quote, TimeAndSale).
-		symbols (pos. 2)  Required. Comma-separated list of symbol names to get events for (e.g. "IBM, AAPL, MSFT").
-		--force-stream    Enforces a streaming contract for subscription. The StreamFeed role is used instead of Feed.`)
+		fmt.Print(perfTestHelp)
 		os.Exit(0)
 	}
 	address := arguments[0]
@@ -52,7 +40,7 @@ func (c PerfTest) Run(args []string) {
 
 	err = perf(address, types, symbols, dxarguments.forceStream())
 	if err != nil {
-		fmt.Printf("Error during dump: %v", err)
+		fmt.Printf("Error during perftest: %v\n", err)
 	}
 }
 

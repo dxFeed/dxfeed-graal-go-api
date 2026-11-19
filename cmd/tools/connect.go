@@ -16,7 +16,7 @@ import (
 type Connect struct{}
 
 func (c Connect) ShortDescription() string {
-	return "Connects to specified address(es)."
+	return "Connects to the address and prints the events."
 }
 
 func (c Connect) Run(args []string) {
@@ -24,24 +24,7 @@ func (c Connect) Run(args []string) {
 
 	arguments := dxarguments.arguments()
 	if len(arguments) < 3 {
-		fmt.Println(`
-		Connect
-		=======
-		
-		Usage:
-		  Connect <address> <types> <symbols> [-f <time>] [<options>]
-		
-		Where:
-			address - The address to connect to retrieve data (remote host or local tape file).
-					  To pass an authorization token, add to the address: ""[login=entitle:<token>]"",
-					  e.g.: demo.dxfeed.com:7300[login=entitle:<token>]
-			types   - Is comma-separated list of dxfeed event types ({eventTypeNames}).
-			symbol  - Is comma-separated list of symbol names to get events for (e.g. ""IBM,AAPL,MSFT"").
-					  for Candle event specify symbol with aggregation like in ""AAPL{{=d}}""
-			--force-stream    Enforces a streaming contract for subscription. The StreamFeed role is used instead of Feed.
-		
-		Sample: connect "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws" Quote AAPL -p dxfeed.experimental.dxlink.enable=true
-		Sample: connect demo.dxfeed.com:7300 Quote AAPL`)
+		fmt.Print(connectHelp)
 		os.Exit(0)
 	}
 

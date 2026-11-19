@@ -21,27 +21,14 @@ import (
 type LatencyTest struct{}
 
 func (c LatencyTest) ShortDescription() string {
-	return "Connects to the specified address(es) and calculates latency."
+	return "Connects to the address and calculates the latency of TimeAndSale events."
 }
 
 func (c LatencyTest) Run(args []string) {
 	dxarguments := DXArguments{args}
 	arguments := dxarguments.arguments()
 	if len(arguments) < 3 {
-		fmt.Println(`
-		Connects to the specified address(es), subscribes to TimeAndSale events and calculates their latency: the delay between the time of an event and its receipt, in milliseconds (min, max, mean, 99th percentile, etc).
-		
-		Usage:
-		path_to_app <address> <types> <symbols> [<options>]
-		
-		Where:
-		
-		address (pos. 0)  Required. The address(es) to connect to retrieve data (see "Help address").
-					For Token-Based Authorization, use the following format: "<address>:<port>[login=entitle:<token>]".
-		types (pos. 1)    Required. Comma-separated list of dxfeed event types (only TimeAndSale).
-		symbols (pos. 2)  Required. Comma-separated list of symbol names to get events for (e.g. "IBM, AAPL, MSFT").
-		--ignore-exchanges Comma-separated list of exchange codes whose events are left out without spaces (e.g. "Q,N").
-		--force-stream    Enforces a streaming contract for subscription. The StreamFeed role is used instead of Feed.`)
+		fmt.Print(latencyTestHelp)
 
 		os.Exit(0)
 	}
