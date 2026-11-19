@@ -7,6 +7,8 @@ package native
 import "C"
 import (
 	"errors"
+	"fmt"
+	"math"
 	"sort"
 	"unsafe"
 
@@ -18,6 +20,12 @@ func checkProfiles(profiles []*events.InstrumentProfile) error {
 	for _, p := range profiles {
 		if p == nil {
 			return errors.New("native: nil instrument profile")
+		}
+		for _, v := range []int64{p.Icb(), p.Sic(), p.Expiration(), p.LastTrade()} {
+			if v < math.MinInt32 || v > math.MaxInt32 {
+				return fmt.Errorf("native: instrument profile %q: ICB, SIC, EXPIRATION or LAST_TRADE %d is out of the "+
+					"int32 range", symbolOf(p), v)
+			}
 		}
 		for _, s := range profileStrings(p) {
 			if s != nil {
@@ -254,4 +262,11 @@ func ParseProfileDate(text string) (int32, error) {
 		return nil
 	})
 	return result, err
+}
+
+func symbolOf(p *events.InstrumentProfile) string {
+	if s := p.Symbol(); s != nil {
+		return *s
+	}
+	return ""
 }

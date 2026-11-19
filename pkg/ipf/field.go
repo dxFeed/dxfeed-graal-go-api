@@ -2,6 +2,7 @@ package ipf
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
@@ -240,25 +241,26 @@ func (f InstrumentProfileField) GetNumeric(p *events.InstrumentProfile) (float64
 	return 0, fmt.Errorf("ipf: field %v is not numeric", f)
 }
 
-// SetNumeric sets the value of a numeric field (see IsNumeric); ICB, SIC and the dates keep the integer part. It is an
-// error for the other fields.
+// SetNumeric sets the value of a numeric field (see IsNumeric); ICB, SIC and the dates are 32-bit integers and keep the
+// integer part, saturated to the int32 range (NaN gives 0), as a Java (int) cast does. It is an error for the other
+// fields.
 func (f InstrumentProfileField) SetNumeric(p *events.InstrumentProfile, value float64) error {
 	if err := f.check(p); err != nil {
 		return err
 	}
 	switch f {
 	case FieldICB:
-		p.SetIcb(int64(int32(value)))
+		p.SetIcb(int64(toInt32(value)))
 	case FieldSIC:
-		p.SetSic(int64(int32(value)))
+		p.SetSic(int64(toInt32(value)))
 	case FieldMultiplier:
 		p.SetMultiplier(value)
 	case FieldSPC:
 		p.SetSpc(value)
 	case FieldExpiration:
-		p.SetExpiration(int64(int32(value)))
+		p.SetExpiration(int64(toInt32(value)))
 	case FieldLastTrade:
-		p.SetLastTrade(int64(int32(value)))
+		p.SetLastTrade(int64(toInt32(value)))
 	case FieldStrike:
 		p.SetStrike(value)
 	default:
@@ -327,8 +329,8 @@ func GetNumericField(p *events.InstrumentProfile, name string) (float64, error) 
 }
 
 // SetNumericField sets the value of a numeric standard field (see InstrumentProfileField.SetNumeric) or, for any
-// other name, of a custom field, which stores the number as FormatNumber formats it. It is an error for the standard
-// fields that are not numeric.
+// other name, of a custom field, which stores the number as FormatNumber formats it (0 removes the field). It is an
+// error for the standard fields that are not numeric.
 func SetNumericField(p *events.InstrumentProfile, name string, value float64) error {
 	if f, ok := FindField(name); ok {
 		return f.SetNumeric(p, value)
@@ -345,8 +347,9 @@ func SetNumericField(p *events.InstrumentProfile, name string, value float64) er
 }
 
 // GetDateField returns the day id (days since January 1, 1970) of a numeric standard field (see
-// InstrumentProfileField.GetNumeric) or, for any other name, of a custom field, parsed like ParseDate does; a custom
-// field that is not set gives 0. It is an error for the standard fields that are not numeric.
+// InstrumentProfileField.GetNumeric; a numeric field that is not a date gives its integer part) or, for any other name,
+// of a custom field, parsed like ParseDate does; a custom field that is not set gives 0. It is an error for the standard
+// fields that are not numeric.
 func GetDateField(p *events.InstrumentProfile, name string) (int32, error) {
 	if f, ok := FindField(name); ok {
 		value, err := f.GetNumeric(p)
@@ -380,8 +383,8 @@ func looksLikeDate(value string) bool {
 	return len(value) == 10 && value[4] == '-' && value[7] == '-'
 }
 
-// FormatNumber formats a number like the numeric fields of the IPF format: an integer without a fraction, other
-// numbers in the shortest exact form.
+// FormatNumber formats a number like the numeric fields of the IPF format, without digit grouping; 0 gives an empty
+// string, so a numeric field of 0 is empty in the text form.
 func FormatNumber(value float64) (string, error) {
 	return native.FormatProfileNumber(value)
 }
@@ -400,4 +403,17 @@ func FormatDate(dayID int32) (string, error) {
 // 0.
 func ParseDate(text string) (int32, error) {
 	return native.ParseProfileDate(text)
+}
+
+// toInt32 converts like a Java (int) cast: the integer part, saturated to the int32 range, NaN gives 0.
+func toInt32(value float64) int32 {
+	switch {
+	case value != value:
+		return 0
+	case value >= math.MaxInt32:
+		return math.MaxInt32
+	case value <= math.MinInt32:
+		return math.MinInt32
+	}
+	return int32(value)
 }

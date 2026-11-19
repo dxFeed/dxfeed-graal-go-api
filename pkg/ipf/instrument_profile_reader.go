@@ -72,7 +72,9 @@ func (r *InstrumentProfileReader) ReadFromFileWithToken(address string, token *a
 }
 
 // WriteToFile writes the profiles to a file in the IPF format; a name ending with .gz or .zip compresses the file.
-// The file can be read back with InstrumentProfileReader.ReadFromFile.
+// An existing file is replaced, and an I/O error may leave an incomplete file. The profiles are not validated beyond
+// a nil profile, a NUL character and the int32 range of ICB, SIC and the dates. The file can be read back with
+// InstrumentProfileReader.ReadFromFile.
 func WriteToFile(path string, profiles []*events.InstrumentProfile) error {
 	return native.WriteProfilesToFile(path, profiles)
 }

@@ -1,10 +1,13 @@
 package ipf
 
 import (
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -231,10 +234,18 @@ func TestReadFromFileWithToken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var mu sync.Mutex
 	var authorization string
+	lastAuthorization := func() string {
+		mu.Lock()
+		defer mu.Unlock()
+		return authorization
+	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
 		authorization = r.Header.Get("Authorization")
-		if authorization == "" {
+		mu.Unlock()
+		if r.Header.Get("Authorization") == "" {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -263,8 +274,8 @@ func TestReadFromFileWithToken(t *testing.T) {
 		if len(profiles) != 9 {
 			t.Errorf("%s: read %d profiles, want 9", token.Scheme(), len(profiles))
 		}
-		if authorization != token.HTTPAuthorization() {
-			t.Errorf("Authorization = %q, want %q", authorization, token.HTTPAuthorization())
+		if got := lastAuthorization(); got != token.HTTPAuthorization() {
+			t.Errorf("Authorization = %q, want %q", got, token.HTTPAuthorization())
 		}
 	}
 
@@ -274,6 +285,71 @@ func TestReadFromFileWithToken(t *testing.T) {
 	}
 	defer reader.Close()
 	if _, err := reader.ReadFromFileWithToken(server.URL+"/profiles.ipf", nil); err == nil {
-		t.Error("a nil token sent an Authorization header or the 401 did not fail")
+		t.Error("a read without a token did not get the 401")
+	}
+	if got := lastAuthorization(); got != "" {
+		t.Errorf("a nil token sent Authorization %q", got)
+	}
+}
+
+func TestWriteGoProfile(t *testing.T) {
+	p := events.NewInstrumentProfile()
+	for name, value := range map[string]string{"TYPE": TypeFuture, "SYMBOL": "/ABCH27", "DESCRIPTION": "Été, \"quoted\"",
+		"MULTIPLIER": "1000", "EXPIRATION": "2027-03-19", "ZETA": "z", "ALPHA": "a", "MIDDLE": "Ünïcode"} {
+		if err := SetField(p, name, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "one.ipf")
+	if err := WriteToFile(path, []*events.InstrumentProfile{p}); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	reader, err := NewInstrumentProfileReader()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reader.Close()
+	back, err := reader.ReadFromFile(path)
+	if err != nil || len(back) != 1 {
+		t.Fatalf("read back: %d profiles, %v", len(back), err)
+	}
+	for _, f := range Fields() {
+		want, _ := f.Get(p)
+		if got, _ := f.Get(back[0]); got != want {
+			t.Errorf("%v = %q, want %q", f, got, want)
+		}
+	}
+	if !reflect.DeepEqual(back[0].CustomFields(), p.CustomFields()) {
+		t.Errorf("custom fields = %v, want %v", back[0].CustomFields(), p.CustomFields())
+	}
+
+	if err := WriteToFile(filepath.Join(dir, "empty.ipf"), nil); err != nil {
+		t.Errorf("write of no profiles: %v", err)
+	}
+	if err := WriteToFile(filepath.Join(dir, "missing", "x.ipf"), []*events.InstrumentProfile{p}); err == nil {
+		t.Error("a write to a missing directory did not fail")
+	}
+	p.SetIcb(1 << 32)
+	if err := WriteToFile(filepath.Join(dir, "range.ipf"), []*events.InstrumentProfile{p}); err == nil {
+		t.Error("an ICB out of the int32 range did not fail")
+	}
+}
+
+func TestNumericSaturation(t *testing.T) {
+	p := events.NewInstrumentProfile()
+	for value, want := range map[float64]int64{1e10: math.MaxInt32, -1e10: math.MinInt32, math.NaN(): 0, 7.9: 7} {
+		if err := FieldICB.SetNumeric(p, value); err != nil {
+			t.Fatal(err)
+		}
+		if p.Icb() != want {
+			t.Errorf("SetNumeric(ICB, %v) = %d, want %d", value, p.Icb(), want)
+		}
+	}
+	if err := FieldStrike.SetNumeric(p, 0); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := FieldStrike.Get(p); got != "" {
+		t.Errorf("STRIKE 0 = %q, want empty", got)
 	}
 }
