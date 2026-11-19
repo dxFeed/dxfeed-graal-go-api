@@ -390,7 +390,8 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [ ] WriteTapeFile is a simple demonstration of how to write events to a tape file
 - [x] [DxFeedIpfConnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/feed-ipf-connect/main.go)
   is a simple demonstration of how to get Instrument Profiles and subscribe to their symbols
-- [ ] DXFeedLiveIpfSample is a simple demonstration of how to get live updates for Instrument Profiles
+- [x] [DXFeedLiveIpfSample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/live-ipf/main.go)
+  is a simple demonstration of how to get live updates for Instrument Profiles
 - [ ] DxFeedPublishProfiles is a simple demonstration of how to publish market events
 - [ ] ScheduleSample is a simple demonstration of how to get various scheduling information for instruments
 - [ ] DXFeedconnect is a simple demonstration of how to subscribe to different events using TimeSeriesSubscription
@@ -586,11 +587,11 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [x] [InstrumentProfileWriter](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ipf/InstrumentProfileWriter.html) writes
   instrument profiles to a file in the IPF format
 
-- [ ] [InstrumentProfileCollector](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ipf/live/InstrumentProfileCollector.html)
+- [x] [InstrumentProfileCollector](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ipf/live/InstrumentProfileCollector.html)
   collects instrument profile updates and provides the live instrument profiles list
   ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/ipf/DXFeedLiveIpfSample.java))
 
-- [ ] [InstrumentProfileConnection](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ipf/live/InstrumentProfileConnection.html)
+- [x] [InstrumentProfileConnection](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ipf/live/InstrumentProfileConnection.html)
   connects to an instrument profile URL and reads instrument profiles with support of streaming live updates
 
 - [ ] [Schedule](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/schedule/Schedule.html)
