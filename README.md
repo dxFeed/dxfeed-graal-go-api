@@ -578,7 +578,11 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/ipf/DXFeedIpfConnect.java))
 
 - [x] [InstrumentProfileReader](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ipf/InstrumentProfileReader.html) reads
-  instrument profiles from the stream using Instrument Profile Format (IPF)
+  instrument profiles from the stream using Instrument Profile Format (IPF) from a file or a URL, with a user and a password
+  or an authorization token; fields are read and written by name in the IPF text form
+
+- [x] [InstrumentProfileWriter](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ipf/InstrumentProfileWriter.html) writes
+  instrument profiles to a file in the IPF format
 
 - [ ] [InstrumentProfileCollector](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ipf/live/InstrumentProfileCollector.html)
   collects instrument profile updates and provides the live instrument profiles list
