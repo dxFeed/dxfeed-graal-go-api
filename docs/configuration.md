@@ -21,7 +21,7 @@ An authorization token goes into the address in brackets: `host:port[login=entit
 `api.NewEndpoint` creates an endpoint with the default properties. The properties of the endpoints, such as
 `dxfeed.address` or `dxfeed.aggregationPeriod`, are set with `api.NewEndpointWithProperties` or with the builder:
 
-```text
+```go
 endpoint, err := api.NewEndpointBuilder().
 	WithRole(api.Feed).
 	WithPropertiesFile("dxfeed.properties").

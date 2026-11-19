@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
+	"strconv"
 	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
@@ -150,26 +152,73 @@ func ExampleDXFeed_CreateSubscription_indexed() {
 	// 2 Sell 100.5 200
 }
 
-// stateLogger is a connection state listener that prints the changes.
-type stateLogger struct{}
+// stateLogger is a connection state listener that prints the changes and signals the connection.
+type stateLogger struct {
+	connected chan struct{}
+}
 
-func (stateLogger) UpdateState(old, new common.ConnectionState) {
+func (l stateLogger) UpdateState(old, new common.ConnectionState) {
 	fmt.Println("connection:", old, "->", new)
+	if new == common.Connected {
+		close(l.connected)
+	}
+}
+
+// freePort returns a free TCP port of the local host for a publisher to listen on.
+func freePort() string {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() { _ = listener.Close() }()
+	return strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
+}
+
+// waitListening waits until a server listens on the local port, so that a client does not wait for a reconnect.
+func waitListening(port string) {
+	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+		if conn, err := net.Dial("tcp", "127.0.0.1:"+port); err == nil {
+			_ = conn.Close()
+			return
+		}
+	}
+	log.Fatal("the publisher does not listen on port " + port)
 }
 
 // A connection state listener reports the state of the endpoint as it connects, loses and restores the connection.
-// This example needs the network, so it is not run by the tests.
+// Here a feed connects to a publisher that listens on a local port; a feed of dxFeed connects to an address such as
+// "demo.dxfeed.com:7300".
 func ExampleDXEndpoint_AddListener() {
+	port := freePort()
+	server, err := api.NewEndpoint(api.Publisher)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() { _ = server.Close() }()
+	if err := server.Connect(":" + port); err != nil {
+		log.Fatal(err)
+	}
+	waitListening(port)
+
 	endpoint, err := api.NewEndpoint(api.Feed)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() { _ = endpoint.Close() }()
-
-	endpoint.AddListener(stateLogger{})
-	if err := endpoint.Connect("demo.dxfeed.com:7300"); err != nil {
+	logger := stateLogger{connected: make(chan struct{})}
+	endpoint.AddListener(logger)
+	if err := endpoint.Connect("127.0.0.1:" + port); err != nil {
 		log.Fatal(err)
 	}
-	// The listener prints "Not connected -> Connecting", then "Connecting -> Connected".
-	time.Sleep(5 * time.Second)
+	select {
+	case <-logger.connected:
+	case <-time.After(10 * time.Second):
+		log.Fatal("not connected")
+	}
+	if err := endpoint.Close(); err != nil {
+		log.Fatal(err)
+	}
+	// Output:
+	// connection: Not connected -> Connecting
+	// connection: Connecting -> Connected
+	// connection: Connected -> Closed
 }

@@ -28,25 +28,7 @@ func (c Dump) Run(args []string) {
 	tape := dxarguments.tape()
 
 	if len(arguments) < 3 {
-		fmt.Println(`
-		Dumps all events received from address.
-		Enforces a streaming contract for subscription. A wildcard enabled by default.
-		This was designed to receive data from a file.
-		Usage: Dump <address> <types> <symbols> [<options>]
-
-		Where:
-		<address>  is a URL to Schedule API defaults file
-		<types>    is comma-separated list of dxfeed event types ({eventTypeNames}).
-		It supports only Quote, Summary, Greeks, Underlying, TimeAndSale, Profile.
-		If <types> is not specified, creates a subscription for all available event types.
-		<symbol>   is comma-separated list of symbol names to get events for (e.g. ""IBM,AAPL,MSFT"").		
-		Usage:
-		Dump <address> [<options>]
-		Dump <address> <types> [<options>]
-		Dump <address> <types> <symbols> [<options>]
-
-		Sample: Dump demo.dxfeed.com:7300 quote AAPL,IBM,ETH/USD:GDAX -t tape_test.txt[format=text] -q -p dxfeed.wildcard.enable=true
-		Sample: Dump tapeK2.tape[speed=max] quote,profile,timeandsale all -t ios_tapeK2.tape -q `)
+		fmt.Print(dumpHelp)
 		os.Exit(0)
 	}
 	inputFile := arguments[0]

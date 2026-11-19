@@ -23,6 +23,7 @@ and [dxFeed Java API](https://docs.dxfeed.com/dxfeed/api/overview-summary.html) 
 - [Overview](#overview)
     * [Future Development](#future-development)
     * [Implementation Details](#implementation-details)
+    * [The same subscription in Java and in Go](#the-same-subscription-in-java-and-in-go)
 - [Documentation](#documentation)
 - [Requirements](#requirements)
 - [Installation](#installation)
@@ -53,6 +54,7 @@ What is left:
 * version 1.0.0 with a stable API
 
 The plans and the open tasks are in the [issues](https://github.com/dxFeed/dxfeed-graal-go-api/issues).
+
 ---
 
 ### Implementation Details
@@ -77,7 +79,11 @@ Below is a scheme of this process:
  <img alt="light" src="docs/images/scheme_light.svg">
 </picture>
 
-The same subscription in Java and in Go:
+### The same subscription in Java and in Go
+
+The Go API follows the dxFeed Java API: the same endpoint, feed and subscription, with the syntax of Go.
+
+**Java API:**
 
 ```java
 DXEndpoint endpoint = DXEndpoint.newBuilder()
@@ -91,6 +97,8 @@ subscription.addEventListener(events -> {
 });
 subscription.addSymbols("AAPL", "IBM");
 ```
+
+**Go API** ([cmd/samples/quick-start](cmd/samples/quick-start/main.go)):
 
 ```go
 // Command quick-start prints quotes of AAPL and IBM until Ctrl+C, from the dxFeed demo feed or the -address.
@@ -277,7 +285,7 @@ pkg.go.dev do not run in the Go Playground; run them locally.
 
 ### How to connect to QD endpoint
 
-The Go program [above](#implementation-details) connects to the dxFeed demo QD endpoint and prints quotes of AAPL and IBM. It is
+The Go program [above](#the-same-subscription-in-java-and-in-go) connects to the dxFeed demo QD endpoint and prints quotes of AAPL and IBM. It is
 the [quick-start](cmd/samples/quick-start/main.go) sample; run it from a clone of this repository with
 `go run ./cmd/samples/quick-start`.
 
@@ -286,7 +294,7 @@ the [quick-start](cmd/samples/quick-start/main.go) sample; run it from a clone o
 <br>
 
 ```
-Quote{AAPL, eventTime=0, time=..., bidTime=..., bidExchange=P, bidPrice=..., bidSize=..., askTime=..., askExchange=P, askPrice=..., askSize=...}
+Quote{AAPL, eventTime=0, time=..., timeNanoPart=..., sequence=..., bidTime=..., bidExchange=P, bidPrice=..., bidSize=..., askTime=..., askExchange=P, askPrice=..., askSize=...}
 ```
 
 </details>
@@ -310,7 +318,7 @@ The [print-quote-events](cmd/samples/print-quote-events/main.go) sample does thi
 <br>
 
 ```
-Quote{AAPL, eventTime=0, time=..., bidTime=..., bidExchange=P, bidPrice=..., bidSize=..., askTime=..., askExchange=P, askPrice=..., askSize=...}
+Quote{AAPL, eventTime=0, time=..., timeNanoPart=..., sequence=..., bidTime=..., bidExchange=P, bidPrice=..., bidSize=..., askTime=..., askExchange=P, askPrice=..., askSize=...}
 ```
 
 </details>
@@ -325,14 +333,16 @@ the feed. Each release has them built as archives on the
 `tools-linux-x64-<version>.zip`, `tools-linux-aarch64-<version>.zip` and `tools-osx-aarch64-<version>.zip`.
 
 * [connect](cmd/tools/connect.go)
-  connects to the specified address(es) and subscribes to the specified events with the specified symbol
+  connects to the address, subscribes to the events of the symbols and prints them
 * [dump](cmd/tools/dump.go)
-  dumps all events received from the address. It was designed to retrieve data from a file
+  prints the events received from the address, such as a tape file, and can write them to another tape file
 * [perftest](cmd/tools/perftest.go)
-  connects to the specified address(es) and calculates performance counters (events per second, memory usage, CPU usage,
-  etc.)
+  connects to the address and prints the rate of events, the rate of listener calls and the number of events in a call
 * [latencytest](cmd/tools/latencytest.go)
-  connects to the specified address(es) and calculates latency
+  connects to the address and calculates the latency of the TimeAndSale events
+
+Run a tool as `tools <tool> <address> <types> <symbols> [<options>]`, or from a clone of this repository as
+`go run ./cmd/tools <tool> ...`; a tool without arguments prints its help, such as `go run ./cmd/tools connect`.
 
 To run tools on macOS, it may be necessary to unquarantine them:
 
@@ -354,8 +364,7 @@ The C++ samples and their Go ports:
 - [x] [QuickStart](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/quick-start/main.go)
   is the program shown in this README: it subscribes to `Quote` events of AAPL and IBM and prints them
 - [x] [PrintQuoteEvents](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/print-quote-events/main.go)
-  is a simple demonstration of how to subscribe to the `Quote` event, using a `DxFeed` instance singleton
-  and `dxfeed.properties` file
+  is a simple demonstration of how to subscribe to the `Quote` event over dxLink
 - [x] [PrintIndexedEvents](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/print-indexed-events/main.go)
   is a simple demonstration of how to subscribe to `Order` events of one source with
   an `IndexedEventSubscriptionSymbol` and to track the connection state

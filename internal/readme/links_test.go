@@ -25,12 +25,13 @@ var (
 	lineAnchor    = regexp.MustCompile(`^L\d+(?:-L\d+)?$`)
 )
 
-// markdownFiles returns the Markdown files whose links are checked: those of the repository root and of docs. The
-// fragments under release-notes are excluded: they are joined into the release notes of a release.
+// markdownFiles returns the Markdown files whose links and code blocks are checked: those of the repository root, of
+// docs and of the samples. The fragments under release-notes are excluded: they are joined into the release notes of a
+// release.
 func markdownFiles(t *testing.T) []string {
 	t.Helper()
 	var files []string
-	for _, pattern := range []string{"../../*.md", "../../docs/*.md"} {
+	for _, pattern := range []string{"../../*.md", "../../docs/*.md", "../../cmd/samples/*.md"} {
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
 			t.Fatal(err)
