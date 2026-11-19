@@ -1,7 +1,10 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package mappers
 
 /*
-#include "../graal/dxfg_api.h"
+#include "dxfg_api.h"
 #include <stdlib.h>
 */
 import "C"
@@ -14,9 +17,9 @@ type UnderlyingMapper struct{}
 
 func (m UnderlyingMapper) CEvent(event interface{}) unsafe.Pointer {
 	u := event.(*underlying.Underlying)
-	n := (*C.dxfg_underlying_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_underlying_t{}))))
+	n := (*C.dxfg_v4_underlying_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_underlying_t{})))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_UNDERLYING
-	n.market_event.event_symbol = C.CString(*u.EventSymbol())
+	n.market_event.event_symbol = cString(*u.EventSymbol())
 	n.market_event.event_time = C.int64_t(u.EventTime())
 	n.event_flags = C.int32_t(u.EventFlags())
 	n.index = C.int64_t(u.Index())
@@ -30,7 +33,7 @@ func (m UnderlyingMapper) CEvent(event interface{}) unsafe.Pointer {
 }
 
 func (m UnderlyingMapper) GoEvent(native unsafe.Pointer) interface{} {
-	n := (*C.dxfg_underlying_t)(native)
+	n := (*C.dxfg_v4_underlying_t)(native)
 	u := underlying.NewUnderlying(C.GoString(n.market_event.event_symbol))
 	u.SetEventTime(int64(n.market_event.event_time))
 	u.SetEventFlags(int32(n.event_flags))
@@ -42,4 +45,11 @@ func (m UnderlyingMapper) GoEvent(native unsafe.Pointer) interface{} {
 	u.SetPutVolume(float64(n.put_volume))
 	u.SetPutCallRatio(float64(n.put_call_ratio))
 	return u
+}
+
+// FreeCEvent frees an event made by CEvent.
+func (UnderlyingMapper) FreeCEvent(event unsafe.Pointer) {
+	n := (*C.dxfg_v4_underlying_t)(event)
+	cFree(unsafe.Pointer(n.market_event.event_symbol))
+	cFree(event)
 }

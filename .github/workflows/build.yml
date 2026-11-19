@@ -1,12 +1,21 @@
 name: "CI"
 
 on:
-  # Branch pushes are built through their pull requests; push runs only for main and tags.
+  # Branch pushes are built through their pull requests; push runs only for main.
+  # Version tags are built by release.yml, which calls this workflow.
   push:
     branches: [ main ]
-    tags: [ '*' ]
+    # A release commit changes only the notes; release.yml builds and tests it.
+    paths-ignore: [ 'ReleaseNotes.md', 'release-notes/**' ]
   pull_request:
   workflow_dispatch:
+  # release.yml passes the version, so the Go stable jobs also build the tools archives.
+  workflow_call:
+    inputs:
+      tools_version:
+        description: 'Version in the tools archive names; empty to skip the archives'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -14,7 +23,7 @@ permissions:
 jobs:
   checks:
     name: Format, static checks, race tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -26,11 +35,17 @@ jobs:
           go-version: 'stable'
           cache: false
 
-      - name: Install dependencies
+      # cgo links the library from the SDK directory, and the tests load it from there.
+      - name: Install the native SDK
+        shell: bash
         run: |
-          go run .
-          go get .
-
+          dir=$(go run ./cmd/install-sdk -print-dir)
+          if [ "$RUNNER_OS" = Windows ]; then
+            echo "CGO_LDFLAGS=-L$dir" >> "$GITHUB_ENV"
+            echo "$dir" >> "$GITHUB_PATH"
+          else
+            echo "CGO_LDFLAGS=-L$dir -Wl,-rpath,$dir" >> "$GITHUB_ENV"
+          fi
       - name: Format
         run: |
           unformatted=$(gofmt -l .)
@@ -43,11 +58,56 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+      - name: Release note fragments
+        run: go run ./internal/cmd/release check
+
+      # Without cgo the build must fail with the one error that tells what to do.
+      - name: Build without cgo
+        run: |
+          if out=$(CGO_ENABLED=0 go build ./... 2>&1); then
+            echo "The build without cgo succeeded"
+            exit 1
+          fi
+          echo "$out"
+          errors=$(echo "$out" | grep -c ': undefined: ' || true)
+          if [ "$errors" != 1 ] || ! echo "$out" | grep -q 'undefined: dxfeed_graal_go_api_requires_cgo_set_CGO_ENABLED_1_and_install_a_C_compiler'; then
+            echo "The build without cgo must fail with the one undefined identifier of internal/native/nocgo.go"
+            exit 1
+          fi
+
       - name: Staticcheck
         run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.2 ./...
 
       - name: Race tests
         run: go test -race ./...
+
+  # gorelease compares the exported API with the latest release tag; an incompatible change that a pull request adds
+  # needs a [BREAKING] release note fragment in it. A release checks its version instead (release.yml).
+  api:
+    name: API compatibility
+    if: inputs.tools_version == ''
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: 'stable'
+          cache: false
+
+      # gorelease loads the packages with cgo, as a build does.
+      - name: Install the native SDK
+        run: |
+          dir=$(go run ./cmd/install-sdk -print-dir)
+          echo "CGO_LDFLAGS=-L$dir" >> "$GITHUB_ENV"
+
+      - name: Compare the API with the latest release
+        run: go run ./internal/cmd/release api
 
   build_and_test:
     name: Build & Test on ${{ matrix.platform.OS_NAME }}, Go ${{ matrix.go }}
@@ -60,7 +120,7 @@ jobs:
         platform:
           - os: windows-latest
             OS_NAME: win-x64
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             OS_NAME: linux-x64
           - os: ubuntu-24.04-arm
             OS_NAME: linux-aarch64
@@ -84,17 +144,17 @@ jobs:
           go-version-file: ${{ matrix.go == 'min' && 'go.mod' || '' }}
           cache: false
 
-      - name: Install dependencies
+      # cgo links the library from the SDK directory, and the tests load it from there.
+      - name: Install the native SDK
+        shell: bash
         run: |
-          go run .
-          go get .
-
-      # Windows finds the SDK library through PATH; Linux and macOS binaries carry an rpath to it.
-      - name: Add native library to PATH
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: Add-Content -Path $env:GITHUB_PATH -Value "$env:GITHUB_WORKSPACE\internal\native\graal"
-
+          dir=$(go run ./cmd/install-sdk -print-dir)
+          if [ "$RUNNER_OS" = Windows ]; then
+            echo "CGO_LDFLAGS=-L$dir" >> "$GITHUB_ENV"
+            echo "$dir" >> "$GITHUB_PATH"
+          else
+            echo "CGO_LDFLAGS=-L$dir -Wl,-rpath,$dir" >> "$GITHUB_ENV"
+          fi
       - name: Build
         run: go build -v ./...
 
@@ -104,56 +164,44 @@ jobs:
       - name: Test
         run: go test -v ./...
 
-  release:
-    name: Release
-    runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            OS_NAME: win-x64
-          - os: ubuntu-latest
-            OS_NAME: linux-x64
-          - os: ubuntu-24.04-arm
-            OS_NAME: linux-aarch64
-          - os: macos-15
-            OS_NAME: osx-aarch64
-    needs: [ checks, build_and_test ]
-    if: (startsWith(github.event.ref, 'refs/tags/'))
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Go
-        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
-        with:
-          go-version: 'stable'
-          cache: false
-
-      - name: Install dependencies
+      # Many goroutines calling the API at once attach their OS threads to the isolate; each run is a new process, so
+      # that every run attaches its threads anew. Attaching and detaching on every call used to hang here on Linux.
+      - name: Concurrent calls in new processes
+        if: runner.os == 'Linux'
         run: |
-          go run .
-          go get .
+          go test -c -o "$RUNNER_TEMP/api.test" ./pkg/api
+          cd pkg/api
+          for i in $(seq 1 10); do
+            timeout 120 "$RUNNER_TEMP/api.test" -test.run '^TestConcurrentGetSetSystemProperty$' -test.timeout 100s ||
+              { echo "run $i failed or hung"; exit 1; }
+          done
 
+      # The archives are built in the tested job, so a release waits for each runner once.
       - name: Build Tools
+        if: inputs.tools_version != '' && matrix.go == 'stable'
         run: make build
         shell: bash
 
       - name: Zip Tools
+        if: inputs.tools_version != '' && matrix.go == 'stable'
         uses: thedoctor0/zip-release@b57d897cb5d60cb78b51a507f63fa184cfe35554 # 0.7.6
         with:
           type: 'zip'
-          filename: tools-${{ matrix.OS_NAME }}-${{ github.ref_name }}.zip
+          filename: tools-${{ matrix.platform.OS_NAME }}-${{ inputs.tools_version }}.zip
           directory: 'bin/'
           path: "."
 
       - name: Upload Tools
-        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
+        if: inputs.tools_version != '' && matrix.go == 'stable'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          generate_release_notes: true
-          files: |
-            bin/*.zip
-          token: ${{ secrets.GITHUB_TOKEN }}
+          name: tools-${{ matrix.platform.OS_NAME }}
+          path: bin/tools-${{ matrix.platform.OS_NAME }}-${{ inputs.tools_version }}.zip
+          if-no-files-found: error
+
+  # A separate module gets the API from a module zip of this commit, as an application gets it with go get.
+  # A release runs the same job against the published version (release.yml).
+  consumer:
+    name: Consumer
+    if: inputs.tools_version == ''
+    uses: ./.github/workflows/consumer.yml

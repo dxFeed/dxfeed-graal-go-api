@@ -1,71 +1,55 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package main
 
 import (
 	"fmt"
 	"math"
-	"os"
 	"time"
 
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/parser"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/Osub"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
 )
 
 type Connect struct{}
 
 func (c Connect) ShortDescription() string {
-	return "Connects to specified address(es)."
+	return "Connects to the address and prints the events."
 }
 
-func (c Connect) Run(args []string) {
-	dxarguments := DXArguments{args}
-
-	arguments := dxarguments.arguments()
-	if len(arguments) < 3 {
-		fmt.Println(`
-		Connect
-		=======
-		
-		Usage:
-		  Connect <address> <types> <symbols> [-f <time>] [<options>]
-		
-		Where:
-			address - The address to connect to retrieve data (remote host or local tape file).
-					  To pass an authorization token, add to the address: ""[login=entitle:<token>]"",
-					  e.g.: demo.dxfeed.com:7300[login=entitle:<token>]
-			types   - Is comma-separated list of dxfeed event types ({eventTypeNames}).
-			symbol  - Is comma-separated list of symbol names to get events for (e.g. ""IBM,AAPL,MSFT"").
-					  for Candle event specify symbol with aggregation like in ""AAPL{{=d}}""
-			--force-stream    Enforces a streaming contract for subscription. The StreamFeed role is used instead of Feed.
-		
-		Sample: connect "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws" Quote AAPL -p dxfeed.experimental.dxlink.enable=true
-		Sample: connect demo.dxfeed.com:7300 Quote AAPL`)
-		os.Exit(0)
-	}
-
-	address := arguments[0]
-	symbols := parser.ParseSymbols(arguments[2])
-	types := parser.ParseEventTypes(arguments[1])
-
-	err := connect(address, types, symbols, dxarguments.properties(), dxarguments.forceStream(), dxarguments.isQuite(), dxarguments.time())
-	if err != nil {
-		fmt.Printf("Error during connect: %v", err)
-	}
+func (c Connect) Run(args []string) int {
+	return runTool("connect", args, connectHelp,
+		[]option{fromTimeOption, propertiesOption, quietOption, forceStreamOption}, func(a toolArguments) error {
+			properties, err := a.properties()
+			if err != nil {
+				return usageError{err}
+			}
+			address, types, symbols, err := parseCommon(a)
+			if err != nil {
+				return err
+			}
+			return connect(address, types, symbols, properties, a.has(forceStreamOption), a.has(quietOption),
+				a.value(fromTimeOption))
+		})
 }
 
 func connect(
 	address string,
 	types []eventcodes.EventCode,
-	symbols []any,
+	symbols []osub.Symbol,
 	properties map[string]string,
 	forceStream bool,
-	isQuite bool,
+	quiet bool,
 	fromTime *string,
 ) error {
 	for key, value := range properties {
-		api.SetSystemProperty(key, value)
+		if err := api.SetSystemProperty(key, value); err != nil {
+			return fmt.Errorf("SetSystemProperty %s: %w", key, err)
+		}
 	}
 	role := api.Feed
 	if forceStream {
@@ -74,7 +58,7 @@ func connect(
 	endpoint, err := api.NewEndpointWithProperties(role, properties)
 
 	if err != nil {
-		return fmt.Errorf("CreateEndpoint: %w", err)
+		return fmt.Errorf("NewEndpointWithProperties: %w", err)
 	}
 
 	defer func(endpoint *api.DXEndpoint) {
@@ -97,8 +81,8 @@ func connect(
 	if err != nil {
 		return fmt.Errorf("CreateSubscription: %w", err)
 	}
-	defer subscription.Close()
-	if !isQuite {
+	defer func() { _ = subscription.Close() }()
+	if !quiet {
 		err = subscription.AddListener(PrintEvents(func(eventsList []interface{}) {
 			for _, event := range eventsList {
 				switch v := event.(type) {
@@ -120,7 +104,7 @@ func connect(
 			if parseErr != nil {
 				return parseErr
 			}
-			timeSeriesSubscriptionSymbol := Osub.NewTimeSeriesSubscriptionSymbol(symbol, parseTime)
+			timeSeriesSubscriptionSymbol := osub.NewTimeSeriesSubscriptionSymbol(symbol, parseTime)
 			err = subscription.AddSymbol(timeSeriesSubscriptionSymbol)
 		} else {
 			err = subscription.AddSymbol(symbol)

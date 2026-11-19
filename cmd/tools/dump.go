@@ -1,13 +1,16 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
-	"os"
 )
 
 type Dump struct{}
@@ -16,61 +19,37 @@ func (c Dump) ShortDescription() string {
 	return "Dumps all data and subscription information received from address."
 }
 
-func (c Dump) Run(args []string) {
-	dxarguments := DXArguments{args}
-
-	arguments := dxarguments.arguments()
-
-	properties := dxarguments.properties()
-	isQuite := dxarguments.isQuite()
-	tape := dxarguments.tape()
-
-	if len(arguments) < 3 {
-		fmt.Println(`
-		Dumps all events received from address.
-		Enforces a streaming contract for subscription. A wildcard enabled by default.
-		This was designed to receive data from a file.
-		Usage: Dump <address> <types> <symbols> [<options>]
-
-		Where:
-		<address>  is a URL to Schedule API defaults file
-		<types>    is comma-separated list of dxfeed event types ({eventTypeNames}).
-		It supports only Quote, Summary, Greeks, Underlying, TimeAndSale, Profile.
-		If <types> is not specified, creates a subscription for all available event types.
-		<symbol>   is comma-separated list of symbol names to get events for (e.g. ""IBM,AAPL,MSFT"").		
-		Usage:
-		Dump <address> [<options>]
-		Dump <address> <types> [<options>]
-		Dump <address> <types> <symbols> [<options>]
-
-		Sample: Dump demo.dxfeed.com:7300 quote AAPL,IBM,ETH/USD:GDAX -t tape_test.txt[format=text] -q -p dxfeed.wildcard.enable=true
-		Sample: Dump tapeK2.tape[speed=max] quote,profile,timeandsale all -t ios_tapeK2.tape -q `)
-		os.Exit(0)
-	}
-	inputFile := arguments[0]
-	symbols := parser.ParseSymbols(arguments[2])
-	types := parser.ParseEventTypes(arguments[1])
-
-	err := dump(inputFile, tape, symbols, types, properties, isQuite)
-	if err != nil {
-		fmt.Printf("Error during dump: %v", err)
-	}
+func (c Dump) Run(args []string) int {
+	return runTool("dump", args, dumpHelp, []option{tapeOption, propertiesOption, quietOption},
+		func(a toolArguments) error {
+			properties, err := a.properties()
+			if err != nil {
+				return usageError{err}
+			}
+			address, types, symbols, err := parseCommon(a)
+			if err != nil {
+				return err
+			}
+			return dump(address, a.value(tapeOption), symbols, types, properties, a.has(quietOption))
+		})
 }
 
 func dump(
 	inputFile string,
 	outputFile *string,
-	symbols []any,
+	symbols []osub.Symbol,
 	types []eventcodes.EventCode,
 	properties map[string]string,
-	isQuite bool,
+	quiet bool,
 ) error {
 	for key, value := range properties {
-		api.SetSystemProperty(key, value)
+		if err := api.SetSystemProperty(key, value); err != nil {
+			return fmt.Errorf("SetSystemProperty %s: %w", key, err)
+		}
 	}
 	var listeners []common.EventListener
 
-	if !isQuite {
+	if !quiet {
 		listeners = append(listeners, DumpEvents(func(eventsList []interface{}) {
 			for _, event := range eventsList {
 				switch v := event.(type) {
@@ -100,7 +79,7 @@ func dump(
 	if err != nil {
 		return fmt.Errorf("CreateSubscription: %w", err)
 	}
-	defer subscription.Close()
+	defer func() { _ = subscription.Close() }()
 	count := 0
 	var outputEndpoint *api.DXEndpoint
 
@@ -146,20 +125,20 @@ func dump(
 		return fmt.Errorf("Connect to %s: %w", inputFile, err)
 	}
 
-	err = inputEndpoint.AwaitNotConnected()
+	err = inputEndpoint.AwaitNotConnected(context.Background())
 	if err != nil {
 		return fmt.Errorf("AwaitNotConnected: %w", err)
 	}
-	err = inputEndpoint.CloseAndAwaitTermination()
+	err = inputEndpoint.CloseAndAwaitTermination(context.Background())
 	if err != nil {
 		return fmt.Errorf("CloseAndAwaitTermination: %w", err)
 	}
 	if outputEndpoint != nil {
-		err = outputEndpoint.AwaitProcessed()
+		err = outputEndpoint.AwaitProcessed(context.Background())
 		if err != nil {
 			return fmt.Errorf("AwaitProcessed: %w", err)
 		}
-		err = outputEndpoint.CloseAndAwaitTermination()
+		err = outputEndpoint.CloseAndAwaitTermination(context.Background())
 		if err != nil {
 			return fmt.Errorf("CloseAndAwaitTermination: %w", err)
 		}

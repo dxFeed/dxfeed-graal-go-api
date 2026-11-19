@@ -1,0 +1,21 @@
+name: Feature request
+description: A new feature, or a feature of the dxFeed Java or C++ API that the Go API lacks.
+labels: [ enhancement ]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you need
+      description: The task you want to solve and why the current API does not cover it.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API
+      description: How you would like to call it. A link to the same feature in the Java or C++ API helps.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Workarounds
+      description: What you use now instead, if anything.

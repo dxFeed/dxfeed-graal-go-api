@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package order
 
 import (
@@ -8,6 +11,7 @@ import (
 	"sync"
 )
 
+// Source is an indexed event source of order events (an order book source).
 type Source struct {
 	events.IndexedEventSource
 	pubFlags  int64
@@ -32,6 +36,8 @@ func newOrderSourceWithIDName(identifier int64, name *string) *Source {
 	return &Source{IndexedEventSource: *events.NewIndexedEventSource(identifier, *name), pubFlags: 0, isBuiltin: false}
 }
 
+// newOrderSourceWithIDNameFlags registers a built-in source of this package's table at package initialization. It panics
+// on an invalid or duplicate entry of that table, a defect of the package that no user input can reach.
 func newOrderSourceWithIDNameFlags(identifier int64, name string, pubflags int64) *Source {
 	err := checkIdAndName(identifier, name)
 	if err != nil {
@@ -129,10 +135,12 @@ func orderSourceCheck(char string) bool {
 	return regexp.MustCompile(`^[a-zA-Z0-9]*$`).MatchString(char)
 }
 
+// IsSpecialSourceId reports whether the identifier belongs to a special (synthetic) source.
 func IsSpecialSourceId(value int64) bool {
 	return value >= 1 && value <= 6
 }
 
+// ValueOfIdentifier returns the order source with the given numeric identifier.
 func ValueOfIdentifier(identifier int64) (*Source, error) {
 	value, ok := sourcesById.Load(identifier)
 	if ok {
@@ -148,6 +156,7 @@ func ValueOfIdentifier(identifier int64) (*Source, error) {
 
 }
 
+// ValueOfName returns the order source with the given name.
 func ValueOfName(name string) (*Source, error) {
 	value, ok := sourcesByName.Load(name)
 	if ok {
@@ -162,6 +171,7 @@ func ValueOfName(name string) (*Source, error) {
 	}
 }
 
+// Type returns the event source type, which is always the order source type.
 func (source Source) Type() events.EventSourceType {
 	return events.OrderSourceType
 }

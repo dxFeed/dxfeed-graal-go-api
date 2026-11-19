@@ -1,0 +1,46 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [ bug ]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Include errors and panics in full.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: A minimal program or the steps. Leave out credentials and private addresses.
+      render: go
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Module version
+      placeholder: v0.4.0
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: OS and architecture, and on Windows the C compiler.
+      placeholder: Windows 11 x64, MSYS2 MinGW-w64 GCC 15
+    validations:
+      required: true
+  - type: input
+    id: go
+    attributes:
+      label: Go version
+      description: The output of `go version`.
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: Logs, the endpoint address type (QD, dxLink, file), workarounds you found.

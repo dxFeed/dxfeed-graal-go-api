@@ -1,60 +1,41 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package main
 
 import (
 	"fmt"
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/formatutil"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/formatutil"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
 	"github.com/montanaflynn/stats"
 	"math"
-	"os"
 	"slices"
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 )
 
 type LatencyTest struct{}
 
 func (c LatencyTest) ShortDescription() string {
-	return "Connects to the specified address(es) and calculates latency."
+	return "Connects to the address and calculates the latency of TimeAndSale events."
 }
 
-func (c LatencyTest) Run(args []string) {
-	dxarguments := DXArguments{args}
-	arguments := dxarguments.arguments()
-	if len(arguments) < 3 {
-		fmt.Println(`
-		Connects to the specified address(es) and calculates performance counters (events per second, cpu usage, etc).
-		
-		Usage:
-		path_to_app <address> <types> <symbols> [<options>]
-		
-		Where:
-		
-		address (pos. 0)  Required. The address(es) to connect to retrieve data (see "Help address").
-					For Token-Based Authorization, use the following format: "<address>:<port>[login=entitle:<token>]".
-		types (pos. 1)    Required. Comma-separated list of dxfeed event types (only TimeAndSale).
-		symbols (pos. 2)  Required. Comma-separated list of symbol names to get events for (e.g. "IBM, AAPL, MSFT").
-		--ignore-exchanges Ignoring next exchanges.
-		--force-stream    Enforces a streaming contract for subscription. The StreamFeed role is used instead of Feed.`)
-
-		os.Exit(0)
-	}
-	address := arguments[0]
-	types := parser.ParseEventTypes(arguments[1])
-	symbols := parser.ParseSymbols(arguments[2])
-	dxarguments.forceStream()
-	err := latency(address, types, symbols, dxarguments.forceStream(), dxarguments.ignoreExchanges())
-	if err != nil {
-		fmt.Printf("Error during dump: %v", err)
-	}
+func (c LatencyTest) Run(args []string) int {
+	return runTool("latency test", args, latencyTestHelp, []option{ignoreExchangesOption, forceStreamOption},
+		func(a toolArguments) error {
+			address, types, symbols, err := parseCommon(a)
+			if err != nil {
+				return err
+			}
+			return latency(address, types, symbols, a.has(forceStreamOption), a.value(ignoreExchangesOption))
+		})
 }
 
-func latency(address string, types []eventcodes.EventCode, symbols []any, forceStream bool, ignoreExchanges *string) error {
+func latency(address string, types []eventcodes.EventCode, symbols []osub.Symbol, forceStream bool, ignoreExchanges *string) error {
 	role := api.Feed
 	if forceStream {
 		role = api.StreamFeed
@@ -64,9 +45,9 @@ func latency(address string, types []eventcodes.EventCode, symbols []any, forceS
 		ignoredExchanges = strings.Split(*ignoreExchanges, ",")
 	}
 
-	endpoint, err := api.CreateEndpoint(role)
+	endpoint, err := api.NewEndpoint(role)
 	if err != nil {
-		return fmt.Errorf("CreateEndpoint: %w", err)
+		return fmt.Errorf("NewEndpoint: %w", err)
 	}
 	err = endpoint.Connect(address)
 	if err != nil {
@@ -91,8 +72,6 @@ func latency(address string, types []eventcodes.EventCode, symbols []any, forceS
 			switch v := event.(type) {
 			case *timeandsale.TimeAndSale:
 				{
-					hash += uintptr(unsafe.Pointer(&v))
-					v.EventSymbol()
 					if len(ignoredExchanges) > 0 && slices.Contains(ignoredExchanges, formatutil.FormatChar(rune(v.ExchangeCode()))) {
 						continue
 					}
@@ -129,7 +108,6 @@ func latency(address string, types []eventcodes.EventCode, symbols []any, forceS
 	}()
 
 	time.Sleep(time.Duration(math.MaxInt64))
-	fmt.Println(hash)
 	return nil
 }
 

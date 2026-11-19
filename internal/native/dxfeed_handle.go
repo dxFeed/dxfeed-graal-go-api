@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package native
 
 /*
@@ -5,40 +8,25 @@ package native
 #include <stdlib.h>
 */
 import "C"
-import (
-	"fmt"
-	"unsafe"
-
-	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
-)
+import "unsafe"
 
 type DXFeedHandle struct {
-	handle Handler
+	handle   Handler
+	promises promiseSet
 }
 
-func NewDXFeedHandle(ptr *C.dxfg_feed_t) *DXFeedHandle {
+func NewDXFeedHandle(ptr *C.dxfg_v4_feed_t) *DXFeedHandle {
 	return &DXFeedHandle{handle: NewJavaHandle(unsafe.Pointer(ptr))}
 }
 
 func (f *DXFeedHandle) CreateSubscription(eventTypes ...int32) (*DXFeedSubscription, error) {
-	available := mappers.AvailableMappers()
-	for _, eventType := range eventTypes {
-		if available[eventType] == nil {
-			return nil, fmt.Errorf("cannot subscribe: event code %d is not supported yet", eventType)
-		}
-	}
-	var ptr *C.dxfg_subscription_t
-	err := executeInIsolateThread(func(thread *isolateThread) error {
-		list := createEventClazzList(eventTypes...)
-		defer destroyEventClazzList(list)
-		return checkCall(func() {
-			ptr = C.dxfg_DXFeed_createSubscription2(thread.ptr, f.ptr(), (*C.dxfg_event_clazz_list_t)(unsafe.Pointer(list)))
-		})
+	var ptr *C.dxfg_v4_subscription_t
+	err := withEventClazzList(eventTypes, func(thread *isolateThread, list *C.dxfg_v4_event_clazz_list) C.int32_t {
+		return C.dxfg_v4_DXFeed_createSubscriptionWithEventTypes(thread.ptr, f.ptr(), list, &ptr)
 	})
 	if err != nil {
 		return nil, err
 	}
-
 	return &DXFeedSubscription{ptr: ptr}, nil
 }
 
@@ -49,6 +37,6 @@ func (f *DXFeedHandle) Free() error {
 	return nil
 }
 
-func (f *DXFeedHandle) ptr() *C.dxfg_feed_t {
-	return (*C.dxfg_feed_t)(f.handle.Ptr())
+func (f *DXFeedHandle) ptr() *C.dxfg_v4_feed_t {
+	return (*C.dxfg_v4_feed_t)(f.handle.Ptr())
 }

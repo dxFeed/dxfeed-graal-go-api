@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package native
 
 /*
@@ -6,7 +9,6 @@ package native
 */
 import "C"
 import (
-	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"unsafe"
@@ -35,22 +37,35 @@ func NewListMapper[T CMapper, U comparable](elements []U) *ListMapper[T] {
 	}
 }
 
+// allocElement maps an event to C memory; the callers check beforehand that every element is an event with a mapper.
 func allocElement[T CMapper, U comparable](element U, mappers map[int32]mappers.MapperInterface) *T {
-	switch t := any(element).(type) {
-	case int32:
-		return (*T)(C.malloc(C.size_t(unsafe.Sizeof(element))))
-	case events.EventType:
-		// all market events have to implement this interface
-		mapper := mappers[int32(t.Type())]
-		return (*T)(mapper.CEvent(t))
-	default:
-		symbol := newEventMapper().cSymbol(t)
-		if symbol != nil {
-			return (*T)(symbol)
-		} else {
-			fmt.Printf("Couldn't alloc element for %T\n", element)
-			return nil
-		}
-
+	event, ok := any(element).(events.EventType)
+	if !ok {
+		return nil
 	}
+	mapper := mappers[event.Type().NativeCode()]
+	if mapper == nil {
+		return nil
+	}
+	return (*T)(mapper.CEvent(event))
+}
+
+// Free frees the events and the array of the list; the list must not be used after that.
+func (l *ListMapper[T]) Free() {
+	if l == nil || l.elements == nil {
+		return
+	}
+	available := mappers.AvailableMappers()
+	for _, element := range unsafe.Slice(l.elements, int(l.size)) {
+		if element == nil {
+			continue
+		}
+		event := (*C.dxfg_v4_event_type_t)(unsafe.Pointer(element))
+		if mapper := available[int32(event.clazz)]; mapper != nil {
+			mapper.FreeCEvent(unsafe.Pointer(element))
+		}
+	}
+	C.free(unsafe.Pointer(l.elements))
+	l.elements = nil
+	l.size = 0
 }

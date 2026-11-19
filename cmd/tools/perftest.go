@@ -1,64 +1,42 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package main
 
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/parser"
 	"math"
-	"os"
 	"sync"
 	"time"
-	"unsafe"
 )
 
 type PerfTest struct{}
-
-var hash uintptr
 
 func (c PerfTest) ShortDescription() string {
 	return "Connects to specified address and calculates performance counters."
 }
 
-func (c PerfTest) Run(args []string) {
-	dxarguments := DXArguments{args}
-	arguments := dxarguments.arguments()
-	if len(arguments) < 3 {
-		fmt.Println(`
-		Connects to the specified address(es) and calculates performance counters (events per second, cpu usage, etc).
-		
-		Usage:
-		path_to_app <address> <types> <symbols> [<options>]
-		
-		Where:
-		
-		address (pos. 0)  Required. The address(es) to connect to retrieve data (see "Help address").
-					For Token-Based Authorization, use the following format: "<address>:<port>[login=entitle:<token>]".
-		types (pos. 1)    Required. Comma-separated list of dxfeed event types (e.g. Quote, TimeAndSale).
-		symbols (pos. 2)  Required. Comma-separated list of symbol names to get events for (e.g. "IBM, AAPL, MSFT").
-		--force-stream    Enforces a streaming contract for subscription. The StreamFeed role is used instead of Feed.`)
-		os.Exit(0)
-	}
-	address := arguments[0]
-	types := parser.ParseEventTypes(arguments[1])
-	symbols := parser.ParseSymbols(arguments[2])
-
-	err := perf(address, types, symbols, dxarguments.forceStream())
-	if err != nil {
-		fmt.Printf("Error during dump: %v", err)
-	}
+func (c PerfTest) Run(args []string) int {
+	return runTool("perftest", args, perfTestHelp, []option{forceStreamOption}, func(a toolArguments) error {
+		address, types, symbols, err := parseCommon(a)
+		if err != nil {
+			return err
+		}
+		return perf(address, types, symbols, a.has(forceStreamOption))
+	})
 }
 
-func perf(address string, types []eventcodes.EventCode, symbols []any, forceStream bool) error {
+func perf(address string, types []eventcodes.EventCode, symbols []osub.Symbol, forceStream bool) error {
 	role := api.Feed
 	if forceStream {
 		role = api.StreamFeed
 	}
-	endpoint, err := api.CreateEndpoint(role)
+	endpoint, err := api.NewEndpoint(role)
 	if err != nil {
-		return fmt.Errorf("CreateEndpoint: %w", err)
+		return fmt.Errorf("NewEndpoint: %w", err)
 	}
 	err = endpoint.Connect(address)
 	if err != nil {
@@ -78,16 +56,6 @@ func perf(address string, types []eventcodes.EventCode, symbols []any, forceStre
 		d.mu.Lock()
 		d.addListenerCounter(1)
 		d.addEventCounter(len(eventsList))
-		for _, event := range eventsList {
-			switch v := event.(type) {
-			case *quote.Quote:
-				fmt.Printf("%s\n", v.String())
-			case *timeandsale.TimeAndSale:
-				hash += uintptr(unsafe.Pointer(&v))
-			default:
-				fmt.Printf("Unsupported event %T!\n", v)
-			}
-		}
 		d.mu.Unlock()
 	}))
 	if err != nil {
@@ -109,7 +77,6 @@ func perf(address string, types []eventcodes.EventCode, symbols []any, forceStre
 	}()
 
 	time.Sleep(time.Duration(math.MaxInt64))
-	fmt.Println(hash)
 	return nil
 }
 

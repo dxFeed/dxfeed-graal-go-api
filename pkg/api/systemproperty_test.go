@@ -1,7 +1,11 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package api
 
 import (
 	"fmt"
+	"runtime/debug"
 	"sync"
 	"testing"
 )
@@ -9,8 +13,13 @@ import (
 func TestGetSystemProperty(t *testing.T) {
 	key := "test_key"
 	value := "test_value"
-	SetSystemProperty(key, value)
-	returnValue := GetSystemProperty(key)
+	if err := SetSystemProperty(key, value); err != nil {
+		t.Fatal(err)
+	}
+	returnValue, err := GetSystemProperty(key)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if returnValue != value {
 		t.Fatalf(`GetSystemProperty("%s") should be "%s". But it equals "%s"`, key, value, returnValue)
 	}
@@ -19,8 +28,13 @@ func TestGetSystemProperty(t *testing.T) {
 func TestGetEmptySystemProperty(t *testing.T) {
 	key := "test_key"
 	value := ""
-	SetSystemProperty(key, value)
-	returnValue := GetSystemProperty(key)
+	if err := SetSystemProperty(key, value); err != nil {
+		t.Fatal(err)
+	}
+	returnValue, err := GetSystemProperty(key)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if returnValue != value {
 		t.Fatalf(`GetSystemProperty("%s") should be "%s". But it equals "%s"`, key, value, returnValue)
 	}
@@ -29,24 +43,45 @@ func TestGetEmptySystemProperty(t *testing.T) {
 func TestGetSystemPropertyWithUnicode(t *testing.T) {
 	key := "∑🍕🍔🍗"
 	value := "∏🍻🍺"
-	SetSystemProperty(key, value)
-	returnValue := GetSystemProperty(key)
+	if err := SetSystemProperty(key, value); err != nil {
+		t.Fatal(err)
+	}
+	returnValue, err := GetSystemProperty(key)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if returnValue != value {
 		t.Fatalf(`GetSystemProperty("%s") should be "%s". But it equals "%s"`, key, value, returnValue)
 	}
 }
 
+// TestConcurrentGetSetSystemProperty calls the API from 10000 goroutines at once, so thousands of OS threads attach to
+// the isolate; attaching and detaching a thread on every call hung this test on Linux, while 5000 goroutines only
+// slowed it down now and then. Each goroutine in a call holds an OS thread, and Go stops the process at its limit of
+// 10000 threads, so the test raises the limit for itself. The race detector allows fewer goroutines (raceEnabled).
 func TestConcurrentGetSetSystemProperty(t *testing.T) {
+	defer debug.SetMaxThreads(debug.SetMaxThreads(20000))
+	goroutines := 10000
+	if raceEnabled {
+		goroutines = 5000
+	}
 	var wg sync.WaitGroup
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < goroutines; i++ {
 		wg.Add(1)
 		num := i
 		go func() {
 			defer wg.Done()
 			key := fmt.Sprintf("test_key_%d", num)
 			value := fmt.Sprintf("test_value_%d", num)
-			SetSystemProperty(key, value)
-			returnValue := GetSystemProperty(key)
+			if err := SetSystemProperty(key, value); err != nil {
+				t.Error(err)
+				return
+			}
+			returnValue, err := GetSystemProperty(key)
+			if err != nil {
+				t.Error(err)
+				return
+			}
 			if returnValue != value {
 				t.Errorf(`GetSystemProperty("%s") should be "%s". But it equals "%s"`, key, value, returnValue)
 				return

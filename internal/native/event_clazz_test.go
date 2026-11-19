@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package native
 
 import (
@@ -59,7 +62,7 @@ func TestEventCodesMatchSdk(t *testing.T) {
 
 // TestSdkEventClazzesCoverHeader fails when a new SDK adds an event class that sdkEventClazzes does not list yet.
 func TestSdkEventClazzesCoverHeader(t *testing.T) {
-	header, err := os.ReadFile(filepath.Join("graal", "dxfg_events.h"))
+	header, err := os.ReadFile(filepath.Join("include", "dxfg_events.h"))
 	if err != nil {
 		t.Fatal(err)
 	}

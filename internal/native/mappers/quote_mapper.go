@@ -1,7 +1,10 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package mappers
 
 /*
-#include "../graal/dxfg_api.h"
+#include "dxfg_api.h"
 #include <stdlib.h>
 */
 import "C"
@@ -16,9 +19,9 @@ type QuoteMapper struct {
 func (m QuoteMapper) CEvent(event interface{}) unsafe.Pointer {
 	quoteEvent := event.(*quote.Quote)
 
-	q := (*C.dxfg_quote_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_quote_t{}))))
+	q := (*C.dxfg_v4_quote_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_quote_t{})))
 	q.market_event.event_type.clazz = C.DXFG_EVENT_QUOTE
-	q.market_event.event_symbol = C.CString(*quoteEvent.EventSymbol())
+	q.market_event.event_symbol = cString(*quoteEvent.EventSymbol())
 	q.market_event.event_time = C.int64_t(quoteEvent.EventTime())
 	q.time_millis_sequence = C.int32_t(quoteEvent.TimeMillisSequence())
 	q.time_nano_part = C.int32_t(quoteEvent.TimeNanoPart())
@@ -34,7 +37,7 @@ func (m QuoteMapper) CEvent(event interface{}) unsafe.Pointer {
 }
 
 func (m QuoteMapper) GoEvent(native unsafe.Pointer) interface{} {
-	quoteNative := (*C.dxfg_quote_t)(native)
+	quoteNative := (*C.dxfg_v4_quote_t)(native)
 	q := quote.NewQuote(C.GoString(quoteNative.market_event.event_symbol))
 	q.SetEventSymbol(C.GoString(quoteNative.market_event.event_symbol))
 	q.SetEventTime(int64(quoteNative.market_event.event_time))
@@ -49,4 +52,11 @@ func (m QuoteMapper) GoEvent(native unsafe.Pointer) interface{} {
 	q.SetAskPrice(float64(quoteNative.ask_price))
 	q.SetAskSize(float64(quoteNative.ask_size))
 	return q
+}
+
+// FreeCEvent frees an event made by CEvent.
+func (QuoteMapper) FreeCEvent(event unsafe.Pointer) {
+	n := (*C.dxfg_v4_quote_t)(event)
+	cFree(unsafe.Pointer(n.market_event.event_symbol))
+	cFree(event)
 }

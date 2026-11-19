@@ -1,7 +1,10 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package mappers
 
 /*
-#include "../graal/dxfg_api.h"
+#include "dxfg_api.h"
 #include <stdlib.h>
 */
 import "C"
@@ -14,9 +17,9 @@ type GreeksMapper struct{}
 
 func (m GreeksMapper) CEvent(event interface{}) unsafe.Pointer {
 	g := event.(*greeks.Greeks)
-	n := (*C.dxfg_greeks_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_greeks_t{}))))
+	n := (*C.dxfg_v4_greeks_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_greeks_t{})))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_GREEKS
-	n.market_event.event_symbol = C.CString(*g.EventSymbol())
+	n.market_event.event_symbol = cString(*g.EventSymbol())
 	n.market_event.event_time = C.int64_t(g.EventTime())
 	n.event_flags = C.int32_t(g.EventFlags())
 	n.index = C.int64_t(g.Index())
@@ -31,7 +34,7 @@ func (m GreeksMapper) CEvent(event interface{}) unsafe.Pointer {
 }
 
 func (m GreeksMapper) GoEvent(native unsafe.Pointer) interface{} {
-	n := (*C.dxfg_greeks_t)(native)
+	n := (*C.dxfg_v4_greeks_t)(native)
 	g := greeks.NewGreeks(C.GoString(n.market_event.event_symbol))
 	g.SetEventTime(int64(n.market_event.event_time))
 	g.SetEventFlags(int32(n.event_flags))
@@ -44,4 +47,11 @@ func (m GreeksMapper) GoEvent(native unsafe.Pointer) interface{} {
 	g.SetRho(float64(n.rho))
 	g.SetVega(float64(n.vega))
 	return g
+}
+
+// FreeCEvent frees an event made by CEvent.
+func (GreeksMapper) FreeCEvent(event unsafe.Pointer) {
+	n := (*C.dxfg_v4_greeks_t)(event)
+	cFree(unsafe.Pointer(n.market_event.event_symbol))
+	cFree(event)
 }

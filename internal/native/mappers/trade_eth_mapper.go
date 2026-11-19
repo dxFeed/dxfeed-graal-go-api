@@ -1,7 +1,10 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package mappers
 
 /*
-#include "../graal/dxfg_api.h"
+#include "dxfg_api.h"
 #include <stdlib.h>
 */
 import "C"
@@ -14,7 +17,7 @@ type TradeETHMapper struct {
 }
 
 func (t TradeETHMapper) GoEvent(native unsafe.Pointer) interface{} {
-	tradeNative := (*C.dxfg_trade_eth_t)(native)
+	tradeNative := (*C.dxfg_v4_trade_eth_t)(native)
 	tradeEvent := trade.NewTradeETH(C.GoString(tradeNative.trade_base.market_event.event_symbol))
 	tradeEvent.SetEventTime(int64(tradeNative.trade_base.market_event.event_time))
 	tradeEvent.SetTimeSequence(int64(tradeNative.trade_base.time_sequence))
@@ -32,9 +35,9 @@ func (t TradeETHMapper) GoEvent(native unsafe.Pointer) interface{} {
 
 func (t TradeETHMapper) CEvent(event interface{}) unsafe.Pointer {
 	tradeEvent := event.(*trade.TradeETH)
-	q := (*C.dxfg_trade_eth_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_trade_eth_t{}))))
+	q := (*C.dxfg_v4_trade_eth_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_trade_eth_t{})))
 	q.trade_base.market_event.event_type.clazz = C.DXFG_EVENT_TRADE_ETH
-	q.trade_base.market_event.event_symbol = C.CString(*tradeEvent.EventSymbol())
+	q.trade_base.market_event.event_symbol = cString(*tradeEvent.EventSymbol())
 	q.trade_base.market_event.event_time = C.int64_t(tradeEvent.EventTime())
 	q.trade_base.time_sequence = C.int64_t(tradeEvent.TimeSequence())
 	q.trade_base.time_nano_part = C.int32_t(tradeEvent.TimeNanoPart())
@@ -47,4 +50,11 @@ func (t TradeETHMapper) CEvent(event interface{}) unsafe.Pointer {
 	q.trade_base.day_turnover = C.double(tradeEvent.DayTurnover())
 	q.trade_base.flags = C.int32_t(tradeEvent.Flags())
 	return unsafe.Pointer(q)
+}
+
+// FreeCEvent frees an event made by CEvent.
+func (TradeETHMapper) FreeCEvent(event unsafe.Pointer) {
+	n := (*C.dxfg_v4_trade_eth_t)(event)
+	cFree(unsafe.Pointer(n.trade_base.market_event.event_symbol))
+	cFree(event)
 }

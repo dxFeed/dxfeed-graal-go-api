@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package native
 
 /*
@@ -6,6 +9,7 @@ package native
 */
 import "C"
 import (
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -14,26 +18,30 @@ type Handler interface {
 	Free() error
 }
 
+// JavaHandle holds a handle of a Java object. It may be used and freed from several goroutines: a wait abandoned on
+// a done context still runs while the owner closes the object.
 type JavaHandle struct {
-	ptr unsafe.Pointer
+	ptr atomic.Pointer[byte]
 }
 
 func NewJavaHandle(ptr unsafe.Pointer) Handler {
-	return &JavaHandle{ptr: ptr}
+	j := &JavaHandle{}
+	j.ptr.Store((*byte)(ptr))
+	return j
 }
 
+// Ptr returns the handle, or nil after Free.
 func (j *JavaHandle) Ptr() unsafe.Pointer {
-	return j.ptr
+	return unsafe.Pointer(j.ptr.Load())
 }
 
+// Free releases the handle once; later calls do nothing.
 func (j *JavaHandle) Free() error {
-	if j.ptr == nil {
+	ptr := j.ptr.Swap(nil)
+	if ptr == nil {
 		return nil
 	}
 	return executeInIsolateThread(func(thread *isolateThread) error {
-		return checkCall(func() {
-			C.dxfg_JavaObjectHandler_release(thread.ptr, (*C.dxfg_java_object_handler)(j.ptr))
-			j.ptr = nil
-		})
+		return checkStatus(thread, C.dxfg_v4_JavaObjectHandler_release(thread.ptr, (*C.dxfg_v4_java_object_handler)(unsafe.Pointer(ptr))))
 	})
 }

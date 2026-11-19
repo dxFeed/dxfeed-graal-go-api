@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package native
 
 /*
@@ -8,22 +11,39 @@ import "C"
 import (
 	"errors"
 	"fmt"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 )
 
-func checkCall(call func()) error {
-	call()
-	return getJavaThreadErrorIfExist()
-}
-
-func checkResultCall(call func() C.int32_t) error {
-	result := call()
-	if result == dxfgExecuteSuccessfully {
+// checkStatus turns the status of a dxfg_v4 call into an error. A failed call leaves a Java exception on the isolate
+// thread; it is taken right away, so that a later failure does not report it again.
+func checkStatus(thread *isolateThread, status C.int32_t) error {
+	if status == dxfgExecuteSuccessfully {
 		return nil
 	}
-	if err := getJavaThreadErrorIfExist(); err != nil {
+	if err := takeJavaException(thread.ptr); err != nil {
 		return err
 	}
-	return fmt.Errorf("native: call failed with code %d without a pending java exception", int32(result))
+	return fmt.Errorf("native: call failed with code %d without a pending java exception", int32(status))
+}
+
+// takeJavaException takes and releases the pending Java exception of the thread; nil if there is none.
+func takeJavaException(thread *C.graal_isolatethread_t) error {
+	var ptr *C.dxfg_v4_exception_t
+	if C.dxfg_v4_get_and_clear_thread_exception(thread, &ptr) != dxfgExecuteSuccessfully || ptr == nil {
+		return nil
+	}
+	defer C.dxfg_v4_Exception_release(thread, ptr)
+	return javaError(ptr)
+}
+
+// javaError converts an exception of the SDK; the caller keeps and releases it.
+func javaError(ptr *C.dxfg_v4_exception_t) error {
+	return common.JavaError{
+		ClassName:  C.GoString(ptr.class_name),
+		Message:    C.GoString(ptr.message),
+		StackTrace: C.GoString(ptr.print_stack_trace),
+	}
 }
 
 func checkIsolateCall(call func() C.int) error {
@@ -32,21 +52,6 @@ func checkIsolateCall(call func() C.int) error {
 		return (IsolateError)(e)
 	}
 	return nil
-}
-
-func getJavaThreadErrorIfExist() error {
-	return executeInIsolateThread(func(thread *isolateThread) error {
-		ptr := C.dxfg_get_and_clear_thread_exception_t(thread.ptr)
-		if ptr == nil {
-			return nil
-		}
-		defer C.dxfg_Exception_release(thread.ptr, ptr)
-		return JavaError{
-			ClassName:  C.GoString(ptr.class_name),
-			Message:    C.GoString(ptr.message),
-			StackTrace: C.GoString(ptr.print_stack_trace),
-		}
-	})
 }
 
 type IsolateError int32
@@ -169,14 +174,4 @@ func (e IsolateError) String() string {
 	default:
 		return "Unknown error."
 	}
-}
-
-type JavaError struct {
-	ClassName  string
-	Message    string
-	StackTrace string
-}
-
-func (e JavaError) Error() string {
-	return fmt.Sprintf("java: exception of eventcodes '%s'. %s \n %s", e.ClassName, e.Message, e.StackTrace)
 }

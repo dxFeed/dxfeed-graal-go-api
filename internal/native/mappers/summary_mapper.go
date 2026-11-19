@@ -1,7 +1,10 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package mappers
 
 /*
-#include "../graal/dxfg_api.h"
+#include "dxfg_api.h"
 #include <stdlib.h>
 */
 import "C"
@@ -16,9 +19,9 @@ type SummaryMapper struct{}
 func (m SummaryMapper) CEvent(event interface{}) unsafe.Pointer {
 	s := event.(*summary.Summary)
 
-	n := (*C.dxfg_summary_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_summary_t{}))))
+	n := (*C.dxfg_v4_summary_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_summary_t{})))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_SUMMARY
-	n.market_event.event_symbol = C.CString(*s.EventSymbol())
+	n.market_event.event_symbol = cString(*s.EventSymbol())
 	n.market_event.event_time = C.int64_t(s.EventTime())
 	n.day_id = C.int32_t(s.DayId())
 	n.day_open_price = C.double(s.DayOpenPrice())
@@ -34,7 +37,7 @@ func (m SummaryMapper) CEvent(event interface{}) unsafe.Pointer {
 }
 
 func (m SummaryMapper) GoEvent(native unsafe.Pointer) interface{} {
-	n := (*C.dxfg_summary_t)(native)
+	n := (*C.dxfg_v4_summary_t)(native)
 
 	s := summary.NewSummary(C.GoString(n.market_event.event_symbol))
 	s.SetEventTime(int64(n.market_event.event_time))
@@ -49,4 +52,11 @@ func (m SummaryMapper) GoEvent(native unsafe.Pointer) interface{} {
 	s.SetOpenInterest(int64(n.open_interest))
 	s.SetFlags(int32(n.flags))
 	return s
+}
+
+// FreeCEvent frees an event made by CEvent.
+func (SummaryMapper) FreeCEvent(event unsafe.Pointer) {
+	n := (*C.dxfg_v4_summary_t)(event)
+	cFree(unsafe.Pointer(n.market_event.event_symbol))
+	cFree(event)
 }

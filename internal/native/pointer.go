@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package native
 
 // #include <stdlib.h>
@@ -21,10 +24,8 @@ func Save(v interface{}) unsafe.Pointer {
 	// This pointer will not store any data, but will bi used for indexing purposes.
 	// Since Go doest allow to cast dangling pointer to unsafe.Pointer, we do rally allocate one byte.
 	// Why we need indexing, because Go doest allow C code to store pointers to Go data.
+	// cgo's C.malloc never returns NULL: it ends the process when C is out of memory.
 	var ptr unsafe.Pointer = C.malloc(C.size_t(1))
-	if ptr == nil {
-		panic("can't allocate 'cgo-pointer hack index pointer': ptr == nil")
-	}
 
 	mutex.Lock()
 	store[ptr] = v

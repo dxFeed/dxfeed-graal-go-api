@@ -1,7 +1,10 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package mappers
 
 /*
-#include "../graal/dxfg_api.h"
+#include "dxfg_api.h"
 #include <stdlib.h>
 */
 import "C"
@@ -15,15 +18,15 @@ type ProfileMapper struct {
 
 func (m ProfileMapper) CEvent(event interface{}) unsafe.Pointer {
 	profile := event.(*profile.Profile)
-	p := (*C.dxfg_profile_t)(C.malloc(C.size_t(unsafe.Sizeof(C.dxfg_profile_t{}))))
+	p := (*C.dxfg_v4_profile_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_profile_t{})))
 	p.market_event.event_type.clazz = C.DXFG_EVENT_PROFILE
-	p.market_event.event_symbol = C.CString(*profile.EventSymbol())
+	p.market_event.event_symbol = cString(*profile.EventSymbol())
 	p.market_event.event_time = C.int64_t(profile.EventTime())
 	if profile.Description() != nil {
-		p.description = C.CString(*profile.Description())
+		p.description = cString(*profile.Description())
 	}
 	if profile.StatusReason() != nil {
-		p.status_reason = C.CString(*profile.StatusReason())
+		p.status_reason = cString(*profile.StatusReason())
 	}
 	p.halt_end_time = C.int64_t(profile.HaltEndTime())
 	p.halt_start_time = C.int64_t(profile.HaltStartTime())
@@ -44,7 +47,7 @@ func (m ProfileMapper) CEvent(event interface{}) unsafe.Pointer {
 }
 
 func (pr ProfileMapper) GoEvent(nativeEvent unsafe.Pointer) interface{} {
-	native := (*C.dxfg_profile_t)(nativeEvent)
+	native := (*C.dxfg_v4_profile_t)(nativeEvent)
 
 	p := profile.NewProfile(C.GoString(native.market_event.event_symbol))
 	p.SetEventTime(int64(native.market_event.event_time))
@@ -65,4 +68,13 @@ func (pr ProfileMapper) GoEvent(nativeEvent unsafe.Pointer) interface{} {
 	p.SetFreeFloat(float64(native.free_float))
 	p.SetFlags(int32(native.flags))
 	return p
+}
+
+// FreeCEvent frees an event made by CEvent.
+func (ProfileMapper) FreeCEvent(event unsafe.Pointer) {
+	n := (*C.dxfg_v4_profile_t)(event)
+	cFree(unsafe.Pointer(n.market_event.event_symbol))
+	cFree(unsafe.Pointer(n.description))
+	cFree(unsafe.Pointer(n.status_reason))
+	cFree(event)
 }
