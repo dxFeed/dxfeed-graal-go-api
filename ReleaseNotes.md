@@ -5,6 +5,18 @@ Each version lists one item per Jira ticket. Changes merged since the last relea
 
 Versions before v0.4.0 were tagged without the `v` prefix, so Go tools see them only as pseudo-versions.
 
+## v0.7.1
+
+* **\[MDAPI-583]\[GO]** Fixed the errors of a build without cgo (`CGO_ENABLED=0`, no C compiler found, the Go
+  Playground): instead of undefined internal symbols, it fails with one error,
+  `undefined: dxfeed_graal_go_api_requires_cgo_set_CGO_ENABLED_1_and_install_a_C_compiler`.
+* **\[MDAPI-584]\[GO]** Fixed a panic of the `tools` program on `--help`, `-h`, `help` or an unknown tool name
+  * Fixed `--help`, `-h` and `help`: they print the usage with the list of tools, as `tools` without arguments does,
+    and exit with status 0 without starting the SDK.
+  * Fixed an unknown tool name: it prints an error naming the tool and the usage, and exits with status 2.
+  * Fixed the order of the list of tools: it is alphabetical instead of random.
+  * Fixed the help of `latencytest`: it described the performance counters of `perftest` instead of the latency test.
+
 ## v0.7.0
 
 * **\[MDAPI-562]\[GO]\[BREAKING]** dxFeed Graal Native SDK updated to 3.17.0, the minimum version of the native
