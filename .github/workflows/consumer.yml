@@ -1,7 +1,7 @@
 name: "Consumer module"
 
 # Builds and runs a separate module that uses the API as an application does: it gets the module with go get, installs
-# the SDK with cmd/install-sdk and links it through CGO_LDFLAGS, as README.md describes.
+# the SDK with cmd/install-sdk and links it through CGO_LDFLAGS, as docs/quick-start.md describes.
 on:
   workflow_call:
     inputs:

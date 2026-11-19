@@ -43,9 +43,9 @@ func (b *EndpointBuilder) WithName(name string) *EndpointBuilder {
 	return b
 }
 
-// WithProperty sets a property of the endpoints, such as "dxfeed.address"; it wins over the same property of a
-// properties file and of the system properties. A property that the builder does not support is ignored: see
-// SupportsProperty.
+// WithProperty sets a property of the endpoints, such as "dxfeed.address". It wins over the same property set earlier,
+// also by a properties file, and loses to one set later (see [EndpointBuilder]). A property that the builder does not
+// support is ignored: see SupportsProperty.
 func (b *EndpointBuilder) WithProperty(key, value string) *EndpointBuilder {
 	b.steps = append(b.steps, native.WithProperty(key, value))
 	return b

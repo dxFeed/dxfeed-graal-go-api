@@ -1,5 +1,6 @@
-// Package readme checks that the Go code in README.md compiles: every ```go block of the README must be the exact
-// text of a sample under cmd/samples, which the build and go vet compile.
+// Package readme checks the Markdown documentation: every ```go block of README.md must be the exact text of a sample
+// under cmd/samples, which the build and go vet compile, and the links of the Markdown files must lead to existing
+// files and headings.
 package readme
 
 import (
