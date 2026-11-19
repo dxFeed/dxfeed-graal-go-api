@@ -55,8 +55,9 @@ Each OS thread that calls the API is attached to the isolate of the SDK on its f
 process exits; Go runs other goroutines on it, and their calls find it attached. A goroutine that locks itself to its
 OS thread with `runtime.LockOSThread`, calls the API and exits without `runtime.UnlockOSThread` ends that OS thread
 while it is still attached: its record stays in the list of the attached threads of the isolate until the process
-exits. Unlock the goroutine
-before it exits, or keep such goroutines alive.
+exits. Unlock the goroutine before it exits, or keep such goroutines alive.
 
 The first calls of thousands of goroutines at once attach as many OS threads; on Linux 10000 goroutines take up to a
-few seconds.
+few seconds. Each goroutine in a call of the API holds an OS thread until the call returns, and Go stops the process with
+`fatal error: thread exhaustion` when it needs more threads than its limit, 10000 by default (`debug.SetMaxThreads`).
+Bound the number of concurrent calls, for example with a pool of workers, rather than raise the limit.

@@ -155,13 +155,16 @@ func ExampleDXFeed_CreateSubscription_indexed() {
 	// 2 Sell 100.5 200
 }
 
-// stateLogger is a connection state listener that prints the changes and passes the new states on.
+// stateLogger is a connection state listener that prints the new states and passes them on. It leaves out Connecting:
+// the SDK may report a fast connection as one change from Not connected to Connected.
 type stateLogger struct {
 	states chan common.ConnectionState
 }
 
 func (l stateLogger) UpdateState(old, new common.ConnectionState) {
-	fmt.Println("connection:", old, "->", new)
+	if new != common.Connecting {
+		fmt.Println("connection:", new)
+	}
 	l.states <- new
 }
 
@@ -230,7 +233,6 @@ func ExampleDXEndpoint_AddListener() {
 	}
 	logger.waitFor(common.Closed)
 	// Output:
-	// connection: Not connected -> Connecting
-	// connection: Connecting -> Connected
-	// connection: Connected -> Closed
+	// connection: Connected
+	// connection: Closed
 }
