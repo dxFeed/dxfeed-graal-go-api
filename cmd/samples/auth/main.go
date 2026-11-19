@@ -1,9 +1,12 @@
 // Command auth connects to an address that takes an authorization token, renews the token every 10 seconds and
-// prints the quotes of AAPL until Ctrl+C. The demo feed accepts any token; this sample makes random ones.
+// prints the quotes of a symbol until Ctrl+C. The demo feed accepts any token; this sample makes random ones.
+//
+//	go run ./cmd/samples/auth -address demo.dxfeed.com:7300 -symbol AAPL
 package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -19,7 +22,10 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
 )
 
-const address = "demo.dxfeed.com:7300"
+var (
+	address = flag.String("address", "demo.dxfeed.com:7300", "the address to connect to, without the token")
+	symbol  = flag.String("symbol", "AAPL", "the symbol to print the quotes of")
+)
 
 type listener func(events []any)
 
@@ -45,10 +51,11 @@ func connect(endpoint *api.DXEndpoint) error {
 	if err != nil {
 		return err
 	}
-	return endpoint.Connect(address + "[login=entitle:" + token.Value() + "]")
+	return endpoint.Connect(*address + "[login=entitle:" + token.Value() + "]")
 }
 
 func main() {
+	flag.Parse()
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
@@ -85,7 +92,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if err := subscription.AddSymbols(osub.String("AAPL")); err != nil {
+	if err := subscription.AddSymbols(osub.String(*symbol)); err != nil {
 		return err
 	}
 

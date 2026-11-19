@@ -1,9 +1,16 @@
 // Command ondemand-replay replays the quotes of Accenture (ACN), which dropped under $1 in the "Flash Crash" of
-// May 6, 2010 from 14:47:48 to 14:48:02 EST, from the dxFeed on-demand history data replay service.
+// May 6, 2010 from 14:47:48 to 14:48:02 EST, from the dxFeed on-demand history data replay service. The service needs
+// the credentials of a dxFeed account with access to it; Ctrl+C stops the replay.
+//
+//	go run ./cmd/samples/ondemand-replay -address "(ondemand:demo.dxfeed.com:7680)" -user <user> -password <password>
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
@@ -21,11 +28,21 @@ func (pr PrintEvents) Update(events []any) {
 const timeLayout = "2006-01-02 15:04:05.000 MST"
 
 func main() {
+	// The address of the on-demand service: the "(ondemand:...)" component makes the replay available.
+	address := flag.String("address", "(ondemand:demo.dxfeed.com:7680)", "the address of the on-demand service")
+	user := flag.String("user", "demo", "the user name of the on-demand service")
+	password := flag.String("password", "demo", "the password of the on-demand service")
+	symbol := flag.String("symbol", "ACN", "the symbol to replay the quotes of")
+	flag.Parse()
+	// Ctrl+C from now on ends the sample through ctx, so that the deferred calls close the endpoint.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	endpoint, err := api.NewEndpointWithProperties(api.OnDemandFeed, map[string]string{
 		// The replayed events keep the time when they happened.
 		"dxendpoint.eventTime": "true",
-		"dxfeed.user":          "demo",
-		"dxfeed.password":      "demo",
+		"dxfeed.user":          *user,
+		"dxfeed.password":      *password,
 	})
 	if err != nil {
 		panic(err)
@@ -57,12 +74,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err = subscription.AddSymbol(osub.String("ACN")); err != nil {
+	if err = subscription.AddSymbol(osub.String(*symbol)); err != nil {
 		panic(err)
 	}
 
-	// The address of the on-demand service: the "(ondemand:...)" component makes the replay available.
-	if err = endpoint.Connect("(ondemand:demo.dxfeed.com:7680)"); err != nil {
+	if err = endpoint.Connect(*address); err != nil {
 		panic(err)
 	}
 	from := time.Date(2010, 5, 6, 14, 47, 48, 0, est)
@@ -70,16 +86,25 @@ func main() {
 	if err = onDemand.Replay(from); err != nil {
 		panic(err)
 	}
+
+	// Print the state every second until the replay reaches the end time or Ctrl+C; returning from main closes the
+	// subscription and the endpoint.
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 	for {
 		now, err := onDemand.Time()
 		if err != nil {
 			panic(err)
 		}
 		if !now.Before(to) {
-			break
+			return
 		}
 		state, _ := endpoint.State()
 		fmt.Printf("Current state is %s, on-demand time is %s\n", state, now.In(est).Format(timeLayout))
-		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
 	}
 }

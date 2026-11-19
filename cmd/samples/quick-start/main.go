@@ -1,9 +1,10 @@
-// Command quick-start prints quotes of AAPL and IBM from the dxFeed demo feed until Ctrl+C.
+// Command quick-start prints quotes of AAPL and IBM until Ctrl+C, from the dxFeed demo feed or the -address.
 // README.md shows this file as it is; a test keeps the two identical.
 package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -27,14 +28,20 @@ func main() {
 }
 
 func run() error {
+	// For token-based authorization, use the address "demo.dxfeed.com:7300[login=entitle:token]".
+	address := flag.String("address", "demo.dxfeed.com:7300", "the address to connect to")
+	flag.Parse()
+	// Ctrl+C from now on ends the sample through ctx, so that the deferred calls close the endpoint.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	endpoint, err := api.NewEndpoint(api.Feed)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = endpoint.Close() }()
 
-	// For token-based authorization, use the address "demo.dxfeed.com:7300[login=entitle:token]".
-	if err := endpoint.Connect("demo.dxfeed.com:7300"); err != nil {
+	if err := endpoint.Connect(*address); err != nil {
 		return err
 	}
 
@@ -62,8 +69,6 @@ func run() error {
 		return err
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
 	<-ctx.Done()
 	return nil
 }

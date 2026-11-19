@@ -1,18 +1,21 @@
+// Command feed-ipf-connect reads instrument profiles from an IPF file or service, subscribes to the quotes of their
+// symbols and prints them until Ctrl+C.
+//
+//	go run ./cmd/samples/feed-ipf-connect -ipf "https://demo:demo@tools.dxfeed.com/ipf?TYPE=STOCK&compression=zip"
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
-	"math"
-	"time"
+	"os"
+	"os/signal"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/profile"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/ipf"
 )
 
@@ -28,8 +31,18 @@ func (pr PrintState) UpdateState(old common.ConnectionState, new common.Connecti
 	pr(old, new)
 }
 
-// An sample that demonstrates a subscription using InstrumentProfile.
 func main() {
+	ipfFile := flag.String("ipf", "https://demo:demo@tools.dxfeed.com/ipf?TYPE=STOCK&compression=zip",
+		"the IPF file or service URL to read the instrument profiles from; user:password@ in a URL are its credentials")
+	// For token-based authorization, use the address format
+	// "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws[login=dxlink:token]".
+	address := flag.String("address", "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws",
+		"the address to connect to; dxLink and QD addresses both work")
+	flag.Parse()
+	// Ctrl+C from now on ends the sample through ctx, so that the deferred calls close the endpoint.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	// The experimental property must be enabled.
 	if err := api.SetSystemProperty("dxfeed.experimental.dxlink.enable", "true"); err != nil {
 		panic(err)
@@ -39,8 +52,7 @@ func main() {
 		panic(err)
 	}
 
-	ipfFile := "https://demo:demo@tools.dxfeed.com/ipf?TYPE=STOCK&compression=zip"
-	fmt.Printf("Reading instruments from %s\n", ipfFile)
+	fmt.Printf("Reading instruments from %s\n", *ipfFile)
 	ipfReader, err := ipf.NewInstrumentProfileReader()
 	if err != nil {
 		panic(err)
@@ -49,7 +61,7 @@ func main() {
 		_ = reader.Close()
 	}(ipfReader)
 
-	instrumentProfiles, err := ipfReader.ReadFromFile(ipfFile)
+	instrumentProfiles, err := ipfReader.ReadFromFile(*ipfFile)
 	if err != nil {
 		panic(err)
 	}
@@ -63,8 +75,6 @@ func main() {
 	lastModified, _ := ipfReader.LastModified()
 	fmt.Printf("LastModified %d\n", lastModified)
 
-	// For token-based authorization, use the following address format:
-	// "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws[login=dxlink:token]"
 	endpoint, err := api.NewEndpoint(api.Feed)
 	if err != nil {
 		panic(err)
@@ -76,7 +86,7 @@ func main() {
 		fmt.Printf("Connection state changed from %s to %s\n", old, new)
 	}))
 
-	err = endpoint.Connect("dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws")
+	err = endpoint.Connect(*address)
 	if err != nil {
 		panic(err)
 	}
@@ -94,15 +104,8 @@ func main() {
 
 	err = subscription.AddListener(PrintEvents(func(events []interface{}) {
 		for _, event := range events {
-			switch v := event.(type) {
-			case *quote.Quote:
-				fmt.Printf("%s\n", v.String())
-			case *profile.Profile:
-				fmt.Printf("%s\n", v.String())
-			case *timeandsale.TimeAndSale:
-				fmt.Printf("%s\n", v.String())
-			case *order.Order:
-				fmt.Printf("%s\n", v.String())
+			if q, ok := event.(*quote.Quote); ok {
+				fmt.Printf("%s\n", q.String())
 			}
 		}
 	}))
@@ -115,5 +118,6 @@ func main() {
 		panic(err)
 	}
 
-	time.Sleep(time.Duration(math.MaxInt64))
+	// Print the quotes until Ctrl+C; returning from main closes the subscription, the endpoint and the reader.
+	<-ctx.Done()
 }

@@ -2,15 +2,17 @@
 
 Each directory is a program; run it from the root of the repository with `go run ./cmd/samples/<name>`, and `-h`
 lists its flags. The Graal Native SDK must be installed, as [README.md](../../README.md#installation) describes.
-Most samples connect to the dxFeed demo feed `demo.dxfeed.com:7300` and need the network; the ones marked
-*offline* do not, and the tests in [samples_test.go](samples_test.go) run them on every CI platform.
+Most samples connect to the dxFeed demo feed `demo.dxfeed.com:7300` by default and need the network; `-address`
+(`-ipf` for instrument profiles) connects them to another endpoint. The ones marked *offline* do not need the
+network, and the tests in [samples_test.go](samples_test.go) run them on every CI platform. The samples that run until
+Ctrl+C close their endpoint on it and exit with status 0.
 
 ## Feed and subscription
 
 | Sample                                         | Shows                                                                     |
 |------------------------------------------------|---------------------------------------------------------------------------|
 | [quick-start](quick-start/main.go)             | the program of README.md: the quotes of AAPL and IBM                      |
-| [print-quote-events](print-quote-events/main.go) | the quotes with the `DXFeed` singleton and `dxfeed.properties`          |
+| [print-quote-events](print-quote-events/main.go) | the quotes of a symbol from a dxLink address                            |
 | [connect](connect/main.go)                     | events of any types and symbols, optionally from a time                   |
 | [quote-and-trade](quote-and-trade/main.go)     | listeners, a promise and snapshots of the quotes and the trades           |
 | [print-indexed-events](print-indexed-events/main.go) | the orders of one source and the connection state                   |
@@ -50,5 +52,8 @@ Most samples connect to the dxFeed demo feed `demo.dxfeed.com:7300` and need the
 | [live-ipf](live-ipf/main.go)                     | the live updates of instrument profiles                                 |
 | [option-chain](option-chain/main.go)             | the option chains of a symbol, their series and strikes                 |
 | [schedule](schedule/main.go)                     | the trading days and sessions of an instrument                          |
-| [ondemand-replay](ondemand-replay/main.go)       | replaying historical data with `OnDemandService`                        |
+| [ondemand-replay](ondemand-replay/main.go)       | replaying historical data with `OnDemandService` (credentials)          |
 | [candle-data-download](candle-data-download/main.go) | downloading candles from the candle web service (credentials)       |
+
+The on-demand service of ondemand-replay and the candle web service of candle-data-download need the credentials of
+a dxFeed account with access to them: pass them with `-user` and `-password`.
