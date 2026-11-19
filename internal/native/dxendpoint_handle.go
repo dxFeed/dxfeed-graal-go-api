@@ -10,6 +10,7 @@ import (
 	"errors"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -18,6 +19,8 @@ type DXEndpointHandle struct {
 	feedOnce sync.Once
 	feed     *DXFeedHandle
 	feedErr  error
+	// feedMade is the feed once it is made, for Close, which must not wait for or start GetFeed.
+	feedMade atomic.Pointer[DXFeedHandle]
 
 	publisherOnce sync.Once
 	publisher     *DXPublisherHandle
@@ -217,6 +220,7 @@ func (e *DXEndpointHandle) Close() error {
 	err := executeInIsolateThread(func(thread *isolateThread) error {
 		return checkStatus(thread, C.dxfg_v4_DXEndpoint_close(thread.ptr, e.ptr()))
 	})
+	e.cancelPromises()
 	return errors.Join(err, e.Free())
 }
 
@@ -224,7 +228,15 @@ func (e *DXEndpointHandle) CloseAndAwaitTermination() error {
 	err := executeInIsolateThread(func(thread *isolateThread) error {
 		return checkStatus(thread, C.dxfg_v4_DXEndpoint_closeAndAwaitTermination(thread.ptr, e.ptr()))
 	})
+	e.cancelPromises()
 	return errors.Join(err, e.Free())
+}
+
+// cancelPromises cancels the pending promises of the feed of the closed endpoint.
+func (e *DXEndpointHandle) cancelPromises() {
+	if feed := e.feedMade.Load(); feed != nil {
+		feed.promises.close()
+	}
 }
 
 func (e *DXEndpointHandle) Connect(address string) error {
@@ -274,6 +286,7 @@ func (e *DXEndpointHandle) GetFeed() (*DXFeedHandle, error) {
 			return checkStatus(thread, C.dxfg_v4_DXEndpoint_getFeed(thread.ptr, e.ptr(), &ptr))
 		})
 		e.feed = NewDXFeedHandle(ptr)
+		e.feedMade.Store(e.feed)
 	})
 
 	return e.feed, e.feedErr

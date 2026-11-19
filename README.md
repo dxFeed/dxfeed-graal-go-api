@@ -385,6 +385,8 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   is a simple demonstration of how to replay historical data with `OnDemandService`
 - [x] [CandleDataDownload](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/candle-data-download/main.go)
   is a simple demonstration of how to download candles with `HistoryEndpoint`
+- [x] [PrintLastEvents](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/print-last-events/main.go)
+  is a simple demonstration of how to request the last events and a time series with promises and wait for them
 - [ ] WriteTapeFile is a simple demonstration of how to write events to a tape file
 - [x] [DxFeedIpfConnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/feed-ipf-connect/main.go)
   is a simple demonstration of how to get Instrument Profiles and subscribe to their symbols

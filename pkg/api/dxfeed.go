@@ -54,8 +54,8 @@ func (f *DXFeed) GetLastEventIfSubscribed(eventType eventcodes.EventCode, symbol
 // it is not a consistent snapshot. It reads the local cache of the feed.
 func (f *DXFeed) GetIndexedEventsIfSubscribed(eventType eventcodes.EventCode, symbol osub.Symbol,
 	source events.IndexedEventSourceInterface) ([]interface{}, error) {
-	if source == nil || isNilPointer(source) || source.Name() == nil {
-		return nil, errors.New("cannot get the indexed events: no source")
+	if !hasSource(source) {
+		return nil, errNoSource
 	}
 	return f.feed.GetIndexedEventsIfSubscribed(eventType.NativeCode(), symbol, *source.Name())
 }
@@ -68,6 +68,14 @@ func (f *DXFeed) GetIndexedEventsIfSubscribed(eventType eventcodes.EventCode, sy
 func (f *DXFeed) GetTimeSeriesIfSubscribed(eventType eventcodes.EventCode, symbol osub.Symbol, fromTime,
 	toTime int64) ([]interface{}, error) {
 	return f.feed.GetTimeSeriesIfSubscribed(eventType.NativeCode(), symbol, fromTime, toTime)
+}
+
+// errNoSource is returned for a request of indexed events without a source.
+var errNoSource = errors.New("dxfeed: no indexed event source")
+
+// hasSource reports whether the indexed event source is set and has a name.
+func hasSource(source events.IndexedEventSourceInterface) bool {
+	return source != nil && !isNilPointer(source) && source.Name() != nil
 }
 
 // isNilPointer reports whether the interface holds a nil pointer, such as a nil *order.Source.
