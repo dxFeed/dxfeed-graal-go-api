@@ -3,8 +3,8 @@
 
 package main
 
-// The help of the tools. A tool prints it when it gets fewer than three arguments. The arguments come first and the
-// options after them, since the value of an option is not told apart from an argument.
+// The help of the tools. A tool prints it when it gets fewer than three arguments or -h, --help or -help, and with an
+// error of its arguments. The options may stand anywhere; an option with a value takes the next argument.
 
 const addressArgument = `  <address>  The address to connect to: host:port, a dxLink URL or a tape file, such as demo.dxfeed.com:7300.
              To pass an authorization token, add it to the address: demo.dxfeed.com:7300[login=entitle:<token>].

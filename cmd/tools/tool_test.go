@@ -116,6 +116,7 @@ func TestToolArgumentErrors(t *testing.T) {
 		{"connect a Quote AAPL -p x", `connect: option --properties: "x" is not name=value`},
 		{"dump a Quote AAPL -t", "dump: option -t needs a value"},
 		{"dump a Quote AAPL extra", "dump: unexpected argument extra"},
+		{"dump a --quiet --bogus", "dump: unknown option --bogus"},
 		{"perftest a Quote AAPL -q", "perftest: unknown option -q"},
 		{"latencytest a TimeAndSale AAPL --ignore-exchanges", "latency test: option --ignore-exchanges needs a value"},
 	} {
@@ -135,9 +136,22 @@ func TestToolRunError(t *testing.T) {
 	if status != 1 {
 		t.Errorf("status %d, want 1:\n%s", status, out)
 	}
-	// The output starts with the log of the SDK.
-	if !strings.Contains(out, "\nError during connect: Connect to localhost:notaport: ") || !strings.HasSuffix(out, "\n") {
+	// The log of the SDK comes before the error.
+	lines := strings.Split(strings.TrimSuffix(out, "\n"), "\n")
+	if last := lines[len(lines)-1]; !strings.HasSuffix(out, "\n") ||
+		!strings.HasPrefix(last, "Error during connect: Connect to localhost:notaport: ") {
 		t.Errorf("output does not end with the error line:\n%s", out)
+	}
+}
+
+// TestToolHelp checks that -h, --help and -help after the name of a tool print its help to stdout with the status 0,
+// wherever they stand.
+func TestToolHelp(t *testing.T) {
+	for _, args := range []string{"connect -h", "dump a Quote AAPL --help", "perftest --bogus -help", "latencytest -h"} {
+		status, out := runTools(t, args)
+		if status != 0 || !strings.Contains(out, "\nUsage:\n  tools "+strings.Fields(args)[0]+" ") {
+			t.Errorf("tools %s: status %d, want 0 and the help:\n%s", args, status, out)
+		}
 	}
 }
 

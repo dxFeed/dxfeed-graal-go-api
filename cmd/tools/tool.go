@@ -28,10 +28,16 @@ type usageError struct{ err error }
 
 func (e usageError) Error() string { return e.err.Error() }
 
-// runTool parses the arguments of a tool and runs it. With fewer than three positional arguments it prints the help
-// to stdout and returns 0. A wrong argument prints the error and the help to stderr and returns 2, as the flag package
+// runTool parses the arguments of a tool and runs it. With -h, --help or -help, or with fewer than three positional
+// arguments, it prints the help to stdout and returns 0. A wrong argument prints the error and the help to stderr and returns 2, as the flag package
 // does; an error of the run is printed to stderr and returns 1.
 func runTool(name string, args []string, help string, accepted []option, run func(a toolArguments) error) int {
+	for _, arg := range args {
+		if arg == "-h" || arg == "--help" || arg == "-help" {
+			fmt.Print(help)
+			return 0
+		}
+	}
 	parsed, err := parseArguments(args, accepted...)
 	switch {
 	case err != nil:
