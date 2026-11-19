@@ -29,3 +29,12 @@ CI checks the fragments on every pull request:
 ```bash
 go run ./internal/cmd/release check
 ```
+
+CI also compares the exported API with the latest release tag ([gorelease](https://pkg.go.dev/golang.org/x/exp/cmd/gorelease)).
+An incompatible change, such as a removed or changed function, type, method or field, fails the check unless a
+fragment that the pull request adds or changes is marked `[BREAKING]`; the incompatible changes already on `main` do
+not count. On a clean working tree with the tags and `origin/main` fetched and cgo set up as for a build:
+
+```bash
+go run ./internal/cmd/release api
+```

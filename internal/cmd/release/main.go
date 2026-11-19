@@ -3,6 +3,7 @@
 // Run it from the repository root:
 //
 //	go run ./internal/cmd/release check
+//	go run ./internal/cmd/release api [v0.4.0]
 //	go run ./internal/cmd/release notes v0.4.0
 //	go run ./internal/cmd/release prepare v0.4.0 [--dry-run]
 package main
@@ -20,6 +21,9 @@ import (
 
 const usage = `usage:
   release check                      check release-notes/MDAPI-NNN.md fragments
+  release api [<version>]            compare the API with the latest release tag (before <version>) with gorelease;
+                                     an incompatible change needs a [BREAKING] fragment or, with <version>, a new
+                                     major version (minor for v0)
   release notes <version>            print the section of <version> from ReleaseNotes.md
   release prepare <version> [--dry-run]
                                      move the fragments into ReleaseNotes.md, commit and tag <version>`
@@ -53,6 +57,24 @@ func run(root string, args []string, out io.Writer) error {
 			return err
 		}
 		_, err = io.WriteString(out, section)
+		return err
+	case args[0] == "api" && len(args) <= 2:
+		version := ""
+		if len(args) == 2 {
+			version = args[1]
+		}
+		report, err := apiCheck(root, version, "origin/main", runGorelease)
+		_, _ = io.WriteString(out, report)
+		if path := os.Getenv("GITHUB_STEP_SUMMARY"); path != "" {
+			f, ferr := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+			if ferr != nil {
+				return errors.Join(err, ferr)
+			}
+			writeSummary(f, report, err)
+			if ferr := f.Close(); ferr != nil {
+				return errors.Join(err, ferr)
+			}
+		}
 		return err
 	case args[0] == "prepare" && len(args) == 2:
 		return prepare(root, args[1], false, out)

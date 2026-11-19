@@ -48,6 +48,15 @@ go test -race ./...
 
 `gofmt -l` must print nothing. The race detector also needs cgo, so it runs with the same compiler.
 
+CI also checks the API against the latest release tag with gorelease; an incompatible change needs a `[BREAKING]`
+release note fragment in the same pull request ([release-notes/README.md](release-notes/README.md)). gorelease
+compares the last commit and refuses a working tree with any change, untracked files included, so run it after a
+commit, with the tags and `origin/main` fetched (`git fetch --tags origin`):
+
+```bash
+go run ./internal/cmd/release api
+```
+
 The API calls only the current (`dxfg_v4`) SDK functions: a call of a deprecated one fails the build.
 
 `make build` builds the tools into `bin/` and copies the SDK library next to them, as the release archives have it
