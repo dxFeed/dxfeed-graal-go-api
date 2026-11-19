@@ -26,3 +26,6 @@ bin/
 
 # The cache of the on-demand data replay, written to the working directory
 mdrcache
+
+# The tape files that the file samples write to the working directory
+*.out.txt
