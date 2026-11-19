@@ -32,6 +32,16 @@ func build(t *testing.T, dir, name string) string {
 // run runs a program in dir and returns its standard output.
 func run(t *testing.T, dir, program string, args ...string) string {
 	t.Helper()
+	out, err := tryRun(dir, program, args...)
+	if err != nil {
+		t.Fatalf("%s %v: %v\n%s", filepath.Base(program), args, err, out)
+	}
+	return out
+}
+
+// tryRun runs a program in dir for at most a minute and returns its standard output, or, if it fails, its standard
+// output and standard error.
+func tryRun(dir, program string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, program, args...)
@@ -39,9 +49,9 @@ func run(t *testing.T, dir, program string, args ...string) string {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("%s %v: %v\nstdout:\n%s\nstderr:\n%s", filepath.Base(program), args, err, &stdout, &stderr)
+		return "stdout:\n" + stdout.String() + "\nstderr:\n" + stderr.String(), err
 	}
-	return stdout.String()
+	return stdout.String(), nil
 }
 
 // lines returns the lines of the output that contain s.
@@ -101,29 +111,44 @@ func TestPublishAndRequestProfile(t *testing.T) {
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
-		_ = server.Process.Kill()
+	exited := make(chan struct{})
+	go func() {
 		_ = server.Wait()
+		close(exited)
 	}()
-	// Wait until the server listens, so that the client does not wait for a reconnect.
+	// stop stops the server and returns its output, which is complete only after Wait.
+	stop := func() string {
+		_ = server.Process.Kill()
+		<-exited
+		return serverOut.String()
+	}
+	defer stop()
+
+	// Wait until the server listens, so that the client does not wait for a reconnect. The port is in the ephemeral
+	// range, so on Linux a dial to it may connect to itself while nothing listens: such a connection does not count.
 	deadline := time.Now().Add(30 * time.Second)
 	for {
 		conn, err := net.DialTimeout("tcp", "127.0.0.1:"+port, time.Second)
 		if err == nil {
+			self := conn.LocalAddr().String() == conn.RemoteAddr().String()
 			_ = conn.Close()
-			break
+			if !self {
+				break
+			}
+		}
+		select {
+		case <-exited:
+			t.Fatalf("publish-profiles exited:\n%s", stop())
+		default:
 		}
 		if time.Now().After(deadline) {
-			// Stop the server first: its output is complete only after Wait.
-			_ = server.Process.Kill()
-			_ = server.Wait()
-			t.Fatalf("publish-profiles does not listen on %s: %v\n%s", port, err, &serverOut)
+			t.Fatalf("publish-profiles does not listen on %s: %v\n%s", port, err, stop())
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	out := run(t, dir, requester, "-address", "127.0.0.1:"+port, "-symbol", "A:TEST", "-timeout", "20s")
-	if !strings.Contains(out, "A:TEST") || !strings.Contains(out, "Test symbol") {
-		t.Errorf("request-profile printed:\n%s", out)
+	out, err := tryRun(dir, requester, "-address", "127.0.0.1:"+port, "-symbol", "A:TEST", "-timeout", "20s")
+	if err != nil || !strings.Contains(out, "A:TEST") || !strings.Contains(out, "Test symbol") {
+		t.Errorf("request-profile: %v\n%s\npublish-profiles:\n%s", err, out, stop())
 	}
 }
