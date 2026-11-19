@@ -5,8 +5,8 @@
 // # Installation
 //
 // The module links the native library of the SDK with cgo, so a program needs a C compiler and the library: install
-// it with the install-sdk command of the module and set CGO_LDFLAGS and the library path it prints. The README of the
-// module describes the steps for Windows, Linux and macOS.
+// it with the install-sdk command of the module and set CGO_LDFLAGS and the library path it prints. The guide
+// docs/quick-start.md of the module describes the steps for Windows, Linux and macOS.
 //
 // # A minimal program
 //

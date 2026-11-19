@@ -5,9 +5,9 @@ systems; [troubleshooting.md](troubleshooting.md) helps when a step fails.
 
 ## Install
 
-The API is a cgo package: it needs a C compiler (see [Requirements](../README.md#requirements)) and the dxFeed Graal Native SDK
-library, which an installer command downloads into your user cache directory. No `sudo` is needed, and nothing is
-written into the Go module cache.
+The API is a cgo package: it needs a C compiler (see [Requirements](../README.md#requirements)) and the dxFeed Graal
+Native SDK library, which an installer command downloads into your user cache directory. No `sudo` is needed, and
+nothing is written into the Go module cache.
 
 1. Add the module to your project:
 
@@ -61,7 +61,7 @@ return an error naming the needed version.
 ### Windows: the C compiler
 
 cgo on Windows needs the 64-bit GCC of [MSYS2](https://www.msys2.org/) (`mingw-w64-x86_64-gcc`) with
-`C:\msys64\mingw64in` in `PATH`; a 32-bit GCC found earlier in `PATH` fails the build. The steps are in
+`C:\msys64\mingw64\bin` in `PATH`; a 32-bit GCC found earlier in `PATH` fails the build. The steps are in
 [HOW_TO_DEVELOP.md](../HOW_TO_DEVELOP.md#windows).
 
 ## A first program

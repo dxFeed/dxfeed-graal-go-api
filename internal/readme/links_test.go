@@ -2,9 +2,11 @@ package readme
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 	"unicode"
@@ -14,11 +16,13 @@ import (
 var repoBlob = regexp.MustCompile(`^https://github\.com/dxFeed/dxfeed-graal-go-api/(?:blob|tree)/main/`)
 
 var (
-	inlineLink    = regexp.MustCompile(`!?\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)`)
+	inlineLink    = regexp.MustCompile(`!?\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+(?:"[^"]*"|'[^']*'))?\s*\)`)
+	htmlLink      = regexp.MustCompile(`\b(?:src|href)="([^"]+)"`)
 	referenceLink = regexp.MustCompile(`(?m)^\s{0,3}\[[^\]]+\]:\s*<?(\S+?)>?(?:\s+.*)?$`)
 	inlineCode    = regexp.MustCompile("`[^`]*`")
 	heading       = regexp.MustCompile(`^#{1,6}\s+(.*?)\s*#*\s*$`)
-	htmlAnchor    = regexp.MustCompile(`<a\s+(?:name|id)="([^"]+)"`)
+	htmlAnchor    = regexp.MustCompile(`<a\s+(?:name|id)=["']([^"']+)["']`)
+	lineAnchor    = regexp.MustCompile(`^L\d+(?:-L\d+)?$`)
 )
 
 // markdownFiles returns the Markdown files whose links are checked: those of the repository root and of docs. The
@@ -110,6 +114,9 @@ func links(text string) map[int][]string {
 		for _, m := range inlineLink.FindAllStringSubmatch(line, -1) {
 			result[i+1] = append(result[i+1], m[1])
 		}
+		for _, m := range htmlLink.FindAllStringSubmatch(line, -1) {
+			result[i+1] = append(result[i+1], m[1])
+		}
 		if m := referenceLink.FindStringSubmatch(line); m != nil {
 			result[i+1] = append(result[i+1], m[1])
 		}
@@ -136,34 +143,60 @@ func TestMarkdownLinks(t *testing.T) {
 
 	for _, file := range markdownFiles(t) {
 		name, _ := filepath.Rel(root, mustAbs(t, file))
-		for line, targets := range links(readNormalized(t, file)) {
-			for _, target := range targets {
+		fileLinks := links(readNormalized(t, file))
+		lines := make([]int, 0, len(fileLinks))
+		for line := range fileLinks {
+			lines = append(lines, line)
+		}
+		sort.Ints(lines)
+		for _, line := range lines {
+			for _, target := range fileLinks[line] {
+				if strings.Contains(target, "://") && !repoBlob.MatchString(target) ||
+					strings.HasPrefix(target, "mailto:") {
+					continue
+				}
+				// The fragment and the query are cut from the target, not from the joined path, which may hold
+				// '#' or '?' itself.
+				rel, anchor, _ := strings.Cut(target, "#")
+				rel, _, _ = strings.Cut(rel, "?")
+				if decoded, err := url.PathUnescape(rel); err == nil {
+					rel = decoded
+				}
 				var path string
 				switch {
-				case repoBlob.MatchString(target):
-					path = filepath.Join(root, filepath.FromSlash(repoBlob.ReplaceAllString(target, "")))
-				case strings.Contains(target, "://") || strings.HasPrefix(target, "mailto:"):
-					continue
-				case strings.HasPrefix(target, "#"):
+				case repoBlob.MatchString(rel):
+					path = filepath.Join(root, filepath.FromSlash(repoBlob.ReplaceAllString(rel, "")))
+				case rel == "":
 					path = mustAbs(t, file)
+				case strings.HasPrefix(rel, "/"):
+					path = filepath.Join(root, filepath.FromSlash(rel))
 				default:
-					path = filepath.Join(filepath.Dir(mustAbs(t, file)), filepath.FromSlash(target))
+					path = filepath.Join(filepath.Dir(mustAbs(t, file)), filepath.FromSlash(rel))
 				}
-				path, anchor, _ := strings.Cut(path, "#")
-				if strings.HasPrefix(target, "#") {
-					anchor = target[1:]
-				}
-				path, _, _ = strings.Cut(path, "?")
 				info, err := os.Stat(path)
 				if err != nil {
 					t.Errorf("%s:%d: link %q: no such file or directory", name, line, target)
 					continue
 				}
-				if anchor == "" || info.IsDir() || !strings.HasSuffix(path, ".md") {
+				if anchor == "" || info.IsDir() || !strings.HasSuffix(path, ".md") || lineAnchor.MatchString(anchor) {
 					continue
 				}
 				if !anchorsOf(path)[anchor] {
 					t.Errorf("%s:%d: link %q: no heading with the anchor #%s", name, line, target, anchor)
+				}
+			}
+		}
+	}
+}
+
+// TestMarkdownControlCharacters finds control characters in the Markdown files, such as a backspace that a script
+// wrote for the "\b" of a Windows path.
+func TestMarkdownControlCharacters(t *testing.T) {
+	for _, file := range markdownFiles(t) {
+		for i, line := range strings.Split(readNormalized(t, file), "\n") {
+			for _, r := range line {
+				if r < 0x20 && r != '\t' {
+					t.Errorf("%s:%d: control character %U", strings.TrimPrefix(filepath.ToSlash(file), "../../"), i+1, r)
 				}
 			}
 		}

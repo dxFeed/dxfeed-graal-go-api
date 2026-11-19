@@ -24,14 +24,15 @@ An authorization token goes into the address in brackets: `host:port[login=entit
 ```text
 endpoint, err := api.NewEndpointBuilder().
 	WithRole(api.Feed).
-	WithProperty("dxfeed.aggregationPeriod", "1s").
 	WithPropertiesFile("dxfeed.properties").
+	WithProperty("dxfeed.aggregationPeriod", "1s").
 	Build()
 ```
 
-`WithPropertiesFile` reads a file in the format of Java properties files; `WithProperty` wins over the same property of
-the file. `Build` connects the endpoint at once if `dxfeed.address` (for a feed) or `dxpublisher.address` (for a
-publisher) is set. `SupportsProperty` tells whether the builder knows a property.
+`WithPropertiesFile` reads a file in the format of Java properties files. The settings apply in the order of the calls,
+so a later one wins over an earlier one with the same key: here the period of the example wins over the file.
+`Build` connects the endpoint at once if `dxfeed.address` (for a feed) or `dxpublisher.address` (for a publisher) is
+set. `SupportsProperty` tells whether the builder knows a property.
 
 ## System properties
 

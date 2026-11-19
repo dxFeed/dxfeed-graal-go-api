@@ -27,8 +27,8 @@ the checksums of its archives is pinned in [internal/sdk/sdk.go](internal/sdk/sd
 [cmd/install-sdk](cmd/install-sdk/main.go) downloads the library of that version for the current OS and architecture
 into the user cache directory and prints the settings: `CGO_LDFLAGS` with the directory of the library and, on
 Windows, the `PATH` entry. Set them in the shell or in the run and test configurations of your IDE, as
-[README.md](README.md#installation) describes. Run the command again after the SDK version changes; each version has
-its own directory.
+[docs/quick-start.md](docs/quick-start.md#install) describes. Run the command again after the SDK version changes;
+each version has its own directory.
 ## Build and test
 
 ```bash
