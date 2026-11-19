@@ -9,13 +9,13 @@ type AdditionalUnderlyings struct {
 }
 
 // ParseAdditionalUnderlyings parses the text of additional underlyings, as in the ADDITIONAL_UNDERLYINGS field of a
-// profile.
+// profile. The text is normalized, so equal underlyings are equal values whatever the order and spacing of the text.
 func ParseAdditionalUnderlyings(text string) (AdditionalUnderlyings, error) {
-	normalized, err := native.NormalizeAdditionalUnderlyings(text)
+	spcs, err := native.AdditionalUnderlyingsMap(text)
 	if err != nil {
 		return AdditionalUnderlyings{}, err
 	}
-	return AdditionalUnderlyings{normalized}, nil
+	return AdditionalUnderlyingsOf(spcs)
 }
 
 // AdditionalUnderlyingsOf returns the additional underlyings of a map from a symbol to its SPC.

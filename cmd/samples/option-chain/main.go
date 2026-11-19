@@ -46,7 +46,7 @@ func run(address, symbol string, nStrikes, nSeries int, price float64) error {
 	}
 	allSeries := chain.Series()
 	fmt.Printf("%s: %d series\n", symbol, len(allSeries))
-	for _, s := range allSeries[:min(nSeries, len(allSeries))] {
+	for _, s := range allSeries[:max(0, min(nSeries, len(allSeries)))] {
 		fmt.Printf("\n%s\n", s)
 		around := price
 		if around == 0 {

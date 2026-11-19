@@ -42,21 +42,6 @@ func priceIncrementsText(thread *isolateThread, h *C.dxfg_v4_price_increments_t)
 	return goStringAndRelease(thread, text), nil
 }
 
-// NormalizePriceIncrements parses price increments and returns their text.
-func NormalizePriceIncrements(text string) (string, error) {
-	if err := checkNoNul(text); err != nil {
-		return "", err
-	}
-	var result string
-	err := executeInIsolateThread(func(thread *isolateThread) error {
-		return withPriceIncrements(thread, text, func(h *C.dxfg_v4_price_increments_t) (err error) {
-			result, err = priceIncrementsText(thread, h)
-			return err
-		})
-	})
-	return result, err
-}
-
 // PriceIncrementsFromValues returns the text of the price increments in the internal representation: an increment,
 // or increments alternating with the price limits.
 func PriceIncrementsFromValues(values []float64) (string, error) {
@@ -358,21 +343,6 @@ func additionalUnderlyingsText(thread *isolateThread, h *C.dxfg_v4_additional_un
 	return goStringAndRelease(thread, text), nil
 }
 
-// NormalizeAdditionalUnderlyings parses additional underlyings and returns their text.
-func NormalizeAdditionalUnderlyings(text string) (string, error) {
-	if err := checkNoNul(text); err != nil {
-		return "", err
-	}
-	var result string
-	err := executeInIsolateThread(func(thread *isolateThread) error {
-		return withAdditionalUnderlyings(thread, text, func(h *C.dxfg_v4_additional_underlyings_t) (err error) {
-			result, err = additionalUnderlyingsText(thread, h)
-			return err
-		})
-	})
-	return result, err
-}
-
 // AdditionalUnderlyingsFromMap returns the text of the additional underlyings of a map from a symbol to its SPC.
 func AdditionalUnderlyingsFromMap(m map[string]float64) (string, error) {
 	keys := make([]string, 0, len(m))
@@ -439,7 +409,10 @@ func AdditionalUnderlyingsMap(text string) (map[string]float64, error) {
 			return nil
 		})
 	})
-	return result, err
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // AdditionalUnderlyingsSPC returns the SPC of a symbol in the additional underlyings, or 0.

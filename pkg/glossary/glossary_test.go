@@ -164,6 +164,15 @@ func TestPriceIncrements(t *testing.T) {
 	if got := ok(whole.RoundPriceWithMode(2, RoundingUnnecessary)); got != 2 {
 		t.Errorf("RoundingUnnecessary of a valid price = %v", got)
 	}
+	if spaced := ok(ParsePriceIncrements("0.00010 1.0; 0.010")); spaced != tiered {
+		t.Errorf("spaced text = %q", spaced.Text())
+	}
+	if _, err := whole.RoundPriceWithMode(2.5, RoundingMode(99)); err == nil {
+		t.Error("an unknown rounding mode did not fail")
+	}
+	if _, err := whole.IncrementPrice(2, 0); err == nil {
+		t.Error("IncrementPrice with direction 0 did not fail")
+	}
 	if _, err := ParsePriceIncrements("bad"); err == nil {
 		t.Error("an invalid text did not fail")
 	}
@@ -204,6 +213,9 @@ func TestAdditionalUnderlyings(t *testing.T) {
 	}
 	if got := ok(ParseAdditionalUnderlyings("")); got != empty {
 		t.Error("an empty text is not empty")
+	}
+	if reordered := ok(ParseAdditionalUnderlyings("US$ 45.460; FIS 53.0")); reordered != fromText {
+		t.Errorf("reordered text = %q", reordered.Text())
 	}
 	if _, err := ParseAdditionalUnderlyings("FIS x"); err == nil {
 		t.Error("an invalid text did not fail")

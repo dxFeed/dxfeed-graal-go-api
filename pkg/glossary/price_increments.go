@@ -1,6 +1,10 @@
 package glossary
 
-import "github.com/dxfeed/dxfeed-graal-go-api/internal/native"
+import (
+	"fmt"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
+)
 
 // RoundingMode is the way of rounding a price that is between two valid prices.
 type RoundingMode int32
@@ -32,13 +36,14 @@ type PriceIncrements struct {
 	text string
 }
 
-// ParsePriceIncrements parses the text of price increments, as in the PRICE_INCREMENTS field of a profile.
+// ParsePriceIncrements parses the text of price increments, as in the PRICE_INCREMENTS field of a profile. The text is
+// normalized, so equal increments are equal values whatever the spacing of the text.
 func ParsePriceIncrements(text string) (PriceIncrements, error) {
-	normalized, err := native.NormalizePriceIncrements(text)
+	values, err := native.PriceIncrementsValues(text)
 	if err != nil {
 		return PriceIncrements{}, err
 	}
-	return PriceIncrements{normalized}, nil
+	return PriceIncrementsOf(values...)
 }
 
 // PriceIncrementsOf returns the price increments of their internal representation: an increment, or increments
@@ -107,17 +112,21 @@ func (p PriceIncrements) RoundPriceWithDirection(price float64, direction int) (
 // RoundPriceWithMode rounds a price to a valid price in the rounding mode; RoundingUnnecessary fails for a price that
 // is not valid.
 func (p PriceIncrements) RoundPriceWithMode(price float64, mode RoundingMode) (float64, error) {
+	if mode < RoundingUp || mode > RoundingUnnecessary {
+		return 0, fmt.Errorf("glossary: unknown rounding mode %d", mode)
+	}
 	return p.call(native.RoundPriceWithMode, native.PriceIncrementsArgs{Price: price, RoundingMode: int32(mode)})
 }
 
 // IncrementPrice returns the next valid price up for a positive direction or down for a negative one; the price is
-// rounded in that direction first.
+// rounded in that direction first. A direction of 0 is an error.
 func (p PriceIncrements) IncrementPrice(price float64, direction int) (float64, error) {
 	return p.call(native.IncrementPrice, native.PriceIncrementsArgs{Price: price, Direction: sign(direction)})
 }
 
 // IncrementPriceWithStep moves a price by a step up for a positive direction or down for a negative one, and rounds
-// the result to a valid price in that direction; a step of 0 moves by the price increment.
+// the result to a valid price in that direction; a step of 0 moves by the price increment. A direction of 0 and a
+// negative or NaN step are errors.
 func (p PriceIncrements) IncrementPriceWithStep(price float64, direction int, step float64) (float64, error) {
 	return p.call(native.IncrementPriceWithStep,
 		native.PriceIncrementsArgs{Price: price, Direction: sign(direction), Step: step})

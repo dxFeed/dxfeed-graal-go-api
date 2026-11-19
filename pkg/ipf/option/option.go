@@ -4,9 +4,14 @@
 //	reader, _ := ipf.NewInstrumentProfileReader()
 //	profiles, _ := reader.ReadFromFile(address)
 //	chains := option.BuildChains(profiles)
-//	for _, series := range chains["AAPL"].Series() {
-//		fmt.Println(series, series.Strikes())
+//	if chain := chains["AAPL"]; chain != nil {
+//		for _, series := range chain.Series() {
+//			fmt.Println(series, series.Strikes())
+//		}
 //	}
+//
+// The chains and series are not safe for concurrent use while a builder adds profiles to them; reading them from
+// several goroutines is safe only after the strikes of each series were read once (they are computed lazily).
 package option
 
 import (
@@ -25,7 +30,7 @@ import (
 // seriesKey are the attributes that tell the series apart; it is comparable, so it keys the series of a chain.
 type seriesKey struct {
 	expiration, lastTrade int64
-	multiplier, spc       uint64 // math.Float64bits of normalizeFloat, so that NaN equals NaN
+	multiplier, spc       uint64 // math.Float64bits of canonicalNaN, so that NaN equals NaN as in Java
 	additionalUnderlyings string
 	mmy, optionType       string
 	expirationStyle       string
@@ -33,23 +38,32 @@ type seriesKey struct {
 	cfi                   string
 }
 
-// normalizeFloat makes the numbers that the series treat as equal equal for ==: -0 and 0, and all NaNs.
-func normalizeFloat(v float64) float64 {
-	switch {
-	case v == 0:
-		return 0
-	case math.IsNaN(v):
+// canonicalNaN replaces any NaN with one NaN. As in Java, -0 and 0 stay different: the series of a -0 multiplier
+// is not the series of a 0 multiplier.
+func canonicalNaN(v float64) float64 {
+	if math.IsNaN(v) {
 		return math.NaN()
 	}
 	return v
+}
+
+// compareDoubles orders numbers as Java Double.compare does: -0 before 0, NaN after +Inf.
+func compareDoubles(a, b float64) int {
+	switch {
+	case a < b:
+		return -1
+	case a > b:
+		return 1
+	}
+	return cmp.Compare(int64(math.Float64bits(canonicalNaN(a))), int64(math.Float64bits(canonicalNaN(b))))
 }
 
 func compareKeys(a, b seriesKey) int {
 	return firstNonZero(
 		cmp.Compare(a.expiration, b.expiration),
 		cmp.Compare(a.lastTrade, b.lastTrade),
-		cmp.Compare(math.Float64frombits(a.multiplier), math.Float64frombits(b.multiplier)),
-		cmp.Compare(math.Float64frombits(a.spc), math.Float64frombits(b.spc)),
+		compareDoubles(math.Float64frombits(a.multiplier), math.Float64frombits(b.multiplier)),
+		compareDoubles(math.Float64frombits(a.spc), math.Float64frombits(b.spc)),
 		strings.Compare(a.additionalUnderlyings, b.additionalUnderlyings),
 		strings.Compare(a.mmy, b.mmy),
 		strings.Compare(a.optionType, b.optionType),
@@ -274,8 +288,8 @@ func (b *OptionChainsBuilder) Add(profile *events.InstrumentProfile) {
 	key := seriesKey{
 		expiration:            profile.Expiration(),
 		lastTrade:             profile.LastTrade(),
-		multiplier:            math.Float64bits(normalizeFloat(profile.Multiplier())),
-		spc:                   math.Float64bits(normalizeFloat(profile.Spc())),
+		multiplier:            math.Float64bits(canonicalNaN(profile.Multiplier())),
+		spc:                   math.Float64bits(canonicalNaN(profile.Spc())),
 		additionalUnderlyings: value(profile.AdditionalUnderlyings()),
 		mmy:                   value(profile.Mmy()),
 		optionType:            value(profile.OptionType()),
@@ -283,7 +297,6 @@ func (b *OptionChainsBuilder) Add(profile *events.InstrumentProfile) {
 		settlementStyle:       value(profile.SettlementStyle()),
 		cfi:                   cfi[:1] + "X" + cfi[2:],
 	}
-	strike = normalizeFloat(strike)
 	for _, symbol := range []string{value(profile.Product()), value(profile.Underlying())} {
 		if symbol != "" {
 			b.chain(symbol).add(key, isCall, strike, profile)

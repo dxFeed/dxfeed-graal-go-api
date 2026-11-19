@@ -3,6 +3,7 @@ package option
 import (
 	"math"
 	"slices"
+	"strconv"
 	"testing"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
@@ -186,5 +187,23 @@ func TestSeriesOrder(t *testing.T) {
 	// By expiration, then by last trading day (none first), then by MMY.
 	if want := []string{"a", "b", "d", "c"}; !slices.Equal(got, want) {
 		t.Errorf("order = %v, want %v", got, want)
+	}
+}
+
+func TestSeriesMultiplierOrder(t *testing.T) {
+	// As in Java Double.compare: -0 before 0, NaN after +Inf; -0 and 0 are different series, all NaNs one series.
+	b := NewOptionChainsBuilder()
+	for i, m := range []float64{math.NaN(), math.Inf(1), 0, math.Copysign(0, -1), 100, math.NaN()} {
+		p := option(t, map[string]string{"SYMBOL": string(rune('a' + i)), "UNDERLYING": "U",
+			"STRIKE": strconv.Itoa(i)})
+		p.SetMultiplier(m)
+		b.Add(p)
+	}
+	var got []string
+	for _, s := range b.Chains()["U"].Series() {
+		got = append(got, strconv.FormatFloat(s.Multiplier(), 'g', -1, 64)+":"+strconv.Itoa(len(s.Calls())))
+	}
+	if want := []string{"-0:1", "0:1", "100:1", "+Inf:1", "NaN:2"}; !slices.Equal(got, want) {
+		t.Errorf("series = %v, want %v", got, want)
 	}
 }
