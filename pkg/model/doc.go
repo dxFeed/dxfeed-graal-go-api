@@ -24,4 +24,18 @@
 //			...
 //		}).
 //		Build()
+//
+// MarketDepthModel keeps the order book of a symbol on top of IndexedTxModel and passes the best buy and sell orders,
+// up to a depth limit, to its listener:
+//
+//	m, err := model.NewMarketDepthModelBuilder[*order.Order]().
+//		WithFeed(feed).
+//		WithSymbol("AAPL").
+//		WithSources(ntv).
+//		WithDepthLimit(10).
+//		WithAggregationPeriod(time.Second).
+//		WithListener(func(buy, sell []*order.Order) {
+//			...
+//		}).
+//		Build()
 package model
