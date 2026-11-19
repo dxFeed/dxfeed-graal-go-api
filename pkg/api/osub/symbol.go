@@ -1,7 +1,7 @@
 package osub
 
-// Symbol is a subscription symbol. It is implemented only by the types of this package: String, *WildcardSymbol,
-// *TimeSeriesSubscriptionSymbol and *IndexedEventSubscriptionSymbol.
+// Symbol is a subscription symbol. It is implemented only by the types of this package: String, *CandleSymbol,
+// *WildcardSymbol, *TimeSeriesSubscriptionSymbol and *IndexedEventSubscriptionSymbol.
 type Symbol interface {
 	isSymbol()
 }

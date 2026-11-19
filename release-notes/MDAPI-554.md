@@ -4,3 +4,5 @@
     normalized. `Symbol` and `SetSymbol` are deprecated.
   * The attributes: `candle.CandlePeriod` and `candle.CandleType`, `candle.CandlePrice`, `candle.CandleSession`,
     `candle.CandleAlignment`, `candle.CandleExchange`, `candle.CandlePriceLevel` and `candle.CandleDataType`.
+  * `osub.Candle` makes a `candle.CandleSymbol` a subscription symbol, also inside a `TimeSeriesSubscriptionSymbol`;
+    the new `print-candles` sample prints the candles of a candle symbol.

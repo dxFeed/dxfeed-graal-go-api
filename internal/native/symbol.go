@@ -11,11 +11,12 @@ import (
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 )
 
 // newCSymbol builds a subscription symbol in C memory, so the SDK never sees Go memory; free it with freeCSymbol.
-// It accepts a string, osub.String, *osub.WildcardSymbol, *osub.TimeSeriesSubscriptionSymbol and
-// *osub.IndexedEventSubscriptionSymbol; anything else is an error.
+// It accepts a string, osub.String, *osub.CandleSymbol, *candle.CandleSymbol, *osub.WildcardSymbol,
+// *osub.TimeSeriesSubscriptionSymbol and *osub.IndexedEventSubscriptionSymbol; anything else is an error.
 func newCSymbol(symbol any) (*C.dxfg_v4_symbol_t, error) {
 	switch value := symbol.(type) {
 	case osub.String:
@@ -24,6 +25,19 @@ func newCSymbol(symbol any) (*C.dxfg_v4_symbol_t, error) {
 		s := (*C.dxfg_v4_string_symbol_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_v4_string_symbol_t{}))))
 		s.supper._type = C.STRING
 		s.symbol = C.CString(value)
+		return &s.supper, nil
+	case *osub.CandleSymbol:
+		if value == nil {
+			return nil, fmt.Errorf("nil %T symbol", symbol)
+		}
+		return newCSymbol(value.CandleSymbol())
+	case *candle.CandleSymbol:
+		if value == nil {
+			return nil, fmt.Errorf("nil %T symbol", symbol)
+		}
+		s := (*C.dxfg_candle_symbol_t)(C.calloc(1, C.size_t(unsafe.Sizeof(C.dxfg_candle_symbol_t{}))))
+		s.supper._type = C.CANDLE
+		s.symbol = C.CString(value.String())
 		return &s.supper, nil
 	case *osub.WildcardSymbol:
 		if value == nil {
@@ -110,6 +124,8 @@ func freeCSymbol(s *C.dxfg_v4_symbol_t) {
 	switch s._type {
 	case C.STRING:
 		C.free(unsafe.Pointer((*C.dxfg_v4_string_symbol_t)(unsafe.Pointer(s)).symbol))
+	case C.CANDLE:
+		C.free(unsafe.Pointer((*C.dxfg_candle_symbol_t)(unsafe.Pointer(s)).symbol))
 	case C.TIME_SERIES_SUBSCRIPTION:
 		freeCSymbol((*C.dxfg_v4_time_series_subscription_symbol_t)(unsafe.Pointer(s)).symbol)
 	case C.INDEXED_EVENT_SUBSCRIPTION:

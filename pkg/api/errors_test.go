@@ -60,7 +60,8 @@ func TestSubscriptionSymbolKinds(t *testing.T) {
 		t.Error("RemoveSymbols of a time series symbol of an int returned no error")
 	}
 	for _, symbol := range []osub.Symbol{(*osub.WildcardSymbol)(nil), (*osub.TimeSeriesSubscriptionSymbol)(nil),
-		(*osub.IndexedEventSubscriptionSymbol)(nil), osub.NewIndexedEventSubscriptionSymbol("AAPL", nil)} {
+		(*osub.IndexedEventSubscriptionSymbol)(nil), osub.NewIndexedEventSubscriptionSymbol("AAPL", nil),
+		(*osub.CandleSymbol)(nil), osub.Candle(nil)} {
 		if err := sub.AddSymbol(symbol); err == nil {
 			t.Errorf("AddSymbol(%#v) returned no error", symbol)
 		}
