@@ -3,7 +3,7 @@
 The API is a cgo wrapper over the [Graal Native SDK](https://github.com/dxFeed/dxfeed-graal-native-sdk), a C library.
 Building it needs Go, a C compiler and the SDK library, which an installer command downloads into the user cache.
 
-Supported platforms: Windows x64, Linux x64 and arm64, macOS arm64 and x64.
+Supported platforms: Windows x64, Linux x64 and arm64, macOS arm64 and x64 (CI does not run on macOS x64).
 
 ## Prerequisites
 

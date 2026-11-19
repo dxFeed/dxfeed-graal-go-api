@@ -21,7 +21,6 @@ and [dxFeed Java API](https://docs.dxfeed.com/dxfeed/api/overview-summary.html) 
 ## Table of Contents
 
 - [Overview](#overview)
-    * [Milestones](#milestones)
     * [Future Development](#future-development)
     * [Implementation Details](#implementation-details)
 - [Documentation](#documentation)
@@ -40,23 +39,20 @@ and [dxFeed Java API](https://docs.dxfeed.com/dxfeed/api/overview-summary.html) 
 dxFeed Graal Go API allows developers to create efficient applications in Go language. This enables developers to
 leverage all the benefits of native app development, resulting in maximum performance and usability for end users.
 
-### Milestones
-
-We are working diligently to ensure that this new repository meets all of our standards for performance, security, and
-scalability. We will be providing regular updates throughout the development process.
-
 If you have a question about the API or found a bug, please open an
 [issue](https://github.com/dxFeed/dxfeed-graal-go-api/issues). Questions about dxFeed data, subscriptions or accounts go
 to your dxFeed support contact.
 
 ### Future Development
 
-Features planned with **high priority**:
+What is left:
 
-* simpler delivery of the native library to applications
-* all market events of the Graal Native SDK
-* more tools and samples, on par with the dxFeed C++ API
+* the tools of the dxFeed C++ API that the Go API does not have yet (Diagnose, Qds, NetTest), after the Graal Native
+  SDK 3.18 release
+* a prototype without cgo (purego), so that a build needs no C compiler
+* version 1.0.0 with a stable API
 
+The plans and the open tasks are in the [issues](https://github.com/dxFeed/dxfeed-graal-go-api/issues).
 ---
 
 ### Implementation Details
@@ -208,6 +204,7 @@ Only x64 versions are supported.
 #### Requirements
 
 * 64-bit [MinGW-w64][mingw] GCC (cgo does not work with MSVC), see [HOW_TO_DEVELOP.md](HOW_TO_DEVELOP.md#windows)
+* the Visual C++ Redistributable (`VCRUNTIME140.dll`) that the SDK library needs
 
 [Windows-client]: https://www.microsoft.com/windows/
 
@@ -229,7 +226,7 @@ x64 and arm64 (aarch64) are supported.
 
 #### Libc compatibility
 
-- [glibc][glibc]: 2.35+ (from Ubuntu 22.04)
+- [glibc][glibc]: 2.17+ (the requirement of the SDK; CI runs on Ubuntu 24.04)
 - [musl][musl]: temporarily unsupported
 
 [glibc]: https://www.gnu.org/software/libc/
@@ -243,7 +240,7 @@ x64 and arm64 (aarch64) are supported.
 | [macOS][macOS] | 11+     | x64           |
 | [macOS][macOS] | 14+     | Arm64         |
 
-Is supported in the Rosetta 2 x64 emulator.
+macOS x64 is supported by the SDK and by `install-sdk`, but this repository's CI does not run on it.
 
 [macOS]: https://support.apple.com/macos
 
@@ -280,18 +277,7 @@ the [quick-start](cmd/samples/quick-start/main.go) sample; run it from a clone o
 <br>
 
 ```
-I 231130 124734.411 [main] QD - Using QDS-3.325+file-UNKNOWN, (C) Devexperts
-I 231130 124734.415 [main] QD - Using scheme com.dxfeed.api.impl.DXFeedScheme slfwemJduh1J7ibvy9oo8DABTNhNALFQfw0KmE40CMI
-I 231130 124734.418 [main] MARS - Started time synchronization tracker using multicast 239.192.51.45:5145 with dPyAu
-I 231130 124734.422 [main] MARS - Started JVM self-monitoring
-I 231130 124734.423 [main] QD - monitoring with collectors [Ticker, Stream, History]
-I 231130 124734.424 [main] QD - monitoring DXEndpoint with dxfeed.address=demo.dxfeed.com:7300
-I 231130 124734.425 [main] ClientSocket-Distributor - Starting ClientSocketConnector to demo.dxfeed.com:7300
-I 231130 124734.425 [demo.dxfeed.com:7300-Reader] ClientSocketConnector - Resolving IPs for demo.dxfeed.com
-I 231130 124734.427 [demo.dxfeed.com:7300-Reader] ClientSocketConnector - Connecting to 208.93.103.170:7300
-I 231130 124734.530 [demo.dxfeed.com:7300-Reader] ClientSocketConnector - Connected to 208.93.103.170:7300
-D 231130 124734.634 [demo.dxfeed.com:7300-Reader] QD - Distributor received protocol descriptor multiplexor@fFLro [type=qtp, version=QDS-3.319, opt=hs, mars.root=mdd.demo-amazon.multiplexor-demo1] sending [TICKER, STREAM, HISTORY, DATA] from 208.93.103.170
-Quote{AAPL, eventTime=0, time=20231130-123206.000, timeNanoPart=0, sequence=0, bidTime=20231130-123206.000, bidExchange=P, bidPrice=189.36, bidSize=3.0, askTime=20231130-123129.000, askExchange=P, askPrice=189.53, askSize=10.0}
+Quote{AAPL, eventTime=0, time=..., bidTime=..., bidExchange=P, bidPrice=..., bidSize=..., askTime=..., askExchange=P, askPrice=..., askSize=...}
 ```
 
 </details>
@@ -315,21 +301,7 @@ The [print-quote-events](cmd/samples/print-quote-events/main.go) sample does thi
 <br>
 
 ```
-I 231130 124929.817 [main] QD - Using QDS-3.325+file-UNKNOWN, (C) Devexperts
-I 231130 124929.821 [main] QD - Using scheme com.dxfeed.api.impl.DXFeedScheme slfwemJduh1J7ibvy9oo8DABTNhNALFQfw0KmE40CMI
-I 231130 124929.824 [main] MARS - Started time synchronization tracker using multicast 239.192.51.45:5145 with sWipb
-I 231130 124929.828 [main] MARS - Started JVM self-monitoring
-I 231130 124929.828 [main] QD - monitoring with collectors [Ticker, Stream, History]
-I 231130 124929.829 [main] QD - monitoring DXEndpoint with dxfeed.address=dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws
-I 231130 124929.831 [main] DxLinkClientWebSocket-Distributor - Starting DxLinkClientWebSocketConnector to wss://demo.dxfeed.com/market-data/dxlink-ws
-SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
-SLF4J: Defaulting to no-operation (NOP) logger implementation
-SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
-I 231130 124929.831 [wss://demo.dxfeed.com/market-data/dxlink-ws-Writer] DxLinkClientWebSocket-Distributor - Connecting to wss://demo.dxfeed.com/market-data/dxlink-ws
-I 231130 124930.153 [wss://demo.dxfeed.com/market-data/dxlink-ws-Writer] DxLinkClientWebSocket-Distributor - Connected to wss://demo.dxfeed.com/market-data/dxlink-ws
-D 231130 124931.269 [oioEventLoopGroup-2-1] QD - Distributor received protocol descriptor [type=dxlink, version=0.1-0.18-20231017-133150, keepaliveTimeout=120, acceptKeepaliveTimeout=5] sending [] from wss://demo.dxfeed.com/market-data/dxlink-ws
-D 231130 124931.271 [oioEventLoopGroup-2-1] QD - Distributor received protocol descriptor [type=dxlink, version=0.1-0.18-20231017-133150, keepaliveTimeout=120, acceptKeepaliveTimeout=5, authentication=] sending [] from wss://demo.dxfeed.com/market-data/dxlink-ws
-Quote{AAPL, eventTime=0, time=20231130-123421.000, timeNanoPart=0, sequence=0, bidTime=20231130-123421.000, bidExchange=Q, bidPrice=189.47, bidSize=4.0, askTime=20231130-123421.000, askExchange=P, askPrice=189.53, askSize=10.0}
+Quote{AAPL, eventTime=0, time=..., bidTime=..., bidExchange=P, bidPrice=..., bidSize=..., askTime=..., askExchange=P, askPrice=..., askSize=...}
 ```
 
 </details>
@@ -338,22 +310,20 @@ To familiarize with the dxLink protocol, please click [here](https://demo.dxfeed
 
 ## Tools
 
-[Tools](https://github.com/dxFeed/dxfeed-graal-go-api/)
-is a collection of utilities that allow you to subscribe to various market events for the specified symbols. The tools
-can
-be
-downloaded
-from [Release](https://github.com/dxFeed/dxfeed-graal-go-api/releases)
+[cmd/tools](cmd/tools) holds command-line tools that subscribe to market events of the specified symbols and measure
+the feed. Each release has them built as archives on the
+[releases page](https://github.com/dxFeed/dxfeed-graal-go-api/releases): `tools-win-x64-<version>.zip`,
+`tools-linux-x64-<version>.zip`, `tools-linux-aarch64-<version>.zip` and `tools-osx-aarch64-<version>.zip`.
 
-* [Connect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/tools/connect.go)
+* [connect](cmd/tools/connect.go)
   connects to the specified address(es) and subscribes to the specified events with the specified symbol
-* [Dump](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/tools/dump.go)
-  dumps all events received from address. This was designed to retrieve data from a file
-* [PerfTest](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/tools/perftest.go)
+* [dump](cmd/tools/dump.go)
+  dumps all events received from the address. It was designed to retrieve data from a file
+* [perftest](cmd/tools/perftest.go)
   connects to the specified address(es) and calculates performance counters (events per second, memory usage, CPU usage,
   etc.)
-* [LatencyTest](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/tools/latencytest.go)
-connects to the specified address(es) and calculates latency
+* [latencytest](cmd/tools/latencytest.go)
+  connects to the specified address(es) and calculates latency
 
 To run tools on macOS, it may be necessary to unquarantine them:
 
@@ -415,7 +385,7 @@ The C++ samples and their Go ports:
 - [x] [ScheduleSample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/schedule/main.go)
   is a simple demonstration of how to get various scheduling information for instruments
 - [x] [DXFeedconnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/connect/main.go)
-  is a simple demonstration of how to subscribe to different events using TimeSeriesSubscription
+  is a simple demonstration of how to subscribe to events of different types and symbols, optionally from a given time
 - [x] [FetchDailyCandles](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/fetch-daily-candles/main.go)
   is a simple demonstration of how to fetch the daily candles of a period as a time series promise
 - [x] [LastEventConsole](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/last-event-console/main.go)
@@ -554,54 +524,56 @@ The C++ samples and their Go ports:
 - [x] [DXFeedSubscription](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeedSubscription.html)
   is a subscription for a set of symbols and event types
 
-- [ ] [DXFeedTimeSeriesSubscription](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeedTimeSeriesSubscription.html)
+- [x] [DXFeedTimeSeriesSubscription](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeedTimeSeriesSubscription.html)
   extends `DXFeedSubscription` to conveniently subscribe to time series events for a set of symbols and event types
+  (create it with `DXFeed.CreateTimeSeriesSubscription`)
 
-- [ ] [ObservableSubscription](https://github.com/devexperts/QD/blob/master/dxfeed-api/src/main/java/com/dxfeed/api/osub/ObservableSubscription.java)
-  is an observable set of subscription symbols for the specific event
-  type ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/_simple_/PublishProfiles.java))
+- [x] [ObservableSubscription](https://github.com/devexperts/QD/blob/master/dxfeed-api/src/main/java/com/dxfeed/api/osub/ObservableSubscription.java)
+  is an observable set of subscription symbols for the specific event type
+  (get it with `DXPublisher.Subscription`; [sample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/publish-profiles/main.go))
 
-- [ ] [GetLastEvent](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getLastEvent-E-)
+- [x] [GetLastEvent](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getLastEvent-E-)
   returns the last event for the specified event instance
-  ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/api/DXFeedSample.java))
+  ([sample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/quote-and-trade/main.go))
 
-- [ ] [GetLastEvents](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getLastEvents-java.util.Collection-)
+- [x] [GetLastEvents](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getLastEvents-java.util.Collection-)
   returns the last events for the specified event instances list
 
-- [ ] [GetLastEventPromise](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getLastEventPromise-java.lang.Class-java.lang.Object-)
+- [x] [GetLastEventPromise](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getLastEventPromise-java.lang.Class-java.lang.Object-)
   requests the last event for the specified event type and symbol
-  ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/console/LastEventsConsole.java))
+  ([sample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/last-event-console/main.go))
 
-- [ ] [GetLastEventsPromises](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getLastEventsPromises-java.lang.Class-java.util.Collection-)
+- [x] [GetLastEventsPromises](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getLastEventsPromises-java.lang.Class-java.util.Collection-)
   requests the last events for the specified event type and symbol collection
+  ([sample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/print-last-events/main.go))
 
-- [ ] [GetLastEventIfSubscribed](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getLastEventIfSubscribed-java.lang.Class-java.lang.Object-)
+- [x] [GetLastEventIfSubscribed](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getLastEventIfSubscribed-java.lang.Class-java.lang.Object-)
   returns the last event for the specified event type and symbol if there’s a subscription for it
 
-- [ ] [GetIndexedEventsPromise](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getIndexedEventsPromise-java.lang.Class-java.lang.Object-com.dxfeed.event.IndexedEventSource-)
+- [x] [GetIndexedEventsPromise](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getIndexedEventsPromise-java.lang.Class-java.lang.Object-com.dxfeed.event.IndexedEventSource-)
   requests an indexed events list for the specified event type, symbol, and source
 
-- [ ] [GetIndexedEventsIfSubscribed](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getIndexedEventsIfSubscribed-java.lang.Class-java.lang.Object-com.dxfeed.event.IndexedEventSource-)
+- [x] [GetIndexedEventsIfSubscribed](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getIndexedEventsIfSubscribed-java.lang.Class-java.lang.Object-com.dxfeed.event.IndexedEventSource-)
   returns a list of indexed events for the specified event type, symbol, and source, if there’s a subscription for it
 
-- [ ] [GetTimeSeriesPromise](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getTimeSeriesPromise-java.lang.Class-java.lang.Object-long-long-)
+- [x] [GetTimeSeriesPromise](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getTimeSeriesPromise-java.lang.Class-java.lang.Object-long-long-)
   requests time series events for the specified event type, symbol, and time range
-  ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/_simple_/FetchDailyCandles.java))
+  ([sample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/fetch-daily-candles/main.go))
 
-- [ ] [GetTimeSeriesIfSubscribed](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getTimeSeriesIfSubscribed-java.lang.Class-java.lang.Object-long-long-)
+- [x] [GetTimeSeriesIfSubscribed](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/api/DXFeed.html#getTimeSeriesIfSubscribed-java.lang.Class-java.lang.Object-long-long-)
   requests time series events for the specified event type, symbol, and time range if there’s a subscription for it
 
+The Java models below are Swing-oriented and have no Go port. The Go models listed after them, `IndexedTxModel`,
+`TimeSeriesTxModel` and `MarketDepthModel`, cover their tasks.
+
 - [ ] [TimeSeriesEventModel](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/model/TimeSeriesEventModel.html)
-  is a model of a list of time series events
-  ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/ui/swing/DXFeedCandleChart.java))
+  is a model of a list of time series events; use TimeSeriesTxModel
 
 - [ ] [IndexedEventModel](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/model/IndexedEventModel.html)
-  is an indexed event list model
-  ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/ui/swing/DXFeedTimeAndSales.java))
+  is an indexed event list model; use IndexedTxModel
 
 - [ ] [OrderBookModel](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/model/market/OrderBookModel.html)
-  is a model of convenient Order Book management
-  ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/ui/swing/DXFeedMarketDepth.java))
+  is a model of convenient Order Book management; use MarketDepthModel
 
 - [x] [IndexedTxModel](https://github.com/dxFeed/dxfeed-graal-cxx-api/blob/main/include/dxfeed_graal_cpp_api/model/IndexedTxModel.hpp)
   passes the complete transactions of the indexed events of a symbol, such as the orders of an order book, to its
