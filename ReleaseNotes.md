@@ -5,6 +5,127 @@ Each version lists one item per Jira ticket. Changes merged since the last relea
 
 Versions before v0.4.0 were tagged without the `v` prefix, so Go tools see them only as pseudo-versions.
 
+## v0.6.0
+
+* **\[MDAPI-422]\[GO]** Added the feed queries of Graal Native SDK 3.16: last events, events if subscribed,
+  promises, attaching subscriptions and the time series subscription.
+  * `DXFeed.GetLastEvent`, `GetLastEvents`, `GetLastEventIfSubscribed`, `GetIndexedEventsIfSubscribed` and
+    `GetTimeSeriesIfSubscribed` read the local cache of the feed.
+  * `DXFeed.GetLastEventPromise`, `GetLastEventsPromises`, `GetIndexedEventsPromise` and `GetTimeSeriesPromise`
+    return a `Promise` that `Await(ctx)` waits for; a done context or closing the endpoint cancels the request. The
+    `print-last-events` sample shows them.
+  * `NewDXFeedSubscription` creates a detached subscription; `DXFeed.AttachSubscription`, `DetachSubscription`,
+    `DetachSubscriptionAndClear` and `DXFeedSubscription.Attach` and `Detach` attach it to feeds and detach it.
+  * `DXFeed.CreateTimeSeriesSubscription` returns a `DXFeedTimeSeriesSubscription` whose `SetFromTime` sets the time
+    from which it receives the events.
+* **\[MDAPI-551]\[GO]** `DXEndpoint` covers more of the SDK 3.16 endpoint: `api.NewEndpointBuilder()` builds endpoints
+  with a role, a name, properties, a properties file and an executor; `User`, `Password`, `Reconnect`, `Disconnect`,
+  `DisconnectAndClear`, `State`, `IsClosed`, `Role` and `EventTypes` are added.
+  * The requested aggregation period: `SetRequestedAggregationPeriod`, `ClearRequestedAggregationPeriod`,
+    `RequestedAggregationPeriod` and `AggregationPeriodInfo`.
+  * Executors of the notifications: `api.NewFixedThreadPoolExecutor` and `api.NewInPlaceExecutor`, whose
+    `ProcessAllPendingTasks` delivers the events on the calling goroutine.
+  * The message connectors and the connection errors: `Connectors` returns a snapshot of each connector,
+    `LastConnectionError` the newest failed connect or dropped connection as an `*api.ConnectionError`, and
+    `AddMessageConnectorListener` reports the state changes of the connectors. The
+    `endpoint-reconnect` sample shows them.
+* **\[MDAPI-552]\[GO]** `DXFeedSubscription` covers more of the SDK 3.16 subscription: `Symbols`,
+  `DecoratedSymbols`, `SetSymbols`, `EventTypes` and `ContainsEventType` are added.
+  * Delivery settings: `SetAggregationPeriod`, `ClearAggregationPeriod`, `AggregationPeriod`, `AggregationPeriodInfo`,
+    `SetEventsBatchLimit`, `EventsBatchLimit`, `SetExecutor` and `TotalDroppedEvents`.
+  * Change listeners: `DXFeedSubscription.AddChangeListener` and `RemoveChangeListener` take an
+    `osub.ObservableSubscriptionChangeListener`; a listener that also implements `osub.ConfigurationChangeListener` is
+    told about configuration changes.
+  * `DXPublisher.Subscription(eventType)` returns the `ObservableSubscription` of the symbols the feeds subscribe to,
+    with `IsClosed`, `EventTypes`, `ContainsEventType` and change listeners. `DXEndpoint.GetPublisher` now returns the
+    same publisher on every call.
+* **\[MDAPI-553]\[GO]** Added the remaining event types of Graal Native SDK 3.16 and the event flags API.
+  * `events.EventFlag` (`TxPending`, `RemoveEvent`, `SnapshotBegin`, `SnapshotEnd`, `SnapshotSnip` and others), the
+    `events.IndexedEvent` interface and the `IsSnapshotBegin`, `IsSnapshotEnd`, `IsSnapshotSnip`,
+    `IsSnapshotEndOrSnip`, `IsPending` and `IsRemove` helpers.
+  * New events: `series.Series`, `theoprice.TheoPrice`, `candle.DailyCandle`, and `misc.Message`,
+    `misc.TextMessage`, `misc.Configuration`, `misc.TextConfiguration`.
+  * New market events: `optionsale.OptionSale`, `marketmaker.MarketMaker`, `order.OtcMarketsOrder` (with
+    `order.OtcMarketsPriceType`) and `orderimbalance.OrderImbalance` (with `orderimbalance.ImbalanceSide` and
+    `orderimbalance.AuctionType`).
+  * New Nuam Exchange events: `order.NuamOrder` (with `order.NuamOrderType` and `order.NuamTimeInForceType`),
+    `timeandsale.NuamTimeAndSale` and `trade.NuamTrade`.
+  * `TimeAndSale.String` prints the buyer and the seller instead of the addresses of their strings.
+* **\[MDAPI-554]\[GO]** Added candle symbols with attributes.
+  * `candle.CandleSymbol` parses and formats the symbols of the Java and C++ APIs: `candle.ParseCandleSymbol` (an error
+    for an invalid attribute), `candle.NewCandleSymbol` and `candle.NewCandleSymbolWithAttributes`; the string form is
+    normalized. `Symbol` and `SetSymbol` are deprecated.
+  * The attributes: `candle.CandlePeriod` and `candle.CandleType`, `candle.CandlePrice`, `candle.CandleSession`,
+    `candle.CandleAlignment`, `candle.CandleExchange`, `candle.CandlePriceLevel` and `candle.CandleDataType`.
+  * `osub.Candle` makes a `candle.CandleSymbol` a subscription symbol, also inside a `TimeSeriesSubscriptionSymbol`;
+    the new `print-candles` sample prints the candles of a candle symbol.
+* **\[MDAPI-555]\[GO]** Instrument profiles: token, all fields by name, writer, collector, live connection, glossary and
+  option chains.
+  * `ipf.InstrumentProfileReader.ReadFromFileWithToken` reads profiles with an `auth.Token`.
+  * `ipf.InstrumentProfileField`, `ipf.GetField`, `SetField`, `GetNumericField`, `SetNumericField`, `GetDateField` and
+    `SetDateField` read and write the standard and the custom fields of a profile by name; `ipf.FormatNumber`,
+    `ParseNumber`, `FormatDate`, `ParseDate` and the `ipf.Type*` instrument types.
+  * `ipf.WriteToFile` writes profiles to a file in the IPF format, plain or compressed.
+  * `live.InstrumentProfileCollector` collects profiles and notifies `InstrumentProfileUpdateListener`s;
+    `live.InstrumentProfileConnection` keeps it up to date from a file, a URL or a server (`CreateConnection`, `Start`,
+    `WaitUntilCompleted`, `State`, state change listeners, update period); the new `live-ipf` sample prints the updates.
+  * The new `glossary` package: `PriceIncrements` (increments by price, precision, rounding with a direction or a
+    `RoundingMode`, price increments), `CFI` (category, group, predicates, integer code, decipher, describe) and
+    `AdditionalUnderlyings` (map, SPC).
+  * The new `ipf/option` package groups option profiles into `OptionChain`s of `OptionSeries` by product and underlying
+    (`BuildChains`, `OptionChainsBuilder`; calls, puts, strikes, `NStrikesAround`); the new `option-chain` sample
+    prints the series of a chain.
+* **\[MDAPI-556]\[GO]** Package `logging` configures the logging of the SDK: `Init`, `InitFile` and `InitFiles` set the
+  levels and the log files, `SetLevel` and `SetErrLevel` change the levels, and `SetListener` gives the log records of
+  the SDK and of the Go API (a panic of a listener, events that the Go API skips) to a Go function.
+  * `api.SetIsolateArguments` sets the arguments of the Graal isolate, such as `-Xmx512m` or `-Dname=value`, before
+    the first call of the API; later it returns `api.ErrIsolateCreated`.
+  * Package `auth` creates, parses and prints the authorization tokens (`Basic`, `Bearer`, custom) for the addresses
+    of the endpoints; the `auth` sample connects with a token and renews it.
+  * Package `dxtime` formats and parses the times as the SDK does (`DefaultFormat`, `GMTFormat`, `NewFormat` of a
+    time zone, with milliseconds, the zone or full ISO 8601) and the time periods (`ParsePeriod`, `FormatPeriod`).
+* **\[MDAPI-557]\[GO]** Added the `schedule` package: trading schedules, days and sessions.
+  * `schedule.FromProfile`, `FromProfileAndVenue` and `FromDefinition` return a `Schedule`; `TradingVenues`,
+    `DownloadDefaults` and `SetDefaults` manage the venues and the default schedule data.
+  * `Schedule`, `Day` and `Session` find the day or the session at a time, the sessions of a day, and the previous
+    or next day or session that a `DayFilter` or `SessionFilter` accepts, such as `TradingDays` or `RegularSessions`;
+    a filter may test the days or sessions with a Go function.
+  * The new `schedule` sample prints the schedule of an instrument at a time.
+* **\[MDAPI-558]\[GO]** Added the event models of the new package `model`.
+  * `model.NewIndexedTxModelBuilder` builds an `IndexedTxModel` of the indexed events of a symbol, such as the
+    orders of an order book: it passes the complete transactions of its sources to a `TxModelListener`, with batch
+    and snapshot processing; `Attach`, `Detach` and `SetSources` change its subscription.
+  * `model.NewTimeSeriesTxModelBuilder` builds a `TimeSeriesTxModel` of the time series events of a symbol from a
+    time, such as candles: it passes their complete transactions to a `TimeSeriesTxModelListener`; `SetFromTime`
+    changes the time of its subscription. The new interface `events.TimeSeriesEvent` describes these events.
+  * `model.NewMarketDepthModelBuilder` builds a `MarketDepthModel`, the order book of a symbol on top of
+    `IndexedTxModel`: it passes the best buy and sell orders of its sources to a `MarketDepthModelListener`, up to
+    a depth limit and at most once per aggregation period; `SetDepthLimit` and `SetAggregationPeriod` change them.
+  * The new `inc-order-snapshot` sample prints the snapshot and the incremental updates of the orders of a source.
+  * The new `market-depth-model` and `simple-order-book` samples print the order book of a symbol.
+* **\[MDAPI-560]\[GO]** Added `OnDemandService` and `HistoryEndpoint`.
+  * `DXEndpoint.OnDemandService` returns the on-demand service of a `Feed` or `OnDemandFeed` endpoint: `Replay`,
+    `ReplayWithSpeed`, `Pause`, `SetSpeed`, `StopAndResume`, `StopAndClear`, the state getters and property change
+    listeners; the new `ondemand-replay` sample replays historical quotes.
+  * `candlewebservice.HistoryEndpoint` downloads candles and other time series events from the candle web service:
+    `NewHistoryEndpointBuilder` with the address, the user name and the password or a token, the compression and the
+    format, then `GetTimeSeries`; the new `candle-data-download` sample prints the downloaded candles.
+* **\[MDAPI-561]\[GO]** Added the client of the ORCS price level service.
+  * `orcs.NewPriceLevelService` connects to the service: `GetOrders`, `GetQuotes` and their `WithCaller` forms
+    request the price levels (orders) and the quotes of a candle symbol with the granularity attribute
+    (`orcs.GranularityAttributeKey`) within a time range, `GetAuthOrderSource` returns the order sources and the
+    symbols available to the client.
+  * `orcs.NewAuthOrderSource` creates an `AuthOrderSource` from the symbols by the order source identifier.
+  * `orcs.ValidatePriceLevels` checks the price levels as `PriceLevelChecker` does; the new
+    `price-level-service-client` sample requests and checks them.
+* **\[MDAPI-566]\[GO]** The packages have overviews on pkg.go.dev: package `api` introduces the module (endpoint roles,
+  subscriptions and symbols, event types, time series, publishing, instrument profiles, threads and errors), the other
+  packages describe their concepts and link the related types.
+  * Examples on pkg.go.dev: time series and indexed subscriptions, the connection state listener, candle symbols, auth
+    tokens, the time format and periods of `dxtime`, and a `log/slog` listener of `logging`.
+  * The guides `docs/quick-start.md`, `docs/configuration.md` and `docs/troubleshooting.md` describe the installation,
+    the configuration and the usual problems; a test checks the links of the Markdown files.
+
 ## v0.5.0
 
 * **\[MDAPI-537]\[GO]** Added a contributing guide, a development guide (Windows setup with MinGW-w64 included) and
