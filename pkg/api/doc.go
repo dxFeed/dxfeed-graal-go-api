@@ -55,8 +55,8 @@
 //
 // [DXFeed.CreateSubscription] creates a [DXFeedSubscription] of one or more event types (package eventcodes). Its
 // listeners get the events of the subscribed symbols in batches. The methods that take symbols take [osub.Symbol],
-// a sealed interface: a plain symbol is [osub.String] ([osub.Strings] converts several), and the wildcard, time
-// series and indexed event symbols are types of package osub too. A string or any other type is rejected at compile
+// a sealed interface: a plain symbol is [osub.String] ([osub.Strings] converts several), and the candle, wildcard,
+// time series and indexed event symbols are types of package osub too. A string or any other type is rejected at compile
 // time; package osub explains why.
 //
 // # Event types
@@ -70,7 +70,8 @@
 //
 // A subscription to a time series event with an [osub.TimeSeriesSubscriptionSymbol] gets the events of the symbol
 // from the given time on, then the new ones as they come. For candles the symbol is a string with the period and the
-// other attributes of the aggregation in braces, such as "AAPL{=1d}" (package candle).
+// other attributes of the aggregation in braces, such as "AAPL{=1d}", or an [osub.CandleSymbol] made with [osub.Candle]
+// from a candle.CandleSymbol (package candle).
 //
 // # Publishing
 //
