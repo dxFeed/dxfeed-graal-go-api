@@ -141,7 +141,10 @@ func (c *InstrumentProfileConnection) State() (State, error) {
 	return state, err
 }
 
-// LastModified returns the modification time of the last data read, or the zero time if it is unknown.
+// LastModified returns the modification time of the last data read, or the zero time if it is unknown. The SDK sets
+// it only after it has read all the data of a download: for a file or a plain HTTP source a moment after the state
+// becomes Completed (right after WaitUntilCompleted returns or the listeners get Completed, it may still be the zero
+// time), for a live streaming source only when the stream ends.
 func (c *InstrumentProfileConnection) LastModified() (time.Time, error) {
 	var millis int64
 	err := c.call(func(h *native.InstrumentProfileConnectionHandle) (err error) {
@@ -163,7 +166,7 @@ func (c *InstrumentProfileConnection) Start() error {
 }
 
 // WaitUntilCompleted waits until the initial profiles are read (the state Completed), the connection is closed or the
-// timeout elapses; it reports whether the profiles were read.
+// timeout elapses; it reports whether the profiles were read. LastModified may lag behind: see there.
 func (c *InstrumentProfileConnection) WaitUntilCompleted(timeout time.Duration) (bool, error) {
 	var completed bool
 	err := c.call(func(h *native.InstrumentProfileConnectionHandle) (err error) {
