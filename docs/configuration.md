@@ -52,6 +52,22 @@ before that, as a native executable takes its command line:
 Call it at the start of `main`. After the isolate is created it returns `api.ErrIsolateCreated`. An argument the SDK
 does not accept makes the creation of the isolate fail: see [troubleshooting.md](troubleshooting.md#isolate-arguments).
 
+## Signals
+
+On Linux and macOS the SDK writes to its connections on threads of its own. When the peer has closed a connection,
+such a write raises `SIGPIPE`, and Go ends the process on a signal of a thread that it did not create, unless the
+program is notified of it. So, when it creates the isolate, the API registers `SIGPIPE` and `SIGXFSZ` (file size
+limit) with [os/signal](https://pkg.go.dev/os/signal) `Notify`, and the write fails with an error that the SDK
+handles, as in a JVM.
+
+This changes the program as a whole:
+
+- a write of the program to a closed standard output or error (for example, `program | head`) returns `EPIPE`
+  instead of ending the program, so check the errors of these writes or exit on them;
+- `signal.Reset` of these signals, or `signal.Reset()` without arguments, brings the ending of the process back; the
+  program's own `signal.Notify` of them is fine, and so is `signal.Ignore` after the first call of the API (before
+  it, the registration of the API cancels the `Ignore`).
+
 ## Logging
 
 By default the SDK writes its log to the standard output. Package
