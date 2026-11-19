@@ -29,7 +29,7 @@ func (c LatencyTest) Run(args []string) {
 	arguments := dxarguments.arguments()
 	if len(arguments) < 3 {
 		fmt.Println(`
-		Connects to the specified address(es) and calculates performance counters (events per second, cpu usage, etc).
+		Connects to the specified address(es), subscribes to TimeAndSale events and calculates their latency: the delay between the time of an event and its receipt, in milliseconds (min, max, mean, 99th percentile, etc).
 		
 		Usage:
 		path_to_app <address> <types> <symbols> [<options>]
@@ -40,7 +40,7 @@ func (c LatencyTest) Run(args []string) {
 					For Token-Based Authorization, use the following format: "<address>:<port>[login=entitle:<token>]".
 		types (pos. 1)    Required. Comma-separated list of dxfeed event types (only TimeAndSale).
 		symbols (pos. 2)  Required. Comma-separated list of symbol names to get events for (e.g. "IBM, AAPL, MSFT").
-		--ignore-exchanges Ignoring next exchanges.
+		--ignore-exchanges Comma-separated list of exchange codes whose events are left out without spaces (e.g. "Q,N").
 		--force-stream    Enforces a streaming contract for subscription. The StreamFeed role is used instead of Feed.`)
 
 		os.Exit(0)
@@ -55,7 +55,7 @@ func (c LatencyTest) Run(args []string) {
 	dxarguments.forceStream()
 	err = latency(address, types, symbols, dxarguments.forceStream(), dxarguments.ignoreExchanges())
 	if err != nil {
-		fmt.Printf("Error during dump: %v", err)
+		fmt.Printf("Error during latency test: %v\n", err)
 	}
 }
 

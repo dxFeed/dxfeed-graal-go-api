@@ -7,6 +7,10 @@ import (
 )
 
 func main() {
+	tool, status := selectTool(os.Args, os.Stdout, os.Stderr)
+	if tool == nil {
+		os.Exit(status)
+	}
 	// Enable experimental feature, and set scheme for dxLink.
 	for _, property := range [][2]string{
 		{"dxfeed.experimental.dxlink.enable", "true"},
@@ -17,5 +21,5 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	Run(os.Args)
+	tool.Run(os.Args)
 }
