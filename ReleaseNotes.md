@@ -5,6 +5,37 @@ Each version lists one item per Jira ticket. Changes merged since the last relea
 
 Versions before v0.4.0 were tagged without the `v` prefix, so Go tools see them only as pseudo-versions.
 
+## v0.7.2
+
+* **\[MDAPI-585]\[GO]** Fixed a hang of many concurrent calls on Linux
+  * An OS thread that calls the API is attached to the isolate on its first call and stays attached, instead of
+    attaching and detaching on every call: with thousands of goroutines calling at once, attaching and detaching made
+    the calls hang on Linux for minutes. A call on an attached thread no longer attaches or detaches it.
+  * A goroutine locked to its OS thread with `runtime.LockOSThread` that calls the API should unlock before it exits
+    (Threads in docs/troubleshooting.md).
+* **\[MDAPI-586]\[GO]** Seven samples accept `-h` and their address as a flag; Ctrl+C ends each sample with status 0
+  * auth, feed-ipf-connect, ondemand-replay, print-candles, print-indexed-events, print-quote-events and quick-start
+    get `-address`, feed-ipf-connect also `-ipf` (its symbols come from the instrument profiles), and the others except
+    quick-start `-symbol`, with the former values as the defaults; `-h` prints their usage instead of starting them.
+  * ondemand-replay takes the credentials of the on-demand service with `-user` and `-password` (default `demo`); the
+    on-demand service needs the credentials of an account with access to it.
+  * feed-ipf-connect, ondemand-replay, print-candles, print-indexed-events and print-quote-events close the endpoint on
+    Ctrl+C and exit with status 0 instead of ending with status 130.
+* **\[MDAPI-589]\[GO]** The help of the tools and the examples of the documentation match the code
+  * The help of connect, dump, perftest and latencytest lists the options they accept (`-f`, `-t`, `-p`, `-q`,
+    `--force-stream`, `--ignore-exchanges`), the event types and `all`, and no longer shows placeholders and doubled
+    quotes; dump no longer claims a wildcard by default or a short list of event types.
+  * Tests type-check the Go code blocks of the Markdown files and of the doc comments, and check the flags of the
+    command lines of the samples against their `-h`.
+* **\[MDAPI-590]\[GO]** Fixed the exit status and the argument errors of the tools
+  * The tools exit with status 1 after an error and print it with a newline to stderr, instead of status 0.
+  * A missing or malformed option value and an unknown option print the error and the help of the tool to stderr and
+    give status 2, instead of a panic or an ignored option; an option that the tool does not take, such as `-q` of
+    perftest, is now an error too. The value of an option is no longer taken as a positional argument.
+  * `-h`, `--help` and `-help` after the name of a tool print its help.
+  * `--quiet` is the name of the option that does not print the events; `--quite` stays as an alias.
+  * perftest no longer prints the Quote events and counts every event the same way.
+
 ## v0.7.1
 
 * **\[MDAPI-583]\[GO]** Fixed the errors of a build without cgo (`CGO_ENABLED=0`, no C compiler found, the Go
