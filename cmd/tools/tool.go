@@ -66,11 +66,15 @@ func parseCommon(a toolArguments) (string, []eventcodes.EventCode, []osub.Symbol
 	if len(a.positional) > 3 {
 		return "", nil, nil, usageError{fmt.Errorf("unexpected argument %s", a.positional[3])}
 	}
+	types, err := parser.ParseEventTypes(a.positional[1])
+	if err != nil {
+		return "", nil, nil, usageError{err}
+	}
 	symbols, err := parser.ParseSymbols(a.positional[2])
 	if err != nil {
 		return "", nil, nil, usageError{fmt.Errorf("symbols: %w", err)}
 	}
-	return a.positional[0], parser.ParseEventTypes(a.positional[1]), symbols, nil
+	return a.positional[0], types, symbols, nil
 }
 
 // selectTool returns the tool named by args[1]. Without a tool name, or with --help, -h or help, it prints the usage

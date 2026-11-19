@@ -116,6 +116,8 @@ func TestToolArgumentErrors(t *testing.T) {
 		{"connect a Quote AAPL -p x", `connect: option --properties: "x" is not name=value`},
 		{"dump a Quote AAPL -t", "dump: option -t needs a value"},
 		{"dump a Quote AAPL extra", "dump: unexpected argument extra"},
+		{"connect a Quote,Qoute AAPL", `connect: unknown event type "Qoute"`},
+		{"perftest a Qoute AAPL", `perftest: unknown event type "Qoute"`},
 		{"dump a --quiet --bogus", "dump: unknown option --bogus"},
 		{"perftest a Quote AAPL -q", "perftest: unknown option -q"},
 		{"latencytest a TimeAndSale AAPL --ignore-exchanges", "latency test: option --ignore-exchanges needs a value"},

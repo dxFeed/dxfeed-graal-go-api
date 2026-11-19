@@ -4,10 +4,13 @@
 package parser
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"strings"
 )
 
 // ParseSymbols parses a comma-separated list of symbols; "all" is the wildcard symbol.
@@ -24,51 +27,48 @@ func ParseSymbols(value string) ([]osub.Symbol, error) {
 	return osub.Strings(symbols...), nil
 }
 
-func ParseEventTypes(value string) []eventcodes.EventCode {
-	codes := map[string]eventcodes.EventCode{
-		"quote":             eventcodes.Quote,
-		"summary":           eventcodes.Summary,
-		"greeks":            eventcodes.Greeks,
-		"underlying":        eventcodes.Underlying,
-		"timeandsale":       eventcodes.TimeAndSale,
-		"profile":           eventcodes.Profile,
-		"order":             eventcodes.Order,
-		"spreadorder":       eventcodes.SpreadOrder,
-		"candle":            eventcodes.Candle,
-		"trade":             eventcodes.Trade,
-		"tradeeth":          eventcodes.TradeETH,
-		"analyticorder":     eventcodes.AnalyticOrder,
-		"series":            eventcodes.Series,
-		"theoprice":         eventcodes.TheoPrice,
-		"message":           eventcodes.Message,
-		"textmessage":       eventcodes.TextMessage,
-		"configuration":     eventcodes.Configuration,
-		"textconfiguration": eventcodes.TextConfiguration,
-		"optionsale":        eventcodes.OptionSale,
-		"marketmaker":       eventcodes.MarketMaker,
-		"otcmarketsorder":   eventcodes.OtcMarketsOrder,
-		"orderimbalance":    eventcodes.OrderImbalance,
-		"nuamorder":         eventcodes.NuamOrder,
-		"nuamtimeandsale":   eventcodes.NuamTimeAndSale,
-		"nuamtrade":         eventcodes.NuamTrade,
+// ParseEventTypes parses a comma-separated list of event types, such as Quote,TimeAndSale; the names are
+// case-insensitive, and "all" is every event type except OrderBase, which has no events of its own. An unknown name,
+// OrderBase included, is an error that names it; so is an empty list.
+func ParseEventTypes(value string) ([]eventcodes.EventCode, error) {
+	if strings.TrimSpace(value) == "" {
+		return nil, fmt.Errorf("no event types")
 	}
-	var values []eventcodes.EventCode
-	if value == "all" {
-		for k := range codes {
-			values = append(values, codes[k])
+	if strings.EqualFold(strings.TrimSpace(value), "all") {
+		var codes []eventcodes.EventCode
+		for _, code := range eventcodes.All() {
+			if code != eventcodes.OrderBase {
+				codes = append(codes, code)
+			}
 		}
-		return values
+		return codes, nil
 	}
+	var codes []eventcodes.EventCode
+	var unknown []string
+	for _, name := range strings.Split(value, ",") {
+		name = strings.TrimSpace(name)
+		code, ok := eventTypeByName(name)
+		if !ok {
+			unknown = append(unknown, strconv.Quote(name))
+			continue
+		}
+		codes = append(codes, code)
+	}
+	if len(unknown) > 0 {
+		return nil, fmt.Errorf("unknown event type %s", strings.Join(unknown, ", "))
+	}
+	return codes, nil
+}
 
-	typeStr := strings.Split(value, ",")
-	for _, element := range typeStr {
-		element = strings.ToLower(strings.TrimSpace(element))
-		eventCode, exists := codes[element]
-		if exists {
-			values = append(values, eventCode)
+// eventTypeByName finds the event code by the name of its type, ignoring the case. OrderBase is not found: it has no
+// events of its own.
+func eventTypeByName(name string) (eventcodes.EventCode, bool) {
+	for _, code := range eventcodes.All() {
+		if code != eventcodes.OrderBase && strings.EqualFold(code.String(), name) {
+			return code, true
 		}
 	}
-	return values
+	return 0, false
 }
 
 func ParseTime(time string) (int64, error) {
