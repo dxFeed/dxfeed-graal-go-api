@@ -211,7 +211,13 @@ func TestConnectionToFile(t *testing.T) {
 	if state, err := connection.State(); err != nil || state != Completed {
 		t.Errorf("state = %v, %v", state, err)
 	}
-	if modified, err := connection.LastModified(); err != nil || modified.IsZero() {
+	// The SDK sets the last modified time after the state Completed, when it has read the whole file: wait for it.
+	modified, err := connection.LastModified()
+	for deadline := time.Now().Add(5 * time.Second); err == nil && modified.IsZero() && time.Now().Before(deadline); {
+		time.Sleep(10 * time.Millisecond)
+		modified, err = connection.LastModified()
+	}
+	if err != nil || modified.IsZero() {
 		t.Errorf("last modified = %v, %v", modified, err)
 	}
 	if err := connection.Start(); err == nil {
