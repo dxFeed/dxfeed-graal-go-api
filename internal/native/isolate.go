@@ -100,6 +100,7 @@ func createIsolate(isolatePtr **C.graal_isolate_t, thread **C.graal_isolatethrea
 // getOrCreateIsolate creates the isolate on the first call; a failure is returned by this call and every later one.
 func getOrCreateIsolate() (*isolate, error) {
 	isolateOnce.Do(func() {
+		handleWriteSignals()
 		// The thread that creates the isolate is attached to it; keep the goroutine on it for the version check.
 		runtime.LockOSThread()
 		defer runtime.UnlockOSThread()

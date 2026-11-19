@@ -93,63 +93,104 @@ func TestTapeFiles(t *testing.T) {
 	}
 }
 
-func TestPublishAndRequestProfile(t *testing.T) {
-	dir := t.TempDir()
-	publisher := build(t, dir, "publish-profiles")
-	requester := build(t, dir, "request-profile")
+// publisher is the publish-profiles sample running on a free local port.
+type publisher struct {
+	port   string
+	server *exec.Cmd
+	out    *syncBuffer
+	exited chan struct{}
+	err    error
+}
+
+// startPublisher builds publish-profiles, starts it on a free port and waits until it listens; the test stops it.
+func startPublisher(t *testing.T, dir string) *publisher {
+	t.Helper()
+	program := build(t, dir, "publish-profiles")
 
 	// A free port: listen on it, then free it for the publisher.
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	port := strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
+	p := &publisher{port: strconv.Itoa(listener.Addr().(*net.TCPAddr).Port), out: &syncBuffer{},
+		exited: make(chan struct{})}
 	_ = listener.Close()
 
-	server := exec.Command(publisher, "-address", ":"+port)
-	server.Dir = dir
-	serverOut := &syncBuffer{}
-	server.Stdout, server.Stderr = serverOut, serverOut
-	if err := server.Start(); err != nil {
+	p.server = exec.Command(program, "-address", ":"+p.port)
+	p.server.Dir = dir
+	p.server.Stdout, p.server.Stderr = p.out, p.out
+	if err := p.server.Start(); err != nil {
 		t.Fatal(err)
 	}
-	exited := make(chan struct{})
-	var exitErr error
 	go func() {
-		exitErr = server.Wait()
-		close(exited)
+		p.err = p.server.Wait()
+		close(p.exited)
 	}()
-	// stop stops the server and describes how it ended and its output, which is complete only after Wait.
-	stop := func() string {
-		select {
-		case <-exited:
-			return fmt.Sprintf("exited by itself: %v\n%s", exitErr, serverOut)
-		default:
-		}
-		_ = server.Process.Kill()
-		<-exited
-		return serverOut.String()
-	}
-	defer stop()
+	t.Cleanup(func() { p.stop() })
 
-	// Wait until the server listens, so that the client does not wait for a reconnect. The log tells it: a probe
-	// connection is not used, since the server writes to the connection that the probe has closed.
+	// Wait until the server listens, so that a client does not wait for a reconnect. The log tells it, not a probe
+	// connection, which TestPublisherSurvivesDisconnects tests on its own.
 	deadline := time.Now().Add(30 * time.Second)
-	for !strings.Contains(serverOut.String(), "Listening at") {
-		select {
-		case <-exited:
-			t.Fatalf("publish-profiles: %s", stop())
-		default:
+	for !strings.Contains(p.out.String(), "Listening at") {
+		if p.hasExited() {
+			t.Fatalf("publish-profiles: %s", p.stop())
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("publish-profiles does not listen on %s:\n%s", port, stop())
+			t.Fatalf("publish-profiles does not listen on %s:\n%s", p.port, p.stop())
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+	return p
+}
 
-	out, err := tryRun(dir, requester, "-address", "127.0.0.1:"+port, "-symbol", "A:TEST", "-timeout", "20s")
+func (p *publisher) hasExited() bool {
+	select {
+	case <-p.exited:
+		return true
+	default:
+		return false
+	}
+}
+
+// stop stops the server and describes how it ended and its output, which is complete only after Wait.
+func (p *publisher) stop() string {
+	if p.hasExited() {
+		return fmt.Sprintf("exited by itself: %v\n%s", p.err, p.out)
+	}
+	_ = p.server.Process.Kill()
+	<-p.exited
+	return p.out.String()
+}
+
+func TestPublishAndRequestProfile(t *testing.T) {
+	dir := t.TempDir()
+	requester := build(t, dir, "request-profile")
+	p := startPublisher(t, dir)
+
+	out, err := tryRun(dir, requester, "-address", "127.0.0.1:"+p.port, "-symbol", "A:TEST", "-timeout", "20s")
 	if err != nil || !strings.Contains(out, "A:TEST") || !strings.Contains(out, "Test symbol") {
-		t.Errorf("request-profile: %v\n%s\npublish-profiles: %s", err, out, stop())
+		t.Errorf("request-profile: %v\n%s\npublish-profiles: %s", err, out, p.stop())
+	}
+}
+
+// TestPublisherSurvivesDisconnects connects to a publisher and disconnects at once, so that the SDK writes to a closed
+// connection. On Linux, the resulting SIGPIPE ended the process unless the API handled it.
+func TestPublisherSurvivesDisconnects(t *testing.T) {
+	p := startPublisher(t, t.TempDir())
+	for i := 0; i < 30; i++ {
+		conn, err := net.Dial("tcp", "127.0.0.1:"+p.port)
+		if err != nil {
+			t.Fatalf("connection %d: %v\npublish-profiles: %s", i, err, p.stop())
+		}
+		if i%2 == 1 {
+			_ = conn.(*net.TCPConn).SetLinger(0) // a reset instead of a close
+		}
+		_ = conn.Close()
+		time.Sleep(50 * time.Millisecond)
+	}
+	time.Sleep(2 * time.Second)
+	if p.hasExited() {
+		t.Fatalf("publish-profiles ended after the disconnects: %s", p.stop())
 	}
 }
 
