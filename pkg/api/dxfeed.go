@@ -18,11 +18,7 @@ type DXFeed struct {
 // CreateSubscription creates a subscription to events of the given types. Add symbols and a listener to it, and close
 // it when it is no longer needed.
 func (f *DXFeed) CreateSubscription(eventType ...eventcodes.EventCode) (*DXFeedSubscription, error) {
-	data := make([]int32, len(eventType))
-	for i := range data {
-		data[i] = eventType[i].NativeCode()
-	}
-	sub, err := f.feed.CreateSubscription(data...)
+	sub, err := f.feed.CreateSubscription(nativeCodes(eventType)...)
 	if err != nil {
 		return nil, err
 	}
