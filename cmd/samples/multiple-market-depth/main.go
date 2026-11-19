@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command multiple-market-depth keeps the order books of several symbols, one model.MarketDepthModel per symbol, and
 // prints each book when it changes, at most once per aggregation period. [ENTER] prints the book of the first symbol;
 // the end of the input (Ctrl+D, Ctrl+Z on Windows) exits.

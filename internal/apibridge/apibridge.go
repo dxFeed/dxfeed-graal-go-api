@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package apibridge gives the other packages of the module the native handles behind the types of pkg/api without
 // exporting them from pkg/api. pkg/api sets the functions in its init, so a package that imports pkg/api can call
 // them.

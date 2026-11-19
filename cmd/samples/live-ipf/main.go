@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command live-ipf keeps instrument profiles up to date from an instrument profile source and prints the updates: the
 // number of the new and changed profiles and the removed ones. The source is a URL, a file or host:port of an
 // instrument profile server; the dxFeed demo service is the default:

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command request-profile connects to a running publish-profiles sample, prints the profile of a ":TEST" symbol and
 // exits.
 //

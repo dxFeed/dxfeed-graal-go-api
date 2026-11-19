@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package osub holds the subscription symbols: [String] for a plain symbol such as "AAPL", [CandleSymbol] for a
 // candle symbol, the wildcard ([WildcardSymbol]), and the time series ([TimeSeriesSubscriptionSymbol]) and indexed event
 // ([IndexedEventSubscriptionSymbol]) symbols. They all implement [Symbol], the type that

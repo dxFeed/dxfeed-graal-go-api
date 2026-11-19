@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package osub
 
 // ObservableSubscriptionChangeListener is notified of the changes of the symbols of a subscription: add it with

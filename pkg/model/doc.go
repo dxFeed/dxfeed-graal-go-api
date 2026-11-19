@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package model holds the models of the events of a feed, as the C++ and Java APIs have them.
 //
 // IndexedTxModel passes the complete transactions of the indexed events of a symbol, such as the orders of an order

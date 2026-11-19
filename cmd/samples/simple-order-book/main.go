@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command simple-order-book builds the order book of a symbol and an order source from the transactions of
 // model.IndexedTxModel and prints its top levels with the scope of each order every second.
 //

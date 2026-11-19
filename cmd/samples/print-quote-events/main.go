@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command print-quote-events prints the quotes of a symbol from a dxLink address until Ctrl+C.
 //
 //	go run ./cmd/samples/print-quote-events -address dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws -symbol AAPL

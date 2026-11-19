@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package series provides the Series event: the properties of an option series, such as its implied volatility and
 // put/call volumes.
 package series

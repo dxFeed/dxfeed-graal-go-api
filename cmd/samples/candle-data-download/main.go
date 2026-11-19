@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command candle-data-download downloads the daily candles of a symbol for the last month from the dxFeed candle web
 // service and prints them. The service needs credentials:
 //

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package samples_test builds the samples that need no network and runs them, so that every CI platform runs them.
 package samples_test
 

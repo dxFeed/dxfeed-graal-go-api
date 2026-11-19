@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command feed-ipf-connect reads instrument profiles from an IPF file or service, subscribes to the quotes of their
 // symbols and prints them until Ctrl+C.
 //

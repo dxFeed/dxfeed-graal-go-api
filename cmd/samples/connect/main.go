@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command connect connects to an address, subscribes to events of some types and symbols, optionally from a time, and
 // prints them until Ctrl+C.
 //

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command print-candles subscribes to the hourly candles of a symbol for the last day and prints them as they arrive,
 // until Ctrl+C.
 //

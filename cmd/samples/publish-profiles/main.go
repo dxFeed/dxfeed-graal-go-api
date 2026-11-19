@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command publish-profiles starts a server that publishes a Profile event for every requested symbol that ends with
 // ":TEST", until Ctrl+C. The request-profile sample requests such profiles.
 //

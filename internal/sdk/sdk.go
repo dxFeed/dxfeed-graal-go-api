@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package sdk pins the dxFeed Graal Native SDK release that the API is built against.
 //
 // The package does not use cgo, so the installer command can use it before the native library is installed.

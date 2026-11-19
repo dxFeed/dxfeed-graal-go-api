@@ -1,5 +1,8 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command quick-start prints quotes of AAPL and IBM until Ctrl+C, from the dxFeed demo feed or the -address.
-// README.md shows this file as it is; a test keeps the two identical.
+// README.md shows this file without its license header; a test keeps the two identical.
 package main
 
 import (

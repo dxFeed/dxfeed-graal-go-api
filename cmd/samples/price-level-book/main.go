@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command price-level-book prints the price levels (market by price) of a symbol, aggregated from the orders (market by
 // order) of a source by model.MarketDepthModel: the size of all the orders at each price, up to a depth limit, at
 // most once per aggregation period. Use a market by order source, such as NTV or GLBX.

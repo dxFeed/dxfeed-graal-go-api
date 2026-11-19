@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package underlying provides the Underlying event: volatility and put/call volume data of an underlying symbol.
 package underlying
 

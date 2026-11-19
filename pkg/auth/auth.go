@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package auth creates the authorization tokens of the dxFeed services.
 //
 // A token authorizes a connection of an endpoint ("demo.dxfeed.com:7300[login=entitle:<token>]") or a request of an

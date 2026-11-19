@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package candlewebservice downloads the history of candles and other time series events from the dxFeed candle web
 // service with HistoryEndpoint, without a feed connection:
 //

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command schedule prints the trading schedule of an instrument at a time: the day and its sessions, the session at
 // the time, and the nearest trading days and sessions. The schedule comes from the trading hours of the instrument
 // profile of a symbol (the dxFeed demo service is the default source of the profiles) or from a definition:

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command print-indexed-events prints the orders of a symbol from one order source (the aggregated asks) and the
 // connection state until Ctrl+C.
 //

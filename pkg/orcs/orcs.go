@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package orcs is the client of the dxFeed ORCS (Order Reconstruction Service): it requests the historical price
 // levels (orders) and quotes of a candle symbol from the price level service and checks the price levels:
 //

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package theoprice provides the TheoPrice event: the theoretical price of an option computed by a pricing model.
 package theoprice
 

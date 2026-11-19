@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package orderimbalance provides the OrderImbalance event: the imbalance of the orders of an auction.
 package orderimbalance
 

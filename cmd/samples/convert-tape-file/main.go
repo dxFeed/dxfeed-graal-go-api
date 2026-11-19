@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command convert-tape-file converts one tape file into another, with optional processing or filtering of the events
 // in between. ConvertTapeFile.in in this directory is a sample input.
 //

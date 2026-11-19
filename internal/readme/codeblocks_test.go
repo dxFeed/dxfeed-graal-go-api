@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package readme
 
 import (
@@ -39,7 +42,7 @@ func markdownGoBlocks(t *testing.T) []codeBlock {
 	}
 	sampleTexts := make(map[string]bool, len(samples))
 	for _, sample := range samples {
-		sampleTexts[readNormalized(t, sample)] = true
+		sampleTexts[readSample(t, sample)] = true
 	}
 	var blocks []codeBlock
 	for _, file := range markdownFiles(t) {

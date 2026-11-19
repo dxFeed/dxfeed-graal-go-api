@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command fetch-daily-candles fetches the daily candles of a symbol for the last 20 days, prints them and exits.
 //
 //	go run ./cmd/samples/fetch-daily-candles -address demo.dxfeed.com:7300 -symbol AAPL

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package marketmaker provides the MarketMaker event: the top bid and ask of one market participant.
 package marketmaker
 

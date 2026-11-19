@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package main
 
 // The help of the tools. A tool prints it when it gets fewer than three arguments. The arguments come first and the

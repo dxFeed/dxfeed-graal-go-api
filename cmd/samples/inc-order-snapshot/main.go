@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Command inc-order-snapshot prints the orders of a symbol and an order source with model.IndexedTxModel: first the
 // snapshot of the order book, then its incremental updates, as complete transactions.
 //

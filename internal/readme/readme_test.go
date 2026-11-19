@@ -1,6 +1,9 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package readme checks the Markdown documentation: every ```go block of README.md must be the exact text of a sample
-// under cmd/samples, which the build and go vet compile, and the links of the Markdown files must lead to existing
-// files and headings.
+// under cmd/samples without its license header, which the build and go vet compile, and the links of the Markdown
+// files must lead to existing files and headings.
 package readme
 
 import (
@@ -22,6 +25,15 @@ func readNormalized(t *testing.T, path string) string {
 	return strings.ReplaceAll(string(data), "\r\n", "\n")
 }
 
+// licenseHeader starts every Go file; README.md shows a sample without it.
+const licenseHeader = "// Copyright (c) 2026 Devexperts LLC.\n// SPDX-License-Identifier: MPL-2.0\n\n"
+
+// readSample returns the text of a sample without its license header, as README.md shows it.
+func readSample(t *testing.T, path string) string {
+	t.Helper()
+	return strings.TrimPrefix(readNormalized(t, path), licenseHeader)
+}
+
 func TestReadmeGoBlocksAreSamples(t *testing.T) {
 	samples, err := filepath.Glob("../../cmd/samples/*/main.go")
 	if err != nil {
@@ -29,7 +41,7 @@ func TestReadmeGoBlocksAreSamples(t *testing.T) {
 	}
 	sampleTexts := make(map[string]string, len(samples))
 	for _, sample := range samples {
-		sampleTexts[readNormalized(t, sample)] = sample
+		sampleTexts[readSample(t, sample)] = sample
 	}
 
 	blocks := goBlock.FindAllStringSubmatch(readNormalized(t, "../../README.md"), -1)

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 package ipf
 
 // The types of instruments, the values of the TYPE field of an instrument profile

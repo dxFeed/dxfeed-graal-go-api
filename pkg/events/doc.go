@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package events holds what the event types have in common: the [EventType] interface, the indexed events
 // ([IndexedEvent], [IndexedEventSource] and the [EventFlag] values), and [InstrumentProfile], the description of an
 // instrument that package ipf reads (not an event). The event types themselves are in the packages under events, one

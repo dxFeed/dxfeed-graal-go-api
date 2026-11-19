@@ -16,7 +16,13 @@ Thank you for helping with the dxFeed Graal Go API. Bug reports, questions, fixe
 1. For anything bigger than a small fix, open an issue first, so we can agree on the approach before you write it.
 2. Fork the repository and create a branch from `main`.
 3. Set up the build and run the checks as [HOW_TO_DEVELOP.md](HOW_TO_DEVELOP.md) describes.
-4. Make the change with tests, keep the existing code style (`gofmt`), and document new exported identifiers.
+4. Make the change with tests, keep the existing code style (`gofmt`), and document new exported identifiers. A new
+   `.go` file starts with the license header, followed by a blank line, as the other files do; a test fails without it:
+
+   ```go
+   // Copyright (c) 2026 Devexperts LLC.
+   // SPDX-License-Identifier: MPL-2.0
+   ```
 5. Add a release note fragment (see below) when users of the API will notice the change.
 6. Open the pull request against `main` and fill in its template. CI builds and tests it on Windows, Linux and macOS.
 

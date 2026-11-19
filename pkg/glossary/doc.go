@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Devexperts LLC.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package glossary holds the values of the instrument profile fields that have a structure of their own: the price
 // increments ([PriceIncrements]), the Classification of Financial Instruments code ([CFI]) and the additional
 // underlyings of an option ([AdditionalUnderlyings]).
