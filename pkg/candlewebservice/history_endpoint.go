@@ -13,6 +13,7 @@ package candlewebservice
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
@@ -111,11 +112,16 @@ func (b *HistoryEndpointBuilder) WithAuthToken(authToken string) *HistoryEndpoin
 	return b
 }
 
-// WithToken sets the authentication token from an auth.Token: its value, as the C++ API does.
+// WithToken sets the credentials from an auth.Token: the user name and the password of a Basic token, otherwise the
+// value of the token, which the requests send as a bearer token. A nil token clears the authentication token.
 func (b *HistoryEndpointBuilder) WithToken(token *auth.Token) *HistoryEndpointBuilder {
 	if token == nil {
 		b.authToken = nil
 		return b
+	}
+	if user, basic := token.User(); basic {
+		password, _ := token.Password()
+		return b.WithUserName(user).WithPassword(password)
 	}
 	return b.WithAuthToken(token.Value())
 }
@@ -160,8 +166,10 @@ func (b *HistoryEndpointBuilder) Build() (*HistoryEndpoint, error) {
 }
 
 // HistoryEndpoint downloads time series events from the dxFeed candle web service; create it with
-// NewHistoryEndpointBuilder. It may be used from several goroutines.
+// NewHistoryEndpointBuilder. It may be used from several goroutines; Close waits for the running requests.
 type HistoryEndpoint struct {
+	// mu is held for reading by the requests and for writing by Close, so the handle is not released under a request.
+	mu          sync.RWMutex
 	handle      *native.HistoryEndpointHandle
 	address     string
 	compression Compression
@@ -190,10 +198,15 @@ func (e *HistoryEndpoint) GetTimeSeries(code eventcodes.EventCode, symbol osub.S
 	if to.Before(from) {
 		return nil, fmt.Errorf("candlewebservice: the time range ends (%v) before it starts (%v)", to, from)
 	}
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	return e.handle.TimeSeries(code.NativeCode(), symbol, from.UnixMilli(), to.UnixMilli())
 }
 
-// Close releases the endpoint; later GetTimeSeries calls fail. Close may be called more than once.
+// Close waits for the running GetTimeSeries calls and releases the endpoint; later GetTimeSeries calls fail. Close may
+// be called more than once.
 func (e *HistoryEndpoint) Close() error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	return e.handle.Free()
 }

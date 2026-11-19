@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/auth"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 )
@@ -57,6 +58,9 @@ func TestGetTimeSeriesFromService(t *testing.T) {
 	}{
 		{"basic", NewHistoryEndpointBuilder().WithUserName("user").WithPassword("secret"), "Basic dXNlcjpzZWNyZXQ="},
 		{"bearer", NewHistoryEndpointBuilder().WithAuthToken("token"), "Bearer token"},
+		{"basic token", NewHistoryEndpointBuilder().WithToken(mustToken(auth.NewBasicUser("user", "secret"))),
+			"Basic dXNlcjpzZWNyZXQ="},
+		{"bearer token", NewHistoryEndpointBuilder().WithToken(mustToken(auth.NewBearer("token"))), "Bearer token"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -98,4 +102,11 @@ func TestGetTimeSeriesFromService(t *testing.T) {
 			}
 		})
 	}
+}
+
+func mustToken(token *auth.Token, err error) *auth.Token {
+	if err != nil {
+		panic(err)
+	}
+	return token
 }
