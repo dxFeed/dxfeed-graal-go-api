@@ -1,4 +1,3 @@
-// Package timeandsale provides the TimeAndSale event: a trade or other price-bearing market event.
 package timeandsale
 
 import (

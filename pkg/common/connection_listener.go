@@ -1,4 +1,3 @@
-// Package common holds the types shared by the other packages: roles, connection states, listeners and JavaError.
 package common
 
 import "fmt"

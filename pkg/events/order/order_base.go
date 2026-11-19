@@ -1,4 +1,3 @@
-// Package order provides order events (Order, AnalyticOrder, SpreadOrder), order sources, actions and scopes.
 package order
 
 import (

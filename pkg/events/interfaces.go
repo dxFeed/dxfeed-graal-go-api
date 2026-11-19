@@ -1,4 +1,3 @@
-// Package events provides dxFeed event types, indexed event sources and instrument profiles.
 package events
 
 import "github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"

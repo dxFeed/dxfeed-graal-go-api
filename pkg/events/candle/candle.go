@@ -1,4 +1,3 @@
-// Package candle provides the Candle event and candle symbols (time-series OHLC aggregates).
 package candle
 
 import (
