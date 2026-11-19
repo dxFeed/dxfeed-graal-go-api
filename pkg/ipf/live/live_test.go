@@ -218,6 +218,13 @@ func TestConnectionToFile(t *testing.T) {
 		t.Error("a second Start did not fail")
 	}
 
+	// The SDK notifies the listeners after it changes the state, on the thread that changes it: WaitUntilCompleted may
+	// return before the listener gets Completed, and Close notifies Closed on this goroutine, so without this wait a
+	// slow machine may see Closed before Completed.
+	deadline := time.Now().Add(5 * time.Second)
+	for !slices.Contains(listener.get(), Completed) && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
 	if err := connection.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -225,7 +232,7 @@ func TestConnectionToFile(t *testing.T) {
 		t.Errorf("state after Close = %v, %v", state, err)
 	}
 	want := []State{Connecting, Connected, Completed, Closed}
-	deadline := time.Now().Add(5 * time.Second)
+	deadline = time.Now().Add(5 * time.Second)
 	for !slices.Equal(listener.get(), want) && time.Now().Before(deadline) {
 		time.Sleep(10 * time.Millisecond)
 	}
