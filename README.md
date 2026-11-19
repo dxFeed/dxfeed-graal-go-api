@@ -383,6 +383,8 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   is a simple demonstration of how to subscribe to the candles of a `CandleSymbol` from a time
 - [x] [OnDemandReplay](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/ondemand-replay/main.go)
   is a simple demonstration of how to replay historical data with `OnDemandService`
+- [x] [CandleDataDownload](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/candle-data-download/main.go)
+  is a simple demonstration of how to download candles with `HistoryEndpoint`
 - [ ] WriteTapeFile is a simple demonstration of how to write events to a tape file
 - [x] [DxFeedIpfConnect](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/feed-ipf-connect/main.go)
   is a simple demonstration of how to get Instrument Profiles and subscribe to their symbols
@@ -599,6 +601,9 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
 - [x] [OnDemandService](https://docs.dxfeed.com/dxfeed/api/com/dxfeed/ondemand/OnDemandService.html)
   provides on-demand historical tick data replay controls
   ([sample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/ondemand-replay/main.go))
+- [x] [HistoryEndpoint](https://github.com/dxFeed/dxfeed-graal-cxx-api/blob/main/include/dxfeed_graal_cpp_api/candlewebservice/HistoryEndpoint.hpp)
+  downloads candles and other time series events from the candle web service
+  ([sample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/candle-data-download/main.go))
 
 ## Contributing
 
