@@ -126,9 +126,10 @@ func TestOnDemandServiceStateTransitions(t *testing.T) {
 	if err := service.ReplayWithSpeed(from, 2); err != nil {
 		t.Fatalf("replay: %v", err)
 	}
-	want := onDemandState{supported: true, replay: true, time: from.UnixMilli(), speed: 2}
-	if got := readOnDemandState(t, service); got != want {
-		t.Fatalf("state after replay %+v, want %+v", got, want)
+	// The provider is unreachable, so the replay waits for data; the time does not go back from the start.
+	if got := readOnDemandState(t, service); !got.supported || !got.replay || got.clear || got.speed != 2 ||
+		got.time < from.UnixMilli() {
+		t.Fatalf("state after replay %+v, want the replay mode from %d at the speed 2", got, from.UnixMilli())
 	}
 	recorder.waitFor(t, "replay false -> true")
 	recorder.waitFor(t, "speed 0 -> 2")
@@ -163,10 +164,16 @@ func TestOnDemandServiceStateTransitions(t *testing.T) {
 	if err := service.StopAndClear(); err != nil {
 		t.Fatalf("stop and clear: %v", err)
 	}
-	if got := readOnDemandState(t, service); got.replay || !got.clear || got.time != from.UnixMilli() {
+	if got := readOnDemandState(t, service); got.replay || !got.clear || got.time < from.UnixMilli() {
 		t.Fatalf("state after StopAndClear %+v, want the clear mode at the last replayed time", got)
 	}
 
+	// The changes of one service are reported one at a time, in order: once the remaining listener has a change, a
+	// removed listener would have had it too.
+	remaining := &propertyRecorder{}
+	if err := service.AddPropertyChangeListener(remaining); err != nil {
+		t.Fatalf("add the second listener: %v", err)
+	}
 	service.RemovePropertyChangeListener(recorder)
 	recorder.mu.Lock()
 	recorder.changes = nil
@@ -174,7 +181,7 @@ func TestOnDemandServiceStateTransitions(t *testing.T) {
 	if err := service.ReplayWithSpeed(from, 3); err != nil {
 		t.Fatalf("replay after removing the listener: %v", err)
 	}
-	time.Sleep(100 * time.Millisecond)
+	remaining.waitFor(t, "speed 0 -> 3")
 	if recorder.has("speed 0 -> 3") {
 		t.Fatal("a removed listener got a property change")
 	}

@@ -156,9 +156,10 @@ func (s *OnDemandService) SetSpeed(speed float64) error {
 	return s.handle.SetSpeed(speed)
 }
 
-// AddPropertyChangeListener adds a listener of the changes of the properties of the service. A listener may be called
-// in the goroutine of the method that changed the property, before the method returns, or on an SDK thread; it must
-// not block. A listener that panics is logged and the other listeners miss that change.
+// AddPropertyChangeListener adds a listener of the changes of the properties of the service. The listeners are called
+// on a thread of the executor of the endpoint, not in the goroutine that changed the property, and the changes of one
+// service one at a time; a listener may add and remove listeners and must not block. A listener that panics is logged
+// and the other listeners miss that change.
 func (s *OnDemandService) AddPropertyChangeListener(listener OnDemandPropertyChangeListener) error {
 	if listener == nil {
 		return errors.New("dxfeed: the on-demand property change listener is nil")
