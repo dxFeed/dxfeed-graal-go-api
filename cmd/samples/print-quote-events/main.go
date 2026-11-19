@@ -1,9 +1,14 @@
+// Command print-quote-events prints the quotes of a symbol from a dxLink address until Ctrl+C.
+//
+//	go run ./cmd/samples/print-quote-events -address dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws -symbol AAPL
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
-	"math"
-	"time"
+	"os"
+	"os/signal"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
@@ -25,6 +30,16 @@ func (pr PrintState) UpdateState(old common.ConnectionState, new common.Connecti
 }
 
 func main() {
+	// For token-based authorization, use the address format
+	// "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws[login=dxlink:token]".
+	address := flag.String("address", "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws",
+		"the address to connect to; dxLink and QD addresses both work")
+	symbol := flag.String("symbol", "AAPL", "the symbol to print the quotes of")
+	flag.Parse()
+	// Ctrl+C from now on ends the sample through ctx, so that the deferred calls close the endpoint.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	// The experimental property must be enabled.
 	if err := api.SetSystemProperty("dxfeed.experimental.dxlink.enable", "true"); err != nil {
 		panic(err)
@@ -34,8 +49,6 @@ func main() {
 		panic(err)
 	}
 
-	// For token-based authorization, use the following address format:
-	// "dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws[login=dxlink:token]"
 	endpoint, err := api.NewEndpoint(api.Feed)
 	if err != nil {
 		panic(err)
@@ -47,7 +60,7 @@ func main() {
 		fmt.Printf("Connection state changed from %s to %s\n", old, new)
 	}))
 
-	err = endpoint.Connect("dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws")
+	err = endpoint.Connect(*address)
 	if err != nil {
 		panic(err)
 	}
@@ -65,9 +78,8 @@ func main() {
 
 	err = subscription.AddListener(PrintEvents(func(events []interface{}) {
 		for _, event := range events {
-			switch v := event.(type) {
-			case *quote.Quote:
-				fmt.Printf("%s\n", v.String())
+			if q, ok := event.(*quote.Quote); ok {
+				fmt.Printf("%s\n", q.String())
 			}
 		}
 	}))
@@ -75,10 +87,11 @@ func main() {
 		panic(err)
 	}
 
-	err = subscription.AddSymbol(osub.String("AAPL"))
+	err = subscription.AddSymbol(osub.String(*symbol))
 	if err != nil {
 		panic(err)
 	}
 
-	time.Sleep(time.Duration(math.MaxInt64))
+	// Print the quotes until Ctrl+C; returning from main closes the subscription and the endpoint.
+	<-ctx.Done()
 }

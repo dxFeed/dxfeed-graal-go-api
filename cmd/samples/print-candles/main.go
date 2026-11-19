@@ -1,9 +1,15 @@
-// Command print-candles subscribes to the hourly candles of AAPL for the last day and prints them as they arrive.
+// Command print-candles subscribes to the hourly candles of a symbol for the last day and prints them as they arrive,
+// until Ctrl+C.
+//
+//	go run ./cmd/samples/print-candles -address demo.dxfeed.com:7300 -symbol AAPL
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
-	"math"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
@@ -26,15 +32,21 @@ func (pr PrintState) UpdateState(old common.ConnectionState, new common.Connecti
 }
 
 func main() {
+	// For token-based authorization, use the address format "demo.dxfeed.com:7300[login=entitle:token]".
+	address := flag.String("address", "demo.dxfeed.com:7300", "the address to connect to")
+	base := flag.String("symbol", "AAPL", "the symbol to print the candles of; the period is always one hour")
+	flag.Parse()
+	// Ctrl+C from now on ends the sample through ctx, so that the deferred calls close the endpoint.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	// The candle symbol of hourly candles: the same as candle.NewCandleSymbol("AAPL{=h}").
-	symbol, err := candle.NewCandleSymbolWithAttributes("AAPL", candle.NewCandlePeriod(1, candle.CandleTypeHour))
+	symbol, err := candle.NewCandleSymbolWithAttributes(*base, candle.NewCandlePeriod(1, candle.CandleTypeHour))
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("Candle symbol %s: period %s, price %s\n", symbol, symbol.Period(), symbol.Price())
 
-	// For token-based authorization, use the following address format:
-	// "demo.dxfeed.com:7300[login=entitle:token]"
 	endpoint, err := api.NewEndpoint(api.Feed)
 	if err != nil {
 		panic(err)
@@ -46,7 +58,7 @@ func main() {
 		fmt.Printf("Connection state changed from %s to %s\n", old, new)
 	}))
 
-	err = endpoint.Connect("demo.dxfeed.com:7300")
+	err = endpoint.Connect(*address)
 	if err != nil {
 		panic(err)
 	}
@@ -81,5 +93,6 @@ func main() {
 		panic(err)
 	}
 
-	time.Sleep(time.Duration(math.MaxInt64))
+	// Print the candles until Ctrl+C; returning from main closes the subscription and the endpoint.
+	<-ctx.Done()
 }
