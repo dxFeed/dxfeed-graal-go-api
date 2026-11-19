@@ -80,6 +80,10 @@ func TestValidatePriceLevels(t *testing.T) {
 			}
 		})
 	}
+	// printQuotes only adds the quotes to the log of the SDK.
+	if valid, err := orcs.ValidatePriceLevels(tests[0].orders, time.Minute, true); err != nil || !valid {
+		t.Errorf("ValidatePriceLevels with printQuotes = %v, %v; want true", valid, err)
+	}
 	if _, err := orcs.ValidatePriceLevels([]*order.Order{priceLevel(t, 1_000, side.Buy, 100, 10), nil}, time.Minute,
 		false); err == nil {
 		t.Error("ValidatePriceLevels with a nil order: no error")
@@ -167,5 +171,11 @@ func TestPriceLevelServiceNilArguments(t *testing.T) {
 	}
 	if _, err := service.GetQuotesWithCaller(nil, now, now, "test"); err == nil {
 		t.Error("GetQuotesWithCaller with a nil symbol: no error")
+	}
+	if _, err := service.GetOrders(symbol, ntv(t), now, now.Add(-time.Hour)); err == nil {
+		t.Error("GetOrders with the end before the start: no error")
+	}
+	if _, err := service.GetQuotes(symbol, now, now.Add(-time.Hour)); err == nil {
+		t.Error("GetQuotes with the end before the start: no error")
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
@@ -30,6 +31,8 @@ type PriceLevelService struct {
 	// mu is held for reading by the requests and for writing by Close, so the handle is not released under a request.
 	mu     sync.RWMutex
 	handle *native.PriceLevelServiceHandle
+	// closed is set by the first Close before it closes the connection, so later requests fail at once.
+	closed atomic.Bool
 }
 
 // NewPriceLevelService creates a client of the price level service at the address of its RMI endpoint, such as
@@ -68,8 +71,14 @@ func (s *PriceLevelService) getOrders(symbol *candle.CandleSymbol, source *order
 	if source == nil {
 		return nil, errors.New("orcs: the order source is nil")
 	}
+	if err := checkRange(from, to); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	if s.closed.Load() {
+		return nil, errClosed
+	}
 	events, err := s.handle.Orders(symbol, source, from.UnixMilli(), to.UnixMilli(), caller)
 	if err != nil {
 		return nil, err
@@ -96,8 +105,14 @@ func (s *PriceLevelService) getQuotes(symbol *candle.CandleSymbol, from, to time
 	if symbol == nil {
 		return nil, errNilSymbol
 	}
+	if err := checkRange(from, to); err != nil {
+		return nil, err
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	if s.closed.Load() {
+		return nil, errClosed
+	}
 	events, err := s.handle.Quotes(symbol, from.UnixMilli(), to.UnixMilli(), caller)
 	if err != nil {
 		return nil, err
@@ -109,6 +124,9 @@ func (s *PriceLevelService) getQuotes(symbol *candle.CandleSymbol, from, to time
 func (s *PriceLevelService) GetAuthOrderSource() (*AuthOrderSource, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	if s.closed.Load() {
+		return nil, errClosed
+	}
 	data, err := s.handle.AuthOrderSource()
 	if err != nil {
 		return nil, err
@@ -121,15 +139,29 @@ func (s *PriceLevelService) GetAuthOrderSource() (*AuthOrderSource, error) {
 // an unreachable service fails after the request timeout of the SDK (a minute by default). Close may be called more
 // than once.
 func (s *PriceLevelService) Close() error {
-	s.mu.RLock()
-	err := s.handle.Close()
-	s.mu.RUnlock()
+	var err error
+	if !s.closed.Swap(true) {
+		s.mu.RLock()
+		err = s.handle.Close()
+		s.mu.RUnlock()
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return errors.Join(err, s.handle.Free())
 }
 
-var errNilSymbol = errors.New("orcs: the candle symbol is nil")
+var (
+	errNilSymbol = errors.New("orcs: the candle symbol is nil")
+	errClosed    = errors.New("orcs: the price level service is closed")
+)
+
+// checkRange checks that the time range does not end before it starts.
+func checkRange(from, to time.Time) error {
+	if to.Before(from) {
+		return fmt.Errorf("orcs: the time range ends (%v) before it starts (%v)", to, from)
+	}
+	return nil
+}
 
 // typed converts the events that the SDK returned to the expected type.
 func typed[T any](events []interface{}) ([]T, error) {
