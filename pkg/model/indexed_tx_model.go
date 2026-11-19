@@ -20,21 +20,25 @@ type TxModelListener[E events.IndexedEvent] func(source events.IndexedEventSourc
 // IndexedTxModelBuilder sets up an IndexedTxModel; create it with NewIndexedTxModelBuilder. The With methods change
 // the builder and return it, so they can be chained.
 type IndexedTxModelBuilder[E events.IndexedEvent] struct {
-	options   native.IndexedTxModelOptions
-	feed      *api.DXFeed
-	symbolSet bool
-	listener  TxModelListener[E]
-	executor  api.Executor
+	options  native.IndexedTxModelOptions
+	feed     *api.DXFeed
+	listener TxModelListener[E]
+	executor api.Executor
+	err      error
 }
 
-// NewIndexedTxModelBuilder creates a builder of a model of the indexed events of type E, such as *order.Order. By
-// default the model processes the transactions in batches and passes a snapshot as it comes.
+// NewIndexedTxModelBuilder creates a builder of a model of the indexed events of type E. E must be a pointer to a
+// concrete indexed event type, such as *order.Order; an interface type, such as events.IndexedEvent, makes Build
+// return an error. By default the model processes the transactions in batches and passes a snapshot as it comes.
 func NewIndexedTxModelBuilder[E events.IndexedEvent]() *IndexedTxModelBuilder[E] {
+	b := &IndexedTxModelBuilder[E]{options: native.IndexedTxModelOptions{BatchProcessing: true}}
 	var zero E
-	return &IndexedTxModelBuilder[E]{options: native.IndexedTxModelOptions{
-		EventType:       zero.Type().NativeCode(),
-		BatchProcessing: true,
-	}}
+	if any(zero) == nil {
+		b.err = errors.New("model: the event type must be a concrete event type, such as *order.Order")
+		return b
+	}
+	b.options.EventType = zero.Type().NativeCode()
+	return b
 }
 
 // WithFeed sets the feed to attach the model to when it is built.
@@ -46,7 +50,6 @@ func (b *IndexedTxModelBuilder[E]) WithFeed(feed *api.DXFeed) *IndexedTxModelBui
 // WithSymbol sets the symbol of the model: a string, an osub.String or a *candle.CandleSymbol. It is required.
 func (b *IndexedTxModelBuilder[E]) WithSymbol(symbol any) *IndexedTxModelBuilder[E] {
 	b.options.Symbol = symbol
-	b.symbolSet = true
 	return b
 }
 
@@ -85,7 +88,10 @@ func (b *IndexedTxModelBuilder[E]) WithExecutor(executor api.Executor) *IndexedT
 
 // Build builds the model and attaches it to the feed, if one is set. Close the model when it is no longer needed.
 func (b *IndexedTxModelBuilder[E]) Build() (*IndexedTxModel[E], error) {
-	if !b.symbolSet || b.options.Symbol == nil {
+	if b.err != nil {
+		return nil, b.err
+	}
+	if b.options.Symbol == nil {
 		return nil, errors.New("model: the symbol of the model is not set")
 	}
 	options := b.options
@@ -196,7 +202,8 @@ func (m *IndexedTxModel[E]) call(f func() error) error {
 }
 
 // Close detaches the model from all the feeds for good and releases it: the listener is not called after Close
-// returns, unless Close is called from the listener itself. Later calls do nothing.
+// returns, unless Close is called from the listener itself. Later calls do nothing: a concurrent second Close
+// returns at once, so the guarantee holds for the Close that performs the release.
 func (m *IndexedTxModel[E]) Close() error {
 	if m.closed.Swap(true) {
 		return nil

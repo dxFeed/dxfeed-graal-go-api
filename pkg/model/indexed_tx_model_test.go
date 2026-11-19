@@ -398,6 +398,9 @@ func TestIndexedTxModelBuildErrors(t *testing.T) {
 	if _, err := model.NewIndexedTxModelBuilder[*order.Order]().WithSymbol(42).Build(); err == nil {
 		t.Error("Build with an unsupported symbol: no error")
 	}
+	if _, err := model.NewIndexedTxModelBuilder[events.IndexedEvent]().WithSymbol(testSymbol).Build(); err == nil {
+		t.Error("Build with an interface event type: no error")
+	}
 	executor, err := api.NewInPlaceExecutor()
 	if err != nil {
 		t.Fatalf("NewInPlaceExecutor: %v", err)

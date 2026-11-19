@@ -87,17 +87,24 @@ func NewIndexedTxModel(o IndexedTxModelOptions) (*IndexedTxModelHandle, error) {
 			builder = nil
 			return err
 		}
-		// step replaces the builder with the one that f returns and releases the previous one.
-		step := func(f func(out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t) error {
+		// step passes the current builder to f, replaces it with the one that f returns and releases the previous one.
+		step := func(f func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t) error {
 			var next *C.dxfg_v4_indexed_tx_model_builder_t
-			if err := checkStatus(thread, f(&next)); err != nil {
+			if err := checkStatus(thread, f(builder, &next)); err != nil {
 				return err
 			}
 			err := release()
 			builder = next
 			return err
 		}
-		err := buildIndexedTxModel(thread, &builder, step, o, h)
+		err := configureIndexedTxModel(thread, step, o, h)
+		if err == nil {
+			var model *C.dxfg_v4_indexed_tx_model_t
+			err = checkStatus(thread, C.dxfg_v4_IndexedTxModel_Builder_build(thread.ptr, builder, &model))
+			if model != nil {
+				h.model = NewJavaHandle(unsafe.Pointer(model))
+			}
+		}
 		return errors.Join(err, release())
 	})
 	if err != nil || h.model == nil {
@@ -109,26 +116,27 @@ func NewIndexedTxModel(o IndexedTxModelOptions) (*IndexedTxModelHandle, error) {
 	return h, nil
 }
 
-func buildIndexedTxModel(thread *isolateThread, builder **C.dxfg_v4_indexed_tx_model_builder_t,
-	step func(f func(out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t) error, o IndexedTxModelOptions,
-	h *IndexedTxModelHandle) error {
+// configureIndexedTxModel applies the options to the builder, one step at a time.
+func configureIndexedTxModel(thread *isolateThread,
+	step func(f func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t) error,
+	o IndexedTxModelOptions, h *IndexedTxModelHandle) error {
 	symbol, err := newCSymbol(o.Symbol)
 	if err != nil {
 		return err
 	}
 	defer freeCSymbol(symbol)
-	if err := step(func(out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-		return C.dxfg_v4_IndexedTxModel_Builder_withSymbol(thread.ptr, *builder, symbol, out)
+	if err := step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
+		return C.dxfg_v4_IndexedTxModel_Builder_withSymbol(thread.ptr, cur, symbol, out)
 	}); err != nil {
 		return err
 	}
-	if err := step(func(out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-		return C.dxfg_v4_IndexedTxModel_Builder_withBatchProcessing(thread.ptr, *builder, cBool(o.BatchProcessing), out)
+	if err := step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
+		return C.dxfg_v4_IndexedTxModel_Builder_withBatchProcessing(thread.ptr, cur, cBool(o.BatchProcessing), out)
 	}); err != nil {
 		return err
 	}
-	if err := step(func(out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-		return C.dxfg_v4_IndexedTxModel_Builder_withSnapshotProcessing(thread.ptr, *builder,
+	if err := step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
+		return C.dxfg_v4_IndexedTxModel_Builder_withSnapshotProcessing(thread.ptr, cur,
 			cBool(o.SnapshotProcessing), out)
 	}); err != nil {
 		return err
@@ -138,8 +146,8 @@ func buildIndexedTxModel(thread *isolateThread, builder **C.dxfg_v4_indexed_tx_m
 		if err != nil {
 			return err
 		}
-		err = step(func(out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-			return C.dxfg_v4_IndexedTxModel_Builder_withSources(thread.ptr, *builder, sources, out)
+		err = step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
+			return C.dxfg_v4_IndexedTxModel_Builder_withSources(thread.ptr, cur, sources, out)
 		})
 		freeCIndexedEventSourceList(sources)
 		if err != nil {
@@ -148,8 +156,8 @@ func buildIndexedTxModel(thread *isolateThread, builder **C.dxfg_v4_indexed_tx_m
 	}
 	if h.listener != nil {
 		listener := (*C.dxfg_v4_tx_model_listener_t)(h.listener.handle.Ptr())
-		if err := step(func(out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-			return C.dxfg_v4_IndexedTxModel_Builder_withListener(thread.ptr, *builder, listener, out)
+		if err := step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
+			return C.dxfg_v4_IndexedTxModel_Builder_withListener(thread.ptr, cur, listener, out)
 		}); err != nil {
 			return err
 		}
@@ -159,8 +167,8 @@ func buildIndexedTxModel(thread *isolateThread, builder **C.dxfg_v4_indexed_tx_m
 		if executor == nil {
 			return errors.New("native: the executor of the model is closed")
 		}
-		if err := step(func(out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-			return C.dxfg_v4_IndexedTxModel_Builder_withExecutor(thread.ptr, *builder, executor, out)
+		if err := step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
+			return C.dxfg_v4_IndexedTxModel_Builder_withExecutor(thread.ptr, cur, executor, out)
 		}); err != nil {
 			return err
 		}
@@ -170,18 +178,11 @@ func buildIndexedTxModel(thread *isolateThread, builder **C.dxfg_v4_indexed_tx_m
 		if feed == nil {
 			return errors.New("native: the feed of the model is closed")
 		}
-		if err := step(func(out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
-			return C.dxfg_v4_IndexedTxModel_Builder_withFeed(thread.ptr, *builder, feed, out)
+		if err := step(func(cur *C.dxfg_v4_indexed_tx_model_builder_t, out **C.dxfg_v4_indexed_tx_model_builder_t) C.int32_t {
+			return C.dxfg_v4_IndexedTxModel_Builder_withFeed(thread.ptr, cur, feed, out)
 		}); err != nil {
 			return err
 		}
-	}
-	var model *C.dxfg_v4_indexed_tx_model_t
-	if err := checkStatus(thread, C.dxfg_v4_IndexedTxModel_Builder_build(thread.ptr, *builder, &model)); err != nil {
-		return err
-	}
-	if model != nil {
-		h.model = NewJavaHandle(unsafe.Pointer(model))
 	}
 	return nil
 }
