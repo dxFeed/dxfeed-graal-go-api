@@ -36,20 +36,29 @@ func TestMultipleAttachIsolateThreadInSameThread(t *testing.T) {
 	})
 }
 
-// TestThreadStaysAttached checks that an OS thread stays attached after a call: the next call on the same thread gets
-// the same IsolateThread without attaching it again.
+// TestThreadStaysAttached checks that an OS thread stays attached after a call, and that the next call on the thread
+// gets the same IsolateThread.
 func TestThreadStaysAttached(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		// Both calls run on the same OS thread.
+		// Both calls and the check run on the same OS thread.
 		runtime.LockOSThread()
 		defer runtime.UnlockOSThread()
 		var first, second *isolateThread
-		_ = executeInIsolateThread(func(thread *isolateThread) error { first = thread; return nil })
-		_ = executeInIsolateThread(func(thread *isolateThread) error { second = thread; return nil })
-		if first == nil || second == nil || first.ptr != second.ptr {
-			t.Errorf("the second call got another IsolateThread: %v, %v", first, second)
+		if err := executeInIsolateThread(func(thread *isolateThread) error { first = thread; return nil }); err != nil {
+			t.Errorf("first call: %v", err)
+			return
+		}
+		if !isAttached() {
+			t.Error("the thread is not attached after a call")
+		}
+		if err := executeInIsolateThread(func(thread *isolateThread) error { second = thread; return nil }); err != nil {
+			t.Errorf("second call: %v", err)
+			return
+		}
+		if first.ptr != second.ptr {
+			t.Errorf("the second call got another IsolateThread: %p, %p", first.ptr, second.ptr)
 		}
 	}()
 	<-done
@@ -83,7 +92,8 @@ func TestIsolateErrorIsReturned(t *testing.T) {
 	}
 }
 
-// executeInIsolateThread pins its goroutine to an OS thread for the duration of the call, so every call in progress
+// TestConcurrentAttachIsolateThread calls from many goroutines at once. executeInIsolateThread pins its goroutine to
+// an OS thread for the duration of the call, so every call in progress
 // costs one real thread. Keep the concurrency modest: with too many goroutines at once the runtime hits the process
 // thread limit and cgo aborts with "pthread_create failed: Resource temporarily unavailable".
 func TestConcurrentAttachIsolateThread(t *testing.T) {

@@ -54,7 +54,9 @@ The endpoint is created and the subscription has a listener, but no events come:
 Each OS thread that calls the API is attached to the isolate of the SDK on its first call and stays attached until the
 process exits; Go runs other goroutines on it, and their calls find it attached. A goroutine that locks itself to its
 OS thread with `runtime.LockOSThread`, calls the API and exits without `runtime.UnlockOSThread` ends that OS thread
-while it is still attached: the isolate keeps its record of the thread until the process exits. Unlock the goroutine
+while it is still attached: its record stays in the list of the attached threads of the isolate until the process
+exits. Unlock the goroutine
 before it exits, or keep such goroutines alive.
 
-The first calls of thousands of goroutines at once attach as many OS threads; on Linux this takes seconds.
+The first calls of thousands of goroutines at once attach as many OS threads; on Linux 10000 goroutines take up to a
+few seconds.

@@ -163,6 +163,13 @@ func executeInIsolateThread(call func(thread *isolateThread) error) error {
 	return call(thread)
 }
 
+// isAttached reports whether the current OS thread is attached to the isolate. The goroutine must be locked to its OS
+// thread.
+func isAttached() bool {
+	isolate, err := getOrCreateIsolate()
+	return err == nil && C.graal_get_current_thread(isolate.ptr) != nil
+}
+
 // currentThread returns the IsolateThread of the current OS thread and attaches the thread if it is not attached. The
 // goroutine must be locked to its OS thread.
 func currentThread() (*isolateThread, error) {
