@@ -54,9 +54,13 @@ func TestGetSystemPropertyWithUnicode(t *testing.T) {
 	}
 }
 
+// TestConcurrentGetSetSystemProperty calls the API from many goroutines at once, so many OS threads attach to the
+// isolate; attaching and detaching a thread on every call hung such a test on Linux. Each goroutine in a call holds an
+// OS thread, and Go stops the process at its limit of 10000 threads (debug.SetMaxThreads), so the test keeps well
+// below it.
 func TestConcurrentGetSetSystemProperty(t *testing.T) {
 	var wg sync.WaitGroup
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 5000; i++ {
 		wg.Add(1)
 		num := i
 		go func() {
