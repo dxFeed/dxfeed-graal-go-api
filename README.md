@@ -392,6 +392,8 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   is a simple demonstration of how to get Instrument Profiles and subscribe to their symbols
 - [x] [DXFeedLiveIpfSample](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/live-ipf/main.go)
   is a simple demonstration of how to get live updates for Instrument Profiles
+- [x] [DXFeedOptionChain](https://github.com/dxFeed/dxfeed-graal-go-api/blob/main/cmd/samples/option-chain/main.go)
+  is a simple demonstration of how to build option chains and print their series and strikes
 - [ ] DxFeedPublishProfiles is a simple demonstration of how to publish market events
 - [ ] ScheduleSample is a simple demonstration of how to get various scheduling information for instruments
 - [ ] DXFeedconnect is a simple demonstration of how to subscribe to different events using TimeSeriesSubscription
@@ -598,7 +600,7 @@ sudo /usr/bin/xattr -r -d com.apple.quarantine <directory_with_tools>
   provides API to retrieve and explore various exchanges’ trading schedules and different financial instrument classes
   ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/schedule/ScheduleSample.java))
 
-- [ ] [Option Series](https://github.com/devexperts/QD/blob/master/dxfeed-api/src/main/java/com/dxfeed/ipf/option/OptionSeries.java)
+- [x] [Option Series](https://github.com/devexperts/QD/blob/master/dxfeed-api/src/main/java/com/dxfeed/ipf/option/OptionSeries.java)
   is a series of call and put options with different strike sharing the same attributes of expiration, last trading day,
   spc, multiplies,
   etc. ([Java API sample](https://github.com/devexperts/QD/blob/master/dxfeed-samples/src/main/java/com/dxfeed/sample/ipf/option/DXFeedOptionChain.java))
