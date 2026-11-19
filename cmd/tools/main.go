@@ -20,9 +20,9 @@ func main() {
 		{"scheme", "ext:opt:sysprops,resource:dxlink.xml"},
 	} {
 		if err := api.SetSystemProperty(property[0], property[1]); err != nil {
-			fmt.Printf("Error setting %s: %v\n", property[0], err)
+			fmt.Fprintf(os.Stderr, "Error setting %s: %v\n", property[0], err)
 			os.Exit(1)
 		}
 	}
-	tool.Run(os.Args)
+	os.Exit(tool.Run(os.Args[2:]))
 }

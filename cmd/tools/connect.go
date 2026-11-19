@@ -6,7 +6,6 @@ package main
 import (
 	"fmt"
 	"math"
-	"os"
 	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/parser"
@@ -22,27 +21,20 @@ func (c Connect) ShortDescription() string {
 	return "Connects to the address and prints the events."
 }
 
-func (c Connect) Run(args []string) {
-	dxarguments := DXArguments{args}
-
-	arguments := dxarguments.arguments()
-	if len(arguments) < 3 {
-		fmt.Print(connectHelp)
-		os.Exit(0)
-	}
-
-	address := arguments[0]
-	symbols, err := parser.ParseSymbols(arguments[2])
-	if err != nil {
-		fmt.Printf("Error parsing symbols: %v\n", err)
-		os.Exit(1)
-	}
-	types := parser.ParseEventTypes(arguments[1])
-
-	err = connect(address, types, symbols, dxarguments.properties(), dxarguments.forceStream(), dxarguments.isQuite(), dxarguments.time())
-	if err != nil {
-		fmt.Printf("Error during connect: %v", err)
-	}
+func (c Connect) Run(args []string) int {
+	return runTool("connect", args, connectHelp,
+		[]option{fromTimeOption, propertiesOption, quietOption, forceStreamOption}, func(a toolArguments) error {
+			properties, err := a.properties()
+			if err != nil {
+				return usageError{err}
+			}
+			address, types, symbols, err := parseCommon(a)
+			if err != nil {
+				return err
+			}
+			return connect(address, types, symbols, properties, a.has(forceStreamOption), a.has(quietOption),
+				a.value(fromTimeOption))
+		})
 }
 
 func connect(
@@ -51,7 +43,7 @@ func connect(
 	symbols []osub.Symbol,
 	properties map[string]string,
 	forceStream bool,
-	isQuite bool,
+	quiet bool,
 	fromTime *string,
 ) error {
 	for key, value := range properties {
@@ -90,7 +82,7 @@ func connect(
 		return fmt.Errorf("CreateSubscription: %w", err)
 	}
 	defer func() { _ = subscription.Close() }()
-	if !isQuite {
+	if !quiet {
 		err = subscription.AddListener(PrintEvents(func(eventsList []interface{}) {
 			for _, event := range eventsList {
 				switch v := event.(type) {

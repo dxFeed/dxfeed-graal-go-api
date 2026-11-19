@@ -5,46 +5,28 @@ package main
 
 import (
 	"fmt"
-	"github.com/dxfeed/dxfeed-graal-go-api/internal/parser"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"math"
-	"os"
 	"sync"
 	"time"
-	"unsafe"
 )
 
 type PerfTest struct{}
-
-var hash uintptr
 
 func (c PerfTest) ShortDescription() string {
 	return "Connects to specified address and calculates performance counters."
 }
 
-func (c PerfTest) Run(args []string) {
-	dxarguments := DXArguments{args}
-	arguments := dxarguments.arguments()
-	if len(arguments) < 3 {
-		fmt.Print(perfTestHelp)
-		os.Exit(0)
-	}
-	address := arguments[0]
-	types := parser.ParseEventTypes(arguments[1])
-	symbols, err := parser.ParseSymbols(arguments[2])
-	if err != nil {
-		fmt.Printf("Error parsing symbols: %v\n", err)
-		os.Exit(1)
-	}
-
-	err = perf(address, types, symbols, dxarguments.forceStream())
-	if err != nil {
-		fmt.Printf("Error during perftest: %v\n", err)
-	}
+func (c PerfTest) Run(args []string) int {
+	return runTool("perftest", args, perfTestHelp, []option{forceStreamOption}, func(a toolArguments) error {
+		address, types, symbols, err := parseCommon(a)
+		if err != nil {
+			return err
+		}
+		return perf(address, types, symbols, a.has(forceStreamOption))
+	})
 }
 
 func perf(address string, types []eventcodes.EventCode, symbols []osub.Symbol, forceStream bool) error {
@@ -74,16 +56,6 @@ func perf(address string, types []eventcodes.EventCode, symbols []osub.Symbol, f
 		d.mu.Lock()
 		d.addListenerCounter(1)
 		d.addEventCounter(len(eventsList))
-		for _, event := range eventsList {
-			switch v := event.(type) {
-			case *quote.Quote:
-				fmt.Printf("%s\n", v.String())
-			case *timeandsale.TimeAndSale:
-				hash += uintptr(unsafe.Pointer(&v))
-			default:
-				fmt.Printf("Unsupported event %T!\n", v)
-			}
-		}
 		d.mu.Unlock()
 	}))
 	if err != nil {
@@ -105,7 +77,6 @@ func perf(address string, types []eventcodes.EventCode, symbols []osub.Symbol, f
 	}()
 
 	time.Sleep(time.Duration(math.MaxInt64))
-	fmt.Println(hash)
 	return nil
 }
 

@@ -6,19 +6,16 @@ package main
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/formatutil"
-	"github.com/dxfeed/dxfeed-graal-go-api/internal/parser"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"github.com/montanaflynn/stats"
 	"math"
-	"os"
 	"slices"
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 )
 
 type LatencyTest struct{}
@@ -27,26 +24,15 @@ func (c LatencyTest) ShortDescription() string {
 	return "Connects to the address and calculates the latency of TimeAndSale events."
 }
 
-func (c LatencyTest) Run(args []string) {
-	dxarguments := DXArguments{args}
-	arguments := dxarguments.arguments()
-	if len(arguments) < 3 {
-		fmt.Print(latencyTestHelp)
-
-		os.Exit(0)
-	}
-	address := arguments[0]
-	types := parser.ParseEventTypes(arguments[1])
-	symbols, err := parser.ParseSymbols(arguments[2])
-	if err != nil {
-		fmt.Printf("Error parsing symbols: %v\n", err)
-		os.Exit(1)
-	}
-	dxarguments.forceStream()
-	err = latency(address, types, symbols, dxarguments.forceStream(), dxarguments.ignoreExchanges())
-	if err != nil {
-		fmt.Printf("Error during latency test: %v\n", err)
-	}
+func (c LatencyTest) Run(args []string) int {
+	return runTool("latency test", args, latencyTestHelp, []option{ignoreExchangesOption, forceStreamOption},
+		func(a toolArguments) error {
+			address, types, symbols, err := parseCommon(a)
+			if err != nil {
+				return err
+			}
+			return latency(address, types, symbols, a.has(forceStreamOption), a.value(ignoreExchangesOption))
+		})
 }
 
 func latency(address string, types []eventcodes.EventCode, symbols []osub.Symbol, forceStream bool, ignoreExchanges *string) error {
@@ -86,8 +72,6 @@ func latency(address string, types []eventcodes.EventCode, symbols []osub.Symbol
 			switch v := event.(type) {
 			case *timeandsale.TimeAndSale:
 				{
-					hash += uintptr(unsafe.Pointer(&v))
-					v.EventSymbol()
 					if len(ignoredExchanges) > 0 && slices.Contains(ignoredExchanges, formatutil.FormatChar(rune(v.ExchangeCode()))) {
 						continue
 					}
@@ -124,7 +108,6 @@ func latency(address string, types []eventcodes.EventCode, symbols []osub.Symbol
 	}()
 
 	time.Sleep(time.Duration(math.MaxInt64))
-	fmt.Println(hash)
 	return nil
 }
 
