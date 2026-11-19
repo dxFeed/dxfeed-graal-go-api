@@ -6,7 +6,9 @@ package native
 */
 import "C"
 import (
+	"errors"
 	"fmt"
+	"sync"
 	"unsafe"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
@@ -15,17 +17,29 @@ import (
 
 type DXPublisherHandle struct {
 	handle Handler
+
+	mu            sync.Mutex
+	subscriptions map[int32]*ObservableSubscriptionHandle
 }
 
 func NewDXPublisherHandle(ptr *C.dxfg_v4_publisher_t) *DXPublisherHandle {
 	return &DXPublisherHandle{handle: NewJavaHandle(unsafe.Pointer(ptr))}
 }
 
+// Free releases the publisher and its observable subscriptions.
 func (p *DXPublisherHandle) Free() error {
-	if p != nil {
-		return p.handle.Free()
+	if p == nil {
+		return nil
 	}
-	return nil
+	p.mu.Lock()
+	subscriptions := p.subscriptions
+	p.subscriptions = nil
+	p.mu.Unlock()
+	var err error
+	for _, sub := range subscriptions {
+		err = errors.Join(err, sub.handle.Free())
+	}
+	return errors.Join(err, p.handle.Free())
 }
 
 func (p *DXPublisherHandle) Publish(events []interface{}) error {

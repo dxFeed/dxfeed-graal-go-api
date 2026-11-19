@@ -40,6 +40,7 @@ type DXEndpoint struct {
 	role            common.Role
 	endpointHandle  *native.DXEndpointHandle
 	feedHandle      *DXFeed
+	publisherOnce   sync.Once
 	publisherHandle *DXPublisher
 
 	// stateListeners is replaced, never changed in place, so UpdateState can call a snapshot without the lock.
@@ -260,13 +261,15 @@ func (e *DXEndpoint) GetFeed() (*DXFeed, error) {
 	return e.feedHandle, nil
 }
 
-// GetPublisher returns the publisher of the endpoint to publish events.
+// GetPublisher returns the publisher of the endpoint to publish events; later calls return the same publisher.
 func (e *DXEndpoint) GetPublisher() (*DXPublisher, error) {
 	handle, err := e.endpointHandle.GetPublisher()
 	if err != nil {
 		return nil, err
 	}
-	e.publisherHandle = &DXPublisher{publisher: handle}
+	e.publisherOnce.Do(func() {
+		e.publisherHandle = &DXPublisher{publisher: handle}
+	})
 	return e.publisherHandle, nil
 }
 

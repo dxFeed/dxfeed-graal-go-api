@@ -2,8 +2,6 @@ package api
 
 import (
 	"errors"
-	"log"
-	"sync"
 	"sync/atomic"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native"
@@ -18,18 +16,18 @@ import (
 // *osub.WildcardSymbol for all symbols, *osub.TimeSeriesSubscriptionSymbol for time series events from a time, and
 // *osub.IndexedEventSubscriptionSymbol for indexed events of one source.
 type DXFeedSubscription struct {
-	sub       *native.DXFeedSubscription
-	mu        sync.Mutex
-	listeners []*attachedListener
-	closed    atomic.Bool
+	sub             *native.DXFeedSubscription
+	listeners       listenerRegistry[common.EventListener, *native.EventListener]
+	changeListeners changeListenerRegistry
+	closed          atomic.Bool
 }
 
-// attachedListener pairs a listener added with AddListener with its native listener. The entry is in the list before
-// the native listener is attached, so a listener may remove itself from its first Update; native is nil until then.
-type attachedListener struct {
-	listener common.EventListener
-	native   *native.EventListener
-	removed  bool
+func newDXFeedSubscription(sub *native.DXFeedSubscription) *DXFeedSubscription {
+	return &DXFeedSubscription{
+		sub:             sub,
+		listeners:       listenerRegistry[common.EventListener, *native.EventListener]{kind: "event listener"},
+		changeListeners: newChangeListenerRegistry(),
+	}
 }
 
 // IsClosed reports whether Close succeeded.
@@ -40,68 +38,55 @@ func (s *DXFeedSubscription) IsClosed() bool {
 // AddListener adds a listener that receives the events of the subscription. The listener is called from an SDK thread;
 // a panic in it is logged and does not end the process.
 func (s *DXFeedSubscription) AddListener(listener common.EventListener) error {
-	entry := &attachedListener{listener: listener}
-	s.mu.Lock()
-	if s.closed.Load() {
-		// A closed subscription delivers no events.
-		s.mu.Unlock()
-		return nil
-	}
-	s.listeners = append(s.listeners, entry)
-	s.mu.Unlock()
-
-	nativeListener, err := s.sub.AttachListener(listener)
-	s.mu.Lock()
-	if err != nil {
-		s.removeEntry(entry)
-		s.mu.Unlock()
-		return err
-	}
-	if !entry.removed {
-		entry.native = nativeListener
-		s.mu.Unlock()
-		return nil
-	}
-	s.mu.Unlock()
-	// RemoveListener or Close came while the native listener was being attached.
-	if err := s.sub.DetachListener(nativeListener); err != nil {
-		log.Printf("dxfeed: remove event listener: %v", err)
-	}
-	return nil
+	return s.listeners.add(listener, func() (*native.EventListener, error) {
+		return s.sub.AttachListener(listener)
+	}, s.sub.DetachListener)
 }
 
 // RemoveListener removes a listener added with AddListener; the listener is not called after RemoveListener returns
 // (if AddListener of that listener is still running, after AddListener returns). It may be called from the listener.
 // A listener added several times is removed once. A failure of the SDK is logged.
 func (s *DXFeedSubscription) RemoveListener(listener common.EventListener) {
-	s.mu.Lock()
-	var removed *native.EventListener
-	for _, l := range s.listeners {
-		if l.listener == listener {
-			removed = l.native
-			s.removeEntry(l)
-			break
-		}
-	}
-	s.mu.Unlock()
-	if removed == nil {
-		// Not added, or AddListener is still attaching it and detaches it when done.
-		return
-	}
-	if err := s.sub.DetachListener(removed); err != nil {
-		log.Printf("dxfeed: remove event listener: %v", err)
-	}
+	s.listeners.remove(listener, s.sub.DetachListener)
 }
 
-// removeEntry marks the entry removed and takes it out of the list; s.mu must be held.
-func (s *DXFeedSubscription) removeEntry(entry *attachedListener) {
-	entry.removed = true
-	for i, l := range s.listeners {
-		if l == entry {
-			s.listeners = append(s.listeners[:i:i], s.listeners[i+1:]...)
-			return
-		}
+// AddChangeListener adds a listener of the changes of the symbols of the subscription; see
+// osub.ObservableSubscriptionChangeListener. If the subscription has symbols, the listener gets them in SymbolsAdded
+// before AddChangeListener returns. Adding a listener to a closed subscription does nothing.
+func (s *DXFeedSubscription) AddChangeListener(listener osub.ObservableSubscriptionChangeListener) error {
+	return s.changeListeners.add(listener, func() (*native.ChangeListener, error) {
+		return attachChangeListener(listener, s.sub.AddChangeListener)
+	}, func(cl *native.ChangeListener) error {
+		return detachChangeListener(cl, s.sub.RemoveChangeListener)
+	})
+}
+
+// RemoveChangeListener removes a listener added with AddChangeListener; its SubscriptionClosed is called before
+// RemoveChangeListener returns, and nothing after that (if AddChangeListener of that listener is still running, after
+// AddChangeListener returns). It may be called from the listener. A listener added several times is removed once. A
+// failure of the SDK is logged.
+func (s *DXFeedSubscription) RemoveChangeListener(listener osub.ObservableSubscriptionChangeListener) {
+	s.changeListeners.remove(listener, func(cl *native.ChangeListener) error {
+		return detachChangeListener(cl, s.sub.RemoveChangeListener)
+	})
+}
+
+// attachChangeListener creates a native change listener and adds it with add.
+func attachChangeListener(listener osub.ObservableSubscriptionChangeListener,
+	add func(*native.ChangeListener) error) (*native.ChangeListener, error) {
+	cl, err := native.NewChangeListener(listener)
+	if err != nil {
+		return nil, err
 	}
+	if err := add(cl); err != nil {
+		return nil, errors.Join(err, cl.Release())
+	}
+	return cl, nil
+}
+
+// detachChangeListener removes the native change listener with remove and releases it.
+func detachChangeListener(cl *native.ChangeListener, remove func(*native.ChangeListener) error) error {
+	return errors.Join(remove(cl), cl.Release())
 }
 
 // AddSymbol adds a symbol to the subscription; see DXFeedSubscription for the symbol types.
@@ -129,24 +114,18 @@ func (s *DXFeedSubscription) Clear() error {
 	return s.sub.Clear()
 }
 
-// Close closes the subscription; it stops receiving events.
+// Close closes the subscription; it stops receiving events, and its change listeners get SubscriptionClosed.
 func (s *DXFeedSubscription) Close() error {
 	if err := s.sub.Close(); err != nil {
 		return err
 	}
 	s.closed.Store(true)
-	s.mu.Lock()
-	listeners := s.listeners
-	s.listeners = nil
-	for _, l := range listeners {
-		l.removed = true
-	}
-	s.mu.Unlock()
 	var err error
-	for _, l := range listeners {
-		if l.native != nil {
-			err = errors.Join(err, l.native.Release())
-		}
+	for _, l := range s.listeners.close() {
+		err = errors.Join(err, l.Release())
+	}
+	for _, l := range s.changeListeners.close() {
+		err = errors.Join(err, l.Release())
 	}
 	return err
 }
