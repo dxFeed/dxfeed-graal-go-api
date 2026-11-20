@@ -78,7 +78,7 @@ func TestSelectToolUnknown(t *testing.T) {
 func checkUsage(t *testing.T, args []string, usage string) {
 	t.Helper()
 	last := -1
-	for _, name := range []string{"connect", "dump", "latencytest", "perftest"} {
+	for _, name := range []string{"connect", "dump", "latencytest", "perftest", "qds"} {
 		line := "\t" + name + " "
 		if strings.Count(usage, line) != 1 {
 			t.Errorf("%q: usage lists %s %d times, want once:\n%s", args, name, strings.Count(usage, line), usage)
@@ -157,6 +157,26 @@ func TestToolHelp(t *testing.T) {
 		status, out := runTools(t, args)
 		if status != 0 || !strings.Contains(out, "\nUsage:\n  tools "+strings.Fields(args)[0]+" ") {
 			t.Errorf("tools %s: status %d, want 0 and the help:\n%s", args, status, out)
+		}
+	}
+}
+
+// TestQds checks that the Qds tool runs the QDS tools of the SDK and exits with their status.
+func TestQds(t *testing.T) {
+	for _, test := range []struct {
+		args   string
+		status int
+		want   string
+	}{
+		{"qds", 0, "Multiplexor"},
+		{"qds -h", 0, "\nUsage:\n  tools qds "},
+		{"qds help -p", 2, "qds: option -p needs a value\n"},
+		{"qds help -p x", 2, `qds: option --properties: "x" is not name=value`},
+		{"qds NoSuchTool", 1, "NoSuchTool"},
+	} {
+		status, out := runTools(t, test.args)
+		if status != test.status || !strings.Contains(out, test.want) {
+			t.Errorf("tools %s: status %d, want %d and %q:\n%s", test.args, status, test.status, test.want, out)
 		}
 	}
 }

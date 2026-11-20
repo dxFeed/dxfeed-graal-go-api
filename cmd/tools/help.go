@@ -42,6 +42,29 @@ Samples:
   tools connect dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws Quote AAPL
 `
 
+const qdsHelp = `Qds: runs the QDS tools of the dxFeed Graal Native SDK, such as connect, dump, multiplexor or feed, with their
+command line in one argument. Without arguments it prints the list of the QDS tools.
+
+Usage:
+  tools qds "<qds-args>" [<options>]
+
+Where:
+  <qds-args>  The command line of the QDS tools: the name of a tool and its arguments, such as
+              "connect demo.dxfeed.com:7300 Quote AAPL"; several tools run together when separated by +. The other
+              arguments, except the first -p, are added to it. "help <tool>" prints the help of a QDS tool.
+
+Options:
+  -p, --properties <name=value,...>
+                          Set system properties before the QDS tools run, such as dxfeed.aggregationPeriod=1s.
+
+-h, --help and -help print this help only as the first argument; later they go to the QDS tools. The exit status is
+that of the QDS tools, 0 if they succeed and 1 if they fail; a wrong option gives 2.
+
+Samples:
+  tools qds "connect demo.dxfeed.com:7300 Quote AAPL -stat 5s"
+  tools qds "help connect"
+`
+
 const dumpHelp = `Dump: prints the events received from the address and, with -t, writes them to a tape file. It uses the StreamFeed
 role, so the events of a tape file come as they are, without conflation.
 
