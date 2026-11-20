@@ -255,7 +255,8 @@ func readSummary(t *testing.T, path string) map[string]any {
 }
 
 // countLines counts the statistics blocks, the instance lines and the runtime lines of the output of a side and checks
-// the side, the name and the instances of each block, and on the consumer a lag from 0 to 1 s.
+// the side, the name and the instances of each block, and on the consumer a lag from 0 to 1 s (a block of a burst on
+// a busy machine may have a mean below 1 us; the summary checks that the lag is positive).
 func countLines(t *testing.T, re map[string]*regexp.Regexp, out, side, name, instances string) (int, int, int) {
 	t.Helper()
 	blocks, instanceLines, runtimes := 0, 0, 0
@@ -266,7 +267,7 @@ func countLines(t *testing.T, re map[string]*regexp.Regexp, out, side, name, ins
 			blocks++
 			m := re["summary"].FindStringSubmatch(line)
 			lag, _ := strconv.Atoi(strings.ReplaceAll(m[4], ",", ""))
-			if m[1] != side || m[2] != name || m[5] != instances || side == "Consumer" && m[3] != "0" && (lag <= 0 || lag >= 1000000) {
+			if m[1] != side || m[2] != name || m[5] != instances || side == "Consumer" && m[3] != "0" && (lag < 0 || lag >= 1000000) {
 				t.Errorf("line %q: want %s, %s, %s instances and a lag from 0 to 1 s on the consumer", line, side,
 					name, instances)
 			}
