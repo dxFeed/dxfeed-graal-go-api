@@ -1,0 +1,11 @@
+{
+  "spec_version": "nettest/1",
+  "about": "The expressions of the NetTest specification (section 'Output lines'), matched against a line without its line break; summary, runtime and metrics are searched anywhere in the line. Portable: bracket expressions, [0-9], no \\d, \\S or (?:...).",
+  "regexes": {
+    "summary": "[{][*]NetTest(Producer|Consumer)Side-([^*]+)[*][}] data ([0-9,]+) rps, lag (-?[0-9,]+) us, instances ([0-9]+), connections ([0-9]+)$",
+    "instance": "^    ([^*]+)[.]([0-9]+) data ([0-9,]+) rps, lag (-?[0-9,]+) us$",
+    "runtime": "[{][*]NetTestRuntime-([^*]+)[*][}] heap (([0-9,]+) MB|n/a) of (([0-9,]+) MB|n/a), gc (([0-9,]+) [(]([0-9,]+) ms[)]|n/a), cpu (([0-9,]+)%|n/a)$",
+    "metrics": "[{][*]NetTestMetrics-([^*]+)[*][}] http://([^ \\t\\r\\n]+):([0-9]+)/metrics$",
+    "isolate_rejection": "^NetTest: the isolate rejected one of the options: ([^ \\t\\r\\n]+( [^ \\t\\r\\n]+)*)$"
+  }
+}

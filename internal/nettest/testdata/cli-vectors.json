@@ -1,0 +1,1094 @@
+{
+  "spec_version": "nettest/1",
+  "about": "Command lines of the NetTest specification (section 'Command line'): args after the tool name. exit 0 entries are checked on the parser without a run: settings are the values it must give, named as in the config of the summary file (side, address, symbols, ...; null is absent), and stdout_contains is a line of the output of --help. exit 2 entries: error is the exact text after '<tool>: ' on the first line of stderr, error_prefix its start; without either only the exit code counts. requires: optional features the entry needs (isolate, legacy) or their absence (!isolate). section: cli, roles, consumer, summary or metrics.",
+  "vectors": [
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100"
+      ],
+      "exit": 0,
+      "settings": {
+        "side": "producer",
+        "address": ":7001",
+        "symbols": 100,
+        "symbols_source": "generated",
+        "instances": 1,
+        "rate_limit": null,
+        "batch": 100,
+        "event": "Trade",
+        "collector": null,
+        "role": "PUBLISHER",
+        "reuse": false,
+        "period_ms": 10000,
+        "warmup_ms": null,
+        "duration_ms": null,
+        "name": "NetTest"
+      }
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        "-S",
+        "100",
+        "127.0.0.1:7001"
+      ],
+      "exit": 0,
+      "settings": {
+        "address": "127.0.0.1:7001",
+        "symbols": 100
+      }
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100@symbols.ipf"
+      ],
+      "exit": 0,
+      "settings": {
+        "symbols": 100,
+        "symbols_source": "file"
+      }
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "-C",
+        "4",
+        "-r",
+        "*/1.5M",
+        "--batch",
+        "50",
+        "--reuse",
+        "--event",
+        "TimeAndSale",
+        "-n",
+        "bench",
+        "-s",
+        "500ms",
+        "--duration",
+        "7m"
+      ],
+      "exit": 0,
+      "settings": {
+        "instances": 4,
+        "rate_limit": 1500000,
+        "batch": 50,
+        "reuse": true,
+        "event": "TimeAndSale",
+        "name": "bench",
+        "period_ms": 500,
+        "duration_ms": 420000
+      }
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--rate-limit=*/500k",
+        "--stat=2s",
+        "--name=bench",
+        "--batch=10"
+      ],
+      "exit": 0,
+      "settings": {
+        "rate_limit": 500000,
+        "period_ms": 2000,
+        "name": "bench",
+        "batch": 10
+      }
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--rate-limit",
+        "*/2k",
+        "--stat",
+        "1m",
+        "--name",
+        "x"
+      ],
+      "exit": 0,
+      "settings": {
+        "rate_limit": 2000,
+        "period_ms": 60000,
+        "name": "x"
+      }
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-S",
+        "200"
+      ],
+      "exit": 0,
+      "settings": {
+        "symbols": 200
+      }
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100000000"
+      ],
+      "exit": 0,
+      "settings": {
+        "symbols": 100000000
+      }
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "-C",
+        "1000",
+        "--batch",
+        "4194304"
+      ],
+      "exit": 0,
+      "settings": {
+        "instances": 1000,
+        "batch": 4194304
+      }
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-Dsome.key=a=b"
+      ],
+      "exit": 0
+    },
+    {
+      "section": "cli",
+      "args": [
+        "--help"
+      ],
+      "exit": 0,
+      "stdout_contains": "spec_version nettest/1"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--help"
+      ],
+      "exit": 0,
+      "stdout_contains": "spec_version nettest/1"
+    },
+    {
+      "section": "cli",
+      "args": [],
+      "exit": 2
+    },
+    {
+      "section": "cli",
+      "args": [
+        "x",
+        ":7001",
+        "-S",
+        "100"
+      ],
+      "exit": 2,
+      "error": "unknown mode 'x'; the mode is p or c"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p"
+      ],
+      "exit": 2,
+      "error": "the address is missing"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001"
+      ],
+      "exit": 2,
+      "error": "-S is missing"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S"
+      ],
+      "exit": 2,
+      "error": "missing value of -S"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "0"
+      ],
+      "exit": 2,
+      "error": "-S needs <total> or <total>@<file>, where <total> is a number from 1 to 100000000: '0'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100000001"
+      ],
+      "exit": 2,
+      "error": "-S needs <total> or <total>@<file>, where <total> is a number from 1 to 100000000: '100000001'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100@"
+      ],
+      "exit": 2,
+      "error": "-S has no file name after '@': '100@'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100/r"
+      ],
+      "exit": 2,
+      "error": "unsupported QD flag: the symbol split '/r' or '/s' in '-S 100/r'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100{4,6}"
+      ],
+      "exit": 2,
+      "error": "unsupported QD flag: the symbol length '{len,max}' in '-S 100{4,6}'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "-C",
+        "0"
+      ],
+      "exit": 2,
+      "error": "-C needs a number from 1 to 1000: '0'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "-C",
+        "1001"
+      ],
+      "exit": 2,
+      "error": "-C needs a number from 1 to 1000: '1001'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-C",
+        "2"
+      ],
+      "exit": 2,
+      "error": "-C 2 cannot be used with the server address ':7001': every instance would bind the same port"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-r",
+        "500k"
+      ],
+      "exit": 2,
+      "error": "-r needs */<rate> (for example */500k): '500k'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-r",
+        "*/0"
+      ],
+      "exit": 2,
+      "error": "-r has a bad rate (a positive number with an optional k, M or G): '*/0'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-r",
+        "*/1e6"
+      ],
+      "exit": 2,
+      "error": "-r has a bad rate (a positive number with an optional k, M or G): '*/1e6'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-r",
+        "*/1M;1s"
+      ],
+      "exit": 2,
+      "error": "unsupported QD flag: the rate limiter bucket ';<time>' in '-r */1M;1s'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-s",
+        "10"
+      ],
+      "exit": 2,
+      "error": "-s needs a positive time with ms, s or m (for example 10s): '10'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-s",
+        "1h"
+      ],
+      "exit": 2,
+      "error": "-s needs a positive time with ms, s or m (for example 10s): '1h'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--duration",
+        "0s"
+      ],
+      "exit": 2,
+      "error": "--duration needs a positive time with ms, s or m (for example 10s): '0s'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--batch",
+        "0"
+      ],
+      "exit": 2,
+      "error": "--batch needs a number from 1 to 4194304: '0'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--batch",
+        "4194305"
+      ],
+      "exit": 2,
+      "error": "--batch needs a number from 1 to 4194304: '4194305'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-n",
+        ""
+      ],
+      "exit": 2,
+      "error": "-n needs a non-empty name"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--event",
+        "Quote"
+      ],
+      "exit": 2,
+      "error": "--event is Trade or TimeAndSale: 'Quote'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-Dnovalue"
+      ],
+      "exit": 2,
+      "error": "-D needs <key>=<value>: '-Dnovalue'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--foo"
+      ],
+      "exit": 2,
+      "error": "unknown flag --foo"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "extra"
+      ],
+      "exit": 2,
+      "error": "unexpected argument 'extra' after the address ':7001'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-w"
+      ],
+      "exit": 2,
+      "error": "unsupported QD flag: -w (the wildcard subscription)"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--wildcard"
+      ],
+      "exit": 2,
+      "error": "unsupported QD flag: --wildcard (the wildcard subscription)"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "-r",
+        "*/1k"
+      ],
+      "exit": 2,
+      "error": "-r is an option of the mode p"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--batch",
+        "10"
+      ],
+      "exit": 2,
+      "error": "--batch is an option of the mode p"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--reuse"
+      ],
+      "exit": 2,
+      "error": "--reuse is an option of the mode p"
+    },
+    {
+      "section": "roles",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-c",
+        "stream"
+      ],
+      "exit": 0,
+      "settings": {
+        "collector": "stream",
+        "role": "STREAM_PUBLISHER"
+      }
+    },
+    {
+      "section": "roles",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--collector=ticker"
+      ],
+      "exit": 0,
+      "settings": {
+        "collector": "ticker",
+        "role": "PUBLISHER"
+      }
+    },
+    {
+      "section": "roles",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-c",
+        "stream",
+        "--role",
+        "PUBLISHER"
+      ],
+      "exit": 0,
+      "settings": {
+        "collector": "stream",
+        "role": "PUBLISHER"
+      }
+    },
+    {
+      "section": "roles",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--role",
+        "STREAM_PUBLISHER"
+      ],
+      "exit": 0,
+      "settings": {
+        "collector": null,
+        "role": "STREAM_PUBLISHER"
+      }
+    },
+    {
+      "section": "roles",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100"
+      ],
+      "exit": 0,
+      "settings": {
+        "side": "consumer",
+        "collector": null,
+        "role": "STREAM_FEED",
+        "conflated": false,
+        "batch": null,
+        "rate_limit": null,
+        "reuse": null
+      }
+    },
+    {
+      "section": "roles",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "-c",
+        "stream"
+      ],
+      "exit": 0,
+      "settings": {
+        "collector": "stream",
+        "role": "STREAM_FEED",
+        "conflated": false
+      }
+    },
+    {
+      "section": "roles",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "-c",
+        "ticker"
+      ],
+      "exit": 0,
+      "settings": {
+        "collector": "ticker",
+        "role": "FEED",
+        "conflated": true
+      }
+    },
+    {
+      "section": "roles",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--role",
+        "FEED"
+      ],
+      "exit": 0,
+      "settings": {
+        "collector": null,
+        "role": "FEED",
+        "conflated": true
+      }
+    },
+    {
+      "section": "roles",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--role",
+        "FEED",
+        "--event",
+        "TimeAndSale"
+      ],
+      "exit": 0,
+      "settings": {
+        "role": "FEED",
+        "conflated": false
+      }
+    },
+    {
+      "section": "roles",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "-c",
+        "stream",
+        "--role",
+        "FEED",
+        "--event",
+        "TimeAndSale"
+      ],
+      "exit": 0,
+      "settings": {
+        "collector": "stream",
+        "role": "FEED",
+        "conflated": false
+      }
+    },
+    {
+      "section": "roles",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "-c",
+        "stream",
+        "--role",
+        "FEED"
+      ],
+      "exit": 2,
+      "error": "--role FEED conflicts with -c stream for Trade"
+    },
+    {
+      "section": "roles",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "-c",
+        "ticker",
+        "--role",
+        "STREAM_FEED"
+      ],
+      "exit": 2,
+      "error": "--role STREAM_FEED conflicts with -c ticker for Trade"
+    },
+    {
+      "section": "roles",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-c",
+        "ticker",
+        "--role",
+        "STREAM_PUBLISHER"
+      ],
+      "exit": 2,
+      "error": "--role STREAM_PUBLISHER conflicts with -c ticker for Trade"
+    },
+    {
+      "section": "roles",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-c",
+        "ticker",
+        "--event",
+        "TimeAndSale"
+      ],
+      "exit": 2,
+      "error": "-c ticker needs --event Trade: TimeAndSale has no ticker contract"
+    },
+    {
+      "section": "roles",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "-c",
+        "ticker",
+        "--event",
+        "TimeAndSale"
+      ],
+      "exit": 2,
+      "error": "-c ticker needs --event Trade: TimeAndSale has no ticker contract"
+    },
+    {
+      "section": "roles",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-c",
+        "history"
+      ],
+      "exit": 2,
+      "error": "-c history is reserved"
+    },
+    {
+      "section": "roles",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-c",
+        "foo"
+      ],
+      "exit": 2,
+      "error": "-c is stream or ticker: 'foo'"
+    },
+    {
+      "section": "roles",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--role",
+        "FEED"
+      ],
+      "exit": 2,
+      "error": "--role is PUBLISHER or STREAM_PUBLISHER: 'FEED'"
+    },
+    {
+      "section": "roles",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--role",
+        "PUBLISHER"
+      ],
+      "exit": 2,
+      "error": "--role is FEED or STREAM_FEED: 'PUBLISHER'"
+    },
+    {
+      "section": "consumer",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--warmup",
+        "30s"
+      ],
+      "exit": 0,
+      "settings": {
+        "warmup_ms": 30000
+      }
+    },
+    {
+      "section": "consumer",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--warmup=500ms"
+      ],
+      "exit": 0,
+      "settings": {
+        "warmup_ms": 500
+      }
+    },
+    {
+      "section": "consumer",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--warmup",
+        "0s"
+      ],
+      "exit": 2,
+      "error": "--warmup needs a positive time with ms, s or m (for example 10s): '0s'"
+    },
+    {
+      "section": "summary",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--summary",
+        "no-such-dir-nettest-kit/summary.json"
+      ],
+      "exit": 2,
+      "error": "--summary cannot write to the directory of 'no-such-dir-nettest-kit/summary.json'"
+    },
+    {
+      "section": "metrics",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--metrics-port",
+        "0"
+      ],
+      "exit": 0
+    },
+    {
+      "section": "metrics",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--metrics-port=127.0.0.1:9100"
+      ],
+      "exit": 0
+    },
+    {
+      "section": "metrics",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--metrics-port",
+        "65536"
+      ],
+      "exit": 2,
+      "error": "--metrics-port needs [<host>:]<port>, where <port> is a number from 0 to 65535: '65536'"
+    },
+    {
+      "section": "metrics",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--metrics-port",
+        "abc"
+      ],
+      "exit": 2,
+      "error": "--metrics-port needs [<host>:]<port>, where <port> is a number from 0 to 65535: 'abc'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-Xmx512m",
+        "-XX:+PrintGC",
+        "-Xss1m"
+      ],
+      "exit": 0,
+      "settings": {
+        "isolate_arguments": [
+          "-Xmx512m",
+          "-XX:+PrintGC",
+          "-Xss1m"
+        ]
+      },
+      "requires": [
+        "isolate"
+      ]
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-Xfoo"
+      ],
+      "exit": 2,
+      "error": "-Xfoo is not an option of the isolate, which takes -Xmx<size>, -Xms<size>, -Xmn<size>, -Xss<size> and -XX:<option>",
+      "requires": [
+        "isolate"
+      ]
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-Xmx512m"
+      ],
+      "exit": 2,
+      "error_prefix": "unsupported option: -Xmx512m",
+      "requires": [
+        "!isolate"
+      ]
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--legacy"
+      ],
+      "exit": 0,
+      "requires": [
+        "legacy"
+      ]
+    },
+    {
+      "section": "cli",
+      "args": [
+        "c",
+        "127.0.0.1:7001",
+        "-S",
+        "100",
+        "--legacy"
+      ],
+      "exit": 2,
+      "error": "--legacy is an option of the mode p",
+      "requires": [
+        "legacy"
+      ]
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "--legacy"
+      ],
+      "exit": 2,
+      "error_prefix": "unsupported option: --legacy",
+      "requires": [
+        "!legacy"
+      ]
+    }
+  ]
+}

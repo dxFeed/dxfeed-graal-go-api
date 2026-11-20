@@ -48,7 +48,7 @@ to your dxFeed support contact.
 
 What is left:
 
-* the tools of the dxFeed C++ API that the Go API does not have yet (NetTest)
+* the summary file and the metrics of NetTest (`--summary`, `--metrics-port`)
 * a prototype without cgo (purego), so that a build needs no C compiler
 * version 1.0.0 with a stable API
 
@@ -342,6 +342,12 @@ the feed. Each release has them built as archives on the
   connects to the address and prints the rate of events, the rate of listener calls and the number of events in a call
 * [latencytest](cmd/tools/latencytest.go)
   connects to the address and calculates the latency of the TimeAndSale events
+* [nettest](cmd/tools/nettest.go)
+  publishes (`p`) or receives (`c`) generated Trade or TimeAndSale events at a controlled rate and prints the rate and
+  the lag, as the
+  [NetTest specification](https://github.com/dxFeed/dxfeed-graal-native-sdk/blob/v3.18.0/docs/wrapper-guide/nettest.md)
+  `nettest/1` of the SDK defines them, so that its output compares with the NetTest of the other APIs, such as
+  `tools nettest p :7001 -S 1000 -r */100k -c stream` and `tools nettest c 127.0.0.1:7001 -S 1000 -c stream`
 * [qds](cmd/tools/qds.go)
   runs the QDS tools of the SDK with their command line in one argument, such as
   `tools qds "connect demo.dxfeed.com:7300 Quote AAPL -stat 5s"`; without arguments it lists them

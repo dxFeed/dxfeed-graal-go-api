@@ -1,0 +1,36 @@
+{
+  "spec_version": "nettest/1",
+  "about": "The generated symbols of the NetTest specification (section 'Time, sequence and symbols'), those of QD NetTest. For each total: draws is the number of symbols drawn, duplicates included, until total distinct ones appear; samples give the symbol at a 0-based index in the order of first appearance; fnv1a64 is the 64-bit FNV-1a hash (offset basis 0xCBF29CE484222325, prime 0x100000001B3) of the ASCII bytes of the symbols in that order, each followed by a line feed. The symbols of a smaller total are the first symbols of a larger one.",
+  "cases": [
+    {
+      "total": 10,
+      "draws": 10,
+      "fnv1a64": "0xBA71757AFFFAC9D8",
+      "samples": [
+        { "index": 0, "symbol": "YQKNT" },
+        { "index": 9, "symbol": "IC" }
+      ]
+    },
+    {
+      "total": 1000,
+      "draws": 1087,
+      "fnv1a64": "0x17C4183EADF83709",
+      "samples": [
+        { "index": 0, "symbol": "YQKNT" },
+        { "index": 9, "symbol": "IC" },
+        { "index": 999, "symbol": "QIDVNU" }
+      ]
+    },
+    {
+      "total": 100000,
+      "draws": 164648,
+      "fnv1a64": "0x5B249D4288075A65",
+      "samples": [
+        { "index": 0, "symbol": "YQKNT" },
+        { "index": 9, "symbol": "IC" },
+        { "index": 999, "symbol": "QIDVNU" },
+        { "index": 99999, "symbol": "EYNMC" }
+      ]
+    }
+  ]
+}
