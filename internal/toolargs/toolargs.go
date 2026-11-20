@@ -34,6 +34,9 @@ var (
 	CPUUsageByCore  = Option{Names: []string{"--cpu-usage-by-core"}}
 	DetachListener  = Option{Names: []string{"--detach-listener"}}
 	Interval        = Option{Names: []string{"--interval"}, HasValue: true}
+	Compare         = Option{Names: []string{"--compare"}, HasValue: true}
+	Duration        = Option{Names: []string{"--duration"}, HasValue: true}
+	Report          = Option{Names: []string{"--report", "-o"}, HasValue: true}
 )
 
 // IsHelp reports whether an argument asks for the help: -h, --help or -help.

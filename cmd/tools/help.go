@@ -42,6 +42,39 @@ Samples:
   tools connect dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws Quote AAPL
 `
 
+const diagnoseHelp = `Diagnose: checks the connection to the address step by step and prints a report with a verdict: the DNS
+lookup and a TCP connect to each IP address of each host:port, the state changes and the connection errors of the
+endpoint, the events of each type with the first ones, their flags and their lag, and the last event per symbol.
+Logins, passwords and tokens are masked in the report.
+
+Usage:
+  tools diagnose <address> <types> <symbols> [<options>]
+
+Where:
+` + addressArgument + allTypesArgument + symbolsArgument + `
+Options:
+  --compare <address>     Diagnose this address too, with the same types, symbols and properties, and compare the
+                          two.
+  --duration <seconds>    The time to wait for the events of an address, from 1 to 3600 seconds, 10 by default.
+  -o, --report <file>     Also write the report to the file.
+  -p, --properties <name=value,...>
+                          Set the properties of the endpoint, also as system properties, such as
+                          dxfeed.aggregationPeriod=1s.
+
+Verdicts and exit statuses (the worst of the two addresses with --compare):
+  DATA                 0  Events came for every type and symbol.
+  PARTIAL DATA         2  Events came for some types and symbols only.
+  CONNECTED, NO DATA   3  The endpoint connected, but no events came.
+  CANNOT CONNECT       4  The endpoint did not connect.
+  CANNOT RESOLVE       5  The host name does not resolve.
+An error of the arguments gives the exit status 2 and another error 1.
+
+Samples:
+  tools diagnose demo.dxfeed.com:7300 Quote,Trade AAPL,IBM
+  tools diagnose demo.dxfeed.com:7300 Quote AAPL --compare dxlink:wss://demo.dxfeed.com/dxlink-ws --duration 20
+  tools diagnose demo.dxfeed.com:7300 Quote AAPL -o report.txt
+`
+
 const qdsHelp = `Qds: runs the QDS tools of the dxFeed Graal Native SDK, such as connect, dump, multiplexor or feed, with their
 command line in one argument. Without arguments it prints the list of the QDS tools.
 

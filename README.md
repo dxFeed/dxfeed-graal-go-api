@@ -48,7 +48,7 @@ to your dxFeed support contact.
 
 What is left:
 
-* the tools of the dxFeed C++ API that the Go API does not have yet (Diagnose, NetTest)
+* the tools of the dxFeed C++ API that the Go API does not have yet (NetTest)
 * a prototype without cgo (purego), so that a build needs no C compiler
 * version 1.0.0 with a stable API
 
@@ -333,6 +333,9 @@ the feed. Each release has them built as archives on the
 
 * [connect](cmd/tools/connect.go)
   connects to the address, subscribes to the events of the symbols and prints them
+* [diagnose](cmd/tools/diagnose.go)
+  checks the connection to the address step by step (DNS, TCP, the endpoint, the events of the symbols) and prints a
+  report with secrets masked and a verdict, which is also the exit status; `--compare` diagnoses a second address
 * [dump](cmd/tools/dump.go)
   prints the events received from the address, such as a tape file, and can write them to another tape file
 * [perftest](cmd/tools/perftest.go)

@@ -33,6 +33,11 @@ type usageError struct{ err error }
 
 func (e usageError) Error() string { return e.err.Error() }
 
+// exitStatus is the exit status of a run that has printed its result, such as the verdict of Diagnose.
+type exitStatus int
+
+func (e exitStatus) Error() string { return fmt.Sprintf("exit status %d", int(e)) }
+
 // runTool parses the arguments of a tool and runs it. With -h, --help or -help anywhere, or with no positional
 // arguments, it prints the help to stdout and returns 0. A wrong argument prints the error and the help to stderr and
 // returns 2, as the flag package does; an error of the run is printed to stderr and returns 1.
@@ -55,9 +60,12 @@ func runTool(name string, args []string, help string, accepted []toolargs.Option
 		err = run(parsed)
 	}
 	var usage usageError
+	var status exitStatus
 	switch {
 	case err == nil:
 		return 0
+	case errors.As(err, &status):
+		return int(status)
 	case errors.As(err, &usage):
 		fmt.Fprintf(os.Stderr, "%s: %v\n\n%s", name, err, help)
 		return 2
@@ -170,6 +178,7 @@ Where <tool> is one of:`)
 func tools() map[string]Tool {
 	return map[string]Tool{
 		"connect":     Connect{},
+		"diagnose":    Diagnose{},
 		"dump":        Dump{},
 		"perftest":    PerfTest{},
 		"latencytest": LatencyTest{},
