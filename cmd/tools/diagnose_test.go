@@ -69,7 +69,8 @@ func TestDiagnoseData(t *testing.T) {
 		"=== Address: " + address + "[user=***,password=***]\n",
 		"  " + address + ": resolved to 1 IP address(es)\n",
 		"    127.0.0.1: TCP connected in ",
-		"Connecting -> Connected\n",
+		// The SDK may report Not connected -> Connected when the connect is fast.
+		" -> Connected\n",
 		"  Quote: ",
 		"    flags: ",
 		"  Quote DIAG: ",
