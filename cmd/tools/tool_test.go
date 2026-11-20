@@ -121,6 +121,10 @@ func TestToolArgumentErrors(t *testing.T) {
 		{"dump a --quiet --bogus", "dump: unknown option --bogus"},
 		{"perftest a Quote AAPL -q", "perftest: unknown option -q"},
 		{"latencytest a TimeAndSale AAPL --ignore-exchanges", "latency test: option --ignore-exchanges needs a value"},
+		{"latencytest a TimeAndSale AAPL --interval 0", `latency test: option --interval: "0" is not a whole number of seconds from 1 to 86400`},
+		{"connect a Order AAPL -f 0 -s NTV", "connect: options --from-time and --source cannot be used together"},
+		{"connect a Quote", "connect: the symbols argument is missing"},
+		{"connect a Quote AAPL -X", "connect: unknown option -X"},
 	} {
 		status, out := runTools(t, test.args)
 		if status != 2 {
@@ -153,6 +157,16 @@ func TestToolHelp(t *testing.T) {
 		status, out := runTools(t, args)
 		if status != 0 || !strings.Contains(out, "\nUsage:\n  tools "+strings.Fields(args)[0]+" ") {
 			t.Errorf("tools %s: status %d, want 0 and the help:\n%s", args, status, out)
+		}
+	}
+}
+
+func TestVersion(t *testing.T) {
+	for _, args := range []string{"--version", "-version"} {
+		status, out := runTools(t, args)
+		if status != 0 || !strings.HasPrefix(out, "dxFeed Graal Go API tools ") ||
+			!strings.Contains(out, ", dxFeed Graal Native SDK ") {
+			t.Errorf("tools %s: status %d, want 0 and the versions:\n%s", args, status, out)
 		}
 	}
 }

@@ -342,7 +342,11 @@ the feed. Each release has them built as archives on the
   connects to the address and calculates the latency of the TimeAndSale events
 
 Run a tool as `tools <tool> <address> <types> <symbols> [<options>]`, or from a clone of this repository as
-`go run ./cmd/tools <tool> ...`; a tool without arguments prints its help, such as `go run ./cmd/tools connect`.
+`go run ./cmd/tools <tool> ...`; a tool without arguments or with `-h` prints its help, such as
+`go run ./cmd/tools connect`, and `tools --version` prints the versions of the tools and of the SDK. The options follow
+the tools of the dxFeed C++ API, such as `-p`/`--properties`, `-t`/`--tape`, `-q`/`--quiet` and `--force-stream`.
+A wrong argument or an unknown option prints the error and the help with the exit status 2; an error of a run gives
+the exit status 1.
 
 To run tools on macOS, it may be necessary to unquarantine them:
 

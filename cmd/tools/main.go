@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"os"
+	"sync"
 )
 
 func main() {
@@ -14,15 +15,23 @@ func main() {
 	if tool == nil {
 		os.Exit(status)
 	}
-	// Enable experimental feature, and set scheme for dxLink.
-	for _, property := range [][2]string{
-		{"dxfeed.experimental.dxlink.enable", "true"},
-		{"scheme", "ext:opt:sysprops,resource:dxlink.xml"},
-	} {
-		if err := api.SetSystemProperty(property[0], property[1]); err != nil {
-			fmt.Fprintf(os.Stderr, "Error setting %s: %v\n", property[0], err)
-			os.Exit(1)
-		}
-	}
 	os.Exit(tool.Run(os.Args[2:]))
 }
+
+// toolProperties are the system properties of the tools, as in the tools of the C++ API: the wildcard symbol "all",
+// the experimental dxLink and its scheme. newEndpoint sets them before the -p properties, so that the SDK does not
+// start before the arguments are checked.
+var toolProperties = [][2]string{
+	{"dxfeed.wildcard.enable", "true"},
+	{"dxfeed.experimental.dxlink.enable", "true"},
+	{"scheme", "ext:opt:sysprops,resource:dxlink.xml"},
+}
+
+var setToolProperties = sync.OnceValue(func() error {
+	for _, property := range toolProperties {
+		if err := api.SetSystemProperty(property[0], property[1]); err != nil {
+			return fmt.Errorf("SetSystemProperty %s: %w", property[0], err)
+		}
+	}
+	return nil
+})

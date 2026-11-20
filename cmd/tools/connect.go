@@ -4,15 +4,17 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"time"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/parser"
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/toolargs"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/order"
 )
 
 type Connect struct{}
@@ -22,98 +24,108 @@ func (c Connect) ShortDescription() string {
 }
 
 func (c Connect) Run(args []string) int {
-	return runTool("connect", args, connectHelp,
-		[]option{fromTimeOption, propertiesOption, quietOption, forceStreamOption}, func(a toolArguments) error {
-			properties, err := a.properties()
-			if err != nil {
-				return usageError{err}
-			}
-			address, types, symbols, err := parseCommon(a)
-			if err != nil {
-				return err
-			}
-			return connect(address, types, symbols, properties, a.has(forceStreamOption), a.has(quietOption),
-				a.value(fromTimeOption))
-		})
+	return runTool("connect", args, connectHelp, []toolargs.Option{toolargs.FromTime, toolargs.Source,
+		toolargs.Properties, toolargs.Tape, toolargs.Quiet, toolargs.ForceStream}, func(a toolargs.Args) error {
+		fromTime, source, err := parseSubscriptionOptions(a)
+		if err != nil {
+			return err
+		}
+		common, err := parseCommon(a, "", "")
+		if err != nil {
+			return err
+		}
+		return connect(common, fromTime, source, a.Value(toolargs.Tape), a.Has(toolargs.ForceStream),
+			a.Has(toolargs.Quiet))
+	})
 }
 
-func connect(
-	address string,
-	types []eventcodes.EventCode,
-	symbols []osub.Symbol,
-	properties map[string]string,
-	forceStream bool,
-	quiet bool,
-	fromTime *string,
-) error {
-	for key, value := range properties {
-		if err := api.SetSystemProperty(key, value); err != nil {
-			return fmt.Errorf("SetSystemProperty %s: %w", key, err)
+// parseSubscriptionOptions parses -f and -s: the time of a time series subscription and the order source of an
+// indexed one. They cannot be used together.
+func parseSubscriptionOptions(a toolargs.Args) (fromTime *int64, source *order.Source, err error) {
+	from, src := a.Value(toolargs.FromTime), a.Value(toolargs.Source)
+	if from != nil && src != nil {
+		return nil, nil, usageError{errors.New("options --from-time and --source cannot be used together")}
+	}
+	if from != nil {
+		t, err := parser.ParseTime(*from)
+		if err != nil {
+			return nil, nil, usageError{fmt.Errorf("option --from-time: %w", err)}
+		}
+		fromTime = &t
+	}
+	if src != nil {
+		source, err = order.ValueOfName(*src)
+		if err != nil {
+			return nil, nil, usageError{fmt.Errorf("option --source: %w", err)}
 		}
 	}
+	return fromTime, source, nil
+}
+
+func connect(common commonArgs, fromTime *int64, source *order.Source, tape *string, forceStream, quiet bool) error {
 	role := api.Feed
 	if forceStream {
 		role = api.StreamFeed
 	}
-	endpoint, err := api.NewEndpointWithProperties(role, properties)
-
+	endpoint, err := newEndpoint(role, common.properties)
 	if err != nil {
-		return fmt.Errorf("NewEndpointWithProperties: %w", err)
+		return err
 	}
-
-	defer func(endpoint *api.DXEndpoint) {
-		_ = endpoint.Close()
-	}(endpoint)
-
-	err = endpoint.Connect(address)
-
-	if err != nil {
-		return fmt.Errorf("Connect to %s: %w", address, err)
-	}
+	defer func() { _ = endpoint.Close() }()
 
 	feed, err := endpoint.GetFeed()
-
 	if err != nil {
 		return fmt.Errorf("GetFeed: %w", err)
 	}
-
-	subscription, err := feed.CreateSubscription(types...)
+	subscription, err := feed.CreateSubscription(common.types...)
 	if err != nil {
 		return fmt.Errorf("CreateSubscription: %w", err)
 	}
 	defer func() { _ = subscription.Close() }()
 	if !quiet {
-		err = subscription.AddListener(PrintEvents(func(eventsList []interface{}) {
-			for _, event := range eventsList {
-				switch v := event.(type) {
-				case events.StringConverter:
-					fmt.Printf("%s\n", v.String())
-				default:
-					fmt.Printf("Unsupported event %T!\n", v)
-				}
-			}
-		}))
-		if err != nil {
+		if err := subscription.AddListener(printEvents()); err != nil {
 			return fmt.Errorf("AddListener: %w", err)
 		}
 	}
-
-	for _, symbol := range symbols {
-		if fromTime != nil {
-			parseTime, parseErr := parser.ParseTime(*fromTime)
-			if parseErr != nil {
-				return parseErr
-			}
-			timeSeriesSubscriptionSymbol := osub.NewTimeSeriesSubscriptionSymbol(symbol, parseTime)
-			err = subscription.AddSymbol(timeSeriesSubscriptionSymbol)
-		} else {
-			err = subscription.AddSymbol(symbol)
-		}
+	if tape != nil {
+		writer, err := newTapeWriter(*tape, common.properties)
 		if err != nil {
+			return err
+		}
+		defer writer.close()
+		if err := subscription.AddListener(writer); err != nil {
+			return fmt.Errorf("AddListener: %w", err)
+		}
+	}
+	for _, symbol := range common.symbols {
+		var s osub.Symbol = symbol
+		switch {
+		case fromTime != nil:
+			s = osub.NewTimeSeriesSubscriptionSymbol(symbol, *fromTime)
+		case source != nil:
+			s = osub.NewIndexedEventSubscriptionSymbol(symbol, source)
+		}
+		if err := subscription.AddSymbol(s); err != nil {
 			return fmt.Errorf("AddSymbol: %w", err)
 		}
-
+	}
+	if err := endpoint.Connect(common.address); err != nil {
+		return fmt.Errorf("Connect to %s: %w", common.address, err)
 	}
 	time.Sleep(time.Duration(math.MaxInt64))
 	return nil
+}
+
+// printEvents is a listener that prints each event on a line.
+func printEvents() PrintEvents {
+	return func(eventsList []interface{}) {
+		for _, event := range eventsList {
+			switch v := event.(type) {
+			case events.StringConverter:
+				fmt.Printf("%s\n", v.String())
+			default:
+				fmt.Printf("Unsupported event %T!\n", v)
+			}
+		}
+	}
 }
