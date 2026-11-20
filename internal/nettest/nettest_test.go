@@ -27,9 +27,6 @@ func readKit(t *testing.T, name string, v any) {
 	}
 }
 
-// notImplemented are the sections of the specification that the tool does not implement yet.
-var notImplemented = map[string]bool{"summary": true, "metrics": true}
-
 // features are the optional features of the specification that the tool has.
 var features = map[string]bool{"isolate": false, "legacy": false}
 
@@ -49,7 +46,7 @@ func TestCLIVectors(t *testing.T) {
 	readKit(t, "cli-vectors.json", &kit)
 	skipped := map[string]int{}
 	for _, v := range kit.Vectors {
-		if notImplemented[v.Section] || !hasFeatures(v.Requires) {
+		if !hasFeatures(v.Requires) {
 			skipped[v.Section+" "+strings.Join(v.Requires, ",")]++
 			continue
 		}
@@ -109,15 +106,6 @@ func normalize(v any) any {
 		return float64(n)
 	}
 	return v
-}
-
-func TestSummaryAndMetricsNotYetImplemented(t *testing.T) {
-	for _, option := range []string{"--summary", "--metrics-port"} {
-		_, err := Parse([]string{"c", "127.0.0.1:7001", "-S", "100", option, "x"})
-		if err == nil || err.Error() != "unsupported option: "+option+" (not yet implemented)" {
-			t.Errorf("%s: %v", option, err)
-		}
-	}
 }
 
 func TestLines(t *testing.T) {

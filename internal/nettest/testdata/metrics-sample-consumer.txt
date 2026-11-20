@@ -1,0 +1,68 @@
+# HELP nettest_info The configuration of the NetTest run.
+# TYPE nettest_info gauge
+nettest_info{tool="java-api",side="consumer",name="bench",spec_version="nettest/1",version="3.18.0",sdk_version="3.18.0",role="STREAM_FEED",event="Trade",collector="stream"} 1
+# HELP nettest_records_total The received events.
+# TYPE nettest_records_total counter
+nettest_records_total{tool="java-api",side="consumer",name="bench",connection="1"} 105000000
+nettest_records_total{tool="java-api",side="consumer",name="bench",connection="2"} 104999000
+# HELP nettest_e2e_lag_seconds The receive time minus the time of the event.
+# TYPE nettest_e2e_lag_seconds histogram
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="5e-05"} 0
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="0.0001"} 1200000
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="0.00025"} 42000000
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="0.0005"} 150000000
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="0.001"} 200500000
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="0.0025"} 208000000
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="0.005"} 209500000
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="0.01"} 209900000
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="0.025"} 209990000
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="0.05"} 209998000
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="0.1"} 209999000
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="0.25"} 209999000
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="1"} 209999000
+nettest_e2e_lag_seconds_bucket{tool="java-api",side="consumer",name="bench",le="+Inf"} 209999000
+nettest_e2e_lag_seconds_sum{tool="java-api",side="consumer",name="bench"} 85049.595
+nettest_e2e_lag_seconds_count{tool="java-api",side="consumer",name="bench"} 209999000
+# HELP nettest_e2e_lag_negative_total The events received with a negative lag.
+# TYPE nettest_e2e_lag_negative_total counter
+nettest_e2e_lag_negative_total{tool="java-api",side="consumer",name="bench"} 0
+# HELP nettest_connections The open connections.
+# TYPE nettest_connections gauge
+nettest_connections{tool="java-api",side="consumer",name="bench",connection="1"} 1
+nettest_connections{tool="java-api",side="consumer",name="bench",connection="2"} 1
+# HELP nettest_connector_read_bytes_total The bytes read by the connectors.
+# TYPE nettest_connector_read_bytes_total counter
+nettest_connector_read_bytes_total{tool="java-api",side="consumer",name="bench"} 6825000000
+# HELP nettest_connector_written_bytes_total The bytes written by the connectors.
+# TYPE nettest_connector_written_bytes_total counter
+nettest_connector_written_bytes_total{tool="java-api",side="consumer",name="bench"} 1200
+# HELP nettest_connector_read_records_total The data records read by the connectors.
+# TYPE nettest_connector_read_records_total counter
+nettest_connector_read_records_total{tool="java-api",side="consumer",name="bench"} 209999000
+# HELP nettest_connector_written_records_total The data records written by the connectors.
+# TYPE nettest_connector_written_records_total counter
+nettest_connector_written_records_total{tool="java-api",side="consumer",name="bench"} 0
+# HELP nettest_connector_lag_seconds_total The sum of the connector lags of the data records read.
+# TYPE nettest_connector_lag_seconds_total counter
+nettest_connector_lag_seconds_total{tool="java-api",side="consumer",name="bench"} 31499.85
+# HELP nettest_connector_rtt_seconds_total The sum of the round-trip times of the records read and written by the connectors.
+# TYPE nettest_connector_rtt_seconds_total counter
+nettest_connector_rtt_seconds_total{tool="java-api",side="consumer",name="bench"} 42039.8
+# HELP nettest_connector_sub_records_total The subscription records read and written by the connectors.
+# TYPE nettest_connector_sub_records_total counter
+nettest_connector_sub_records_total{tool="java-api",side="consumer",name="bench"} 200000
+# HELP nettest_runtime_heap_used_bytes The used heap.
+# TYPE nettest_runtime_heap_used_bytes gauge
+nettest_runtime_heap_used_bytes{tool="java-api",side="consumer",name="bench"} 325058560
+# HELP nettest_runtime_heap_committed_bytes The committed heap.
+# TYPE nettest_runtime_heap_committed_bytes gauge
+nettest_runtime_heap_committed_bytes{tool="java-api",side="consumer",name="bench"} 1073741824
+# HELP nettest_runtime_gc_total The collections.
+# TYPE nettest_runtime_gc_total counter
+nettest_runtime_gc_total{tool="java-api",side="consumer",name="bench"} 41
+# HELP nettest_runtime_gc_seconds_total The time of the collections.
+# TYPE nettest_runtime_gc_seconds_total counter
+nettest_runtime_gc_seconds_total{tool="java-api",side="consumer",name="bench"} 0.38
+# HELP nettest_runtime_cpu_seconds_total The CPU time of the process.
+# TYPE nettest_runtime_cpu_seconds_total counter
+nettest_runtime_cpu_seconds_total{tool="java-api",side="consumer",name="bench"} 365.4

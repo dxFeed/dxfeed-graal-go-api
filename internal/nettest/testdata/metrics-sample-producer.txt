@@ -1,0 +1,51 @@
+# HELP nettest_info The configuration of the NetTest run.
+# TYPE nettest_info gauge
+nettest_info{tool="c-api",side="producer",name="bench",spec_version="nettest/1",version="3.18.0",sdk_version="3.18.0",role="STREAM_PUBLISHER",event="Trade",collector="stream"} 1
+# HELP nettest_records_total The published events.
+# TYPE nettest_records_total counter
+nettest_records_total{tool="c-api",side="producer",name="bench",connection="1"} 210000000
+# HELP nettest_publish_seconds_total The time of the batch fills and the publishing calls.
+# TYPE nettest_publish_seconds_total counter
+nettest_publish_seconds_total{tool="c-api",side="producer",name="bench"} 86.1
+# HELP nettest_publish_calls_total The publishing calls.
+# TYPE nettest_publish_calls_total counter
+nettest_publish_calls_total{tool="c-api",side="producer",name="bench"} 2100000
+# HELP nettest_schedule_slip_seconds The schedule slip of the last batch.
+# TYPE nettest_schedule_slip_seconds gauge
+nettest_schedule_slip_seconds{tool="c-api",side="producer",name="bench"} 0.000012
+# HELP nettest_connections The open connections.
+# TYPE nettest_connections gauge
+nettest_connections{tool="c-api",side="producer",name="bench",connection="1"} 1
+# HELP nettest_connector_read_bytes_total The bytes read by the connectors.
+# TYPE nettest_connector_read_bytes_total counter
+nettest_connector_read_bytes_total{tool="c-api",side="producer",name="bench"} 1200
+# HELP nettest_connector_written_bytes_total The bytes written by the connectors.
+# TYPE nettest_connector_written_bytes_total counter
+nettest_connector_written_bytes_total{tool="c-api",side="producer",name="bench"} 6825000000
+# HELP nettest_connector_read_records_total The data records read by the connectors.
+# TYPE nettest_connector_read_records_total counter
+nettest_connector_read_records_total{tool="c-api",side="producer",name="bench"} 0
+# HELP nettest_connector_written_records_total The data records written by the connectors.
+# TYPE nettest_connector_written_records_total counter
+nettest_connector_written_records_total{tool="c-api",side="producer",name="bench"} 210000000
+# HELP nettest_connector_rtt_seconds_total The sum of the round-trip times of the records read and written by the connectors.
+# TYPE nettest_connector_rtt_seconds_total counter
+nettest_connector_rtt_seconds_total{tool="c-api",side="producer",name="bench"} 42020
+# HELP nettest_connector_sub_records_total The subscription records read and written by the connectors.
+# TYPE nettest_connector_sub_records_total counter
+nettest_connector_sub_records_total{tool="c-api",side="producer",name="bench"} 100000
+# HELP nettest_runtime_heap_used_bytes The used heap.
+# TYPE nettest_runtime_heap_used_bytes gauge
+nettest_runtime_heap_used_bytes{tool="c-api",side="producer",name="bench"} 125829120
+# HELP nettest_runtime_heap_committed_bytes The committed heap.
+# TYPE nettest_runtime_heap_committed_bytes gauge
+nettest_runtime_heap_committed_bytes{tool="c-api",side="producer",name="bench"} 268435456
+# HELP nettest_runtime_gc_total The collections.
+# TYPE nettest_runtime_gc_total counter
+nettest_runtime_gc_total{tool="c-api",side="producer",name="bench"} 312
+# HELP nettest_runtime_gc_seconds_total The time of the collections.
+# TYPE nettest_runtime_gc_seconds_total counter
+nettest_runtime_gc_seconds_total{tool="c-api",side="producer",name="bench"} 1.52
+# HELP nettest_runtime_cpu_seconds_total The CPU time of the process.
+# TYPE nettest_runtime_cpu_seconds_total counter
+nettest_runtime_cpu_seconds_total{tool="c-api",side="producer",name="bench"} 402.7

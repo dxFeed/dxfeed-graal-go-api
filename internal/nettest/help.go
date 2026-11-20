@@ -36,11 +36,15 @@ Options:
                           otherwise on c.
   --duration <time>       End the run after the time with the exit status 0.
   --warmup <time>         The warm-up time: on c from the first event, on p from the first batch.
+  --summary <file>        Write a JSON summary of the run (schema nettest-summary/1) to the file at the end.
+  --metrics-port [<host>:]<port>
+                          Serve the metrics in the Prometheus text format at http://<host>:<port>/metrics;
+                          the host is 127.0.0.1 by default, the port 0 takes a free port.
   -D<key>=<value>         Set a system property before the first endpoint, also on the endpoints;
                           -Ddxscheme.nanoTime=false turns off the nanosecond time for peers without it.
   -h, --help              Print this help.
 
-Not supported: -X and -XX (the options of a Graal isolate), --legacy; not yet: --summary and --metrics-port.
+Not supported: -X and -XX (the options of a Graal isolate), --legacy.
 
 The output lines, once per period:
   {*NetTestProducerSide-<name>*} data <rps> rps, lag <us> us, instances <C>, connections <M>
