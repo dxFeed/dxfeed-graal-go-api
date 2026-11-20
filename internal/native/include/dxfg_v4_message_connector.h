@@ -31,8 +31,10 @@ extern "C" {
  *
  *  A connector stopped by such a replace, by dxfg_v4_DXEndpoint_disconnect() or by the close of its endpoint stays
  *  readable through its handle: its state is #DXFG_V4_MESSAGE_CONNECTOR_STATE_DISCONNECTED, it is not active, it has no
- *  open connections and no current addresses, and it keeps its name, kind, address, statistics and last connection
- *  error.
+ *  open connections and no current addresses, and it keeps its name, kind, address, last connection error, and the
+ *  bytes and connection counts of its statistics. The counters of QD's statistics read 0 then, since QD closes them
+ *  and adds them to those of the endpoint: the data records of dxfg_v4_message_connector_stats_t and the ten I/O
+ *  counters of dxfg_v4_message_connector_io_stats_t.
  *
  *  Each value of a connector is current when it is read; the values are not read together as one consistent set.
  *  Reading them changes nothing: the statistics are not reset, and other readers (QD's JMX beans) see the same values.
@@ -54,7 +56,8 @@ extern "C" {
  *  `com.devexperts.connector.codec.ssl` themselves wins and may stop the capture.
  *
  *  #DXFG_V4_FEATURE_MESSAGE_CONNECTORS reports the functions of the group except the connection errors, which
- *  #DXFG_V4_FEATURE_CONNECTION_ERRORS reports.
+ *  #DXFG_V4_FEATURE_CONNECTION_ERRORS reports, and the I/O statistics (dxfg_v4_MessageConnector_getIoStatistics(),
+ *  since 3.18.0), which #DXFG_V4_FEATURE_MESSAGE_CONNECTOR_IO_STATISTICS reports.
  *
  *  Java: `com.devexperts.qd.qtp.MessageConnector` of `com.dxfeed.api.impl.DXEndpointImpl.getQDEndpoint()`.
  *  @{
@@ -135,6 +138,9 @@ typedef struct dxfg_v4_message_connector_list {
  * The counters cover all the connections of the connector since it was created, the closed ones included. The layout
  * of the struct does not change: new counters will come with a new function.
  *
+ * A stopped connector (replaced by a connect to another address, disconnected, or of a closed endpoint) reads 0 for
+ * `read_data_records` and `written_data_records`: QD closes its statistics. The bytes and connection counts stay.
+ *
  * On iOS and the iOS Simulator, `read_data_records` and `written_data_records` stay 0: the SDK of these platforms has
  * no QD monitoring (`qds-monitoring`), which keeps the statistics they come from. The other counters work there too.
  * @since 3.14.0
@@ -153,6 +159,74 @@ typedef struct dxfg_v4_message_connector_stats_t {
     /** The connections closed since the connector was created. */
     int64_t closed_connection_count;
 } dxfg_v4_message_connector_stats_t;
+
+/**
+ * @brief The I/O statistics of a message connector (dxfg_v4_MessageConnector_getIoStatistics()): the ten cumulative
+ * I/O counters of QD's statistics and the open and closed connections.
+ *
+ * The counters cover all the connections of the connector since it was created, the closed ones included, and are
+ * never reset: a reader takes the differences between two calls. Units: records, bytes, and microseconds for the lags
+ * and the round-trip times. The layout of the struct does not change: new counters will come with a new function.
+ *
+ * The lags and the round-trip times are sums over the records, not samples: for each record QD adds the current value
+ * of its connection. Divide a sum by the matching record count for an average per record:
+ * - `read_data_lag_sum_us / read_data_records` is the average lag of the data received: the lag that the peer reported
+ *   in its last heartbeat (how long the data waited in the peer and upstream of it) plus the round-trip time of the
+ *   connection. It means something on the side that receives data (a feed); on a publisher it stays 0.
+ * - `written_data_lag_sum_us / written_data_records` is the average time a record spent in this process: from its
+ *   arrival on another connection to the end of the composing of its message. The records that the application
+ *   publishes itself have no arrival time and count the composing time only, so on a publisher the value is close to 0
+ *   and does not measure a delivery delay.
+ * - `read_rtt_sum_us / (read_data_records + read_sub_records)` and
+ *   `written_rtt_sum_us / (written_data_records + written_sub_records)` are the round-trip time of the connections,
+ *   weighted by their records.
+ *
+ * An interval without records has no average: check that the record difference is not 0 before dividing.
+ *
+ * QD measures the round-trip time with its heartbeats: it is 0 until the first heartbeats have gone both ways (about a
+ * second after the connect, the first heartbeat is sent after 0.5 s), so the records of the first moments add 0 to the
+ * round-trip sums and to the read lag sum. The time marks are microseconds of a 30-bit clock that wraps every 2^30 us
+ * (about 17.9 minutes), and each lag or round-trip time is a signed difference of two marks: a value of more than about
+ * 537 s comes out wrong, and a sum may then even decrease.
+ *
+ * On iOS and the iOS Simulator the ten I/O counters stay 0: the SDK of these platforms has no QD monitoring
+ * (`qds-monitoring`), which keeps the statistics they come from. The connection counts work there too.
+ *
+ * A connector stopped by a connect to another address, by dxfg_v4_DXEndpoint_disconnect() or by the close of its
+ * endpoint reads 0 for the ten I/O counters: QD closes its statistics and adds them to those of the endpoint. The
+ * connection counts stay. Read the statistics before such a stop to keep the last values; dxfg_v4_DXEndpoint_reconnect()
+ * and the drops of the connections do not stop the connector and keep the counters.
+ *
+ * The bytes are those of the QTP messages as QD's statistics count them, heartbeats included; they may differ from the
+ * socket bytes of dxfg_v4_message_connector_stats_t (`read_bytes`, `written_bytes`), e.g. with TLS.
+ * @since 3.18.0
+ */
+typedef struct dxfg_v4_message_connector_io_stats_t {
+    /** The data records read (`IO_DATA_READ_RECORDS`): they grow only when data arrives. */
+    int64_t read_data_records;
+    /** The data records written (`IO_DATA_WRITE_RECORDS`). */
+    int64_t written_data_records;
+    /** The subscription records read (`IO_SUB_READ_RECORDS`): those a publisher receives. */
+    int64_t read_sub_records;
+    /** The subscription records written (`IO_SUB_WRITE_RECORDS`): those a feed sends. */
+    int64_t written_sub_records;
+    /** The bytes of the QTP messages read, heartbeats included (`IO_READ_BYTES`). */
+    int64_t read_bytes;
+    /** The bytes of the QTP messages written, heartbeats included (`IO_WRITE_BYTES`). */
+    int64_t written_bytes;
+    /** The sum over the data records read of their lag, in microseconds (`IO_DATA_READ_LAGS`). */
+    int64_t read_data_lag_sum_us;
+    /** The sum over the data records written of their lag, in microseconds (`IO_DATA_WRITE_LAGS`). */
+    int64_t written_data_lag_sum_us;
+    /** The sum over the records read of the round-trip time of the connection, in microseconds (`IO_READ_RTTS`). */
+    int64_t read_rtt_sum_us;
+    /** The sum over the records written of the round-trip time of the connection, in microseconds (`IO_WRITE_RTTS`). */
+    int64_t written_rtt_sum_us;
+    /** The open connections. */
+    int64_t active_connection_count;
+    /** The connections closed since the connector was created. */
+    int64_t closed_connection_count;
+} dxfg_v4_message_connector_io_stats_t;
 
 /**
  * @brief The handle of a listener of the state changes of the message connectors of an endpoint
@@ -392,6 +466,33 @@ int32_t dxfg_v4_MessageConnector_getClosedConnectionCount(graal_isolatethread_t 
  */
 int32_t dxfg_v4_MessageConnector_getStatistics(graal_isolatethread_t *thread, dxfg_v4_message_connector_t *connector,
                                                DXFG_OUT dxfg_v4_message_connector_stats_t *stats);
+
+/**
+ * @brief Reads the I/O statistics of a message connector: the data and subscription records, the bytes, the lags and
+ * the round-trip times read and written, the open and the closed connections.
+ *
+ * The counters are cumulative since the connector was created; dxfg_v4_message_connector_io_stats_t describes their
+ * units and how to read the sums. Nothing is reset: other readers of QD's statistics see the same values. The values
+ * are read one by one, not as one consistent set. On iOS and the iOS Simulator, and for a stopped connector, the I/O
+ * counters are 0.
+ *
+ * A wrapper that loads the library at run time checks #DXFG_V4_FEATURE_MESSAGE_CONNECTOR_IO_STATISTICS with
+ * dxfg_v4_system_is_feature_supported() first. dxfg_v4_MessageConnector_getStatistics() and its struct stay as they
+ * are.
+ *
+ * Java: `QDStats.getValue(SValue)` of `MessageConnector.getStats()` with the ten `QDStats.SValue.IO_*` values, and
+ * `MessageConnector.retrieveCompleteEndpointStats()` for the connections.
+ *
+ * @param[in] thread The current GraalVM Isolate's thread.
+ * @param[in] connector The connector; must not be NULL.
+ * @param[out] stats The pointer to the structure that receives the statistics; must not be NULL. It is written on
+ * success only.
+ * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
+ * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
+ * @since 3.18.0
+ */
+int32_t dxfg_v4_MessageConnector_getIoStatistics(graal_isolatethread_t *thread, dxfg_v4_message_connector_t *connector,
+                                                 DXFG_OUT dxfg_v4_message_connector_io_stats_t *stats);
 
 /**
  * @brief Creates a new listener of the state changes of the message connectors of an endpoint.

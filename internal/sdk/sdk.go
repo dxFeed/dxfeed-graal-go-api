@@ -14,7 +14,7 @@ import (
 )
 
 // Version is the release of the dxFeed Graal Native SDK whose headers are in internal/native/include.
-const Version = "3.17.0"
+const Version = "3.18.0"
 
 // LibraryName is the name of the native library without the platform prefix and extension,
 // as passed to the linker with -l.
@@ -30,16 +30,16 @@ type Archive struct {
 
 // Archives maps a Go platform (GOOS/GOARCH) to the SDK archive for it.
 var Archives = map[string]Archive{
-	"windows/amd64": {"graal-native-sdk-3.17.0-amd64-windows.zip",
-		"a91bb975b0b093185addb0b694eedb6b6eb31dd638a45f65c7b84012ca9a0ef5"},
-	"linux/amd64": {"graal-native-sdk-3.17.0-amd64-linux.zip",
-		"d5ebd45f11175d5ff7f1d08b11e66e77c620358e0b518b4e41578fdca01940af"},
-	"linux/arm64": {"graal-native-sdk-3.17.0-aarch64-linux.zip",
-		"d46e01d5b3d6209f33fc6032c9f44b29253fb5659e48ba3ac387edae1aad4d8c"},
-	"darwin/arm64": {"graal-native-sdk-3.17.0-aarch64-osx.zip",
-		"0e01dfe6b90c514dcc3248786c53f8ab0a758bd8896e9e4c407e1a209cc4d6be"},
-	"darwin/amd64": {"graal-native-sdk-3.17.0-x86_64-osx.zip",
-		"27d56659453d41bfd5cd695165e1aef7aafa747f407a8a1cdd5d45259a15995e"},
+	"windows/amd64": {"graal-native-sdk-3.18.0-amd64-windows.zip",
+		"3e372e15eb2083f3b044e761b4056b313ccb63e80ef642745cdecee8c6fe605c"},
+	"linux/amd64": {"graal-native-sdk-3.18.0-amd64-linux.zip",
+		"4f393b33fea08cbbb775a5b6819e7582e5767ac8968c2f2151810f873f1b1d21"},
+	"linux/arm64": {"graal-native-sdk-3.18.0-aarch64-linux.zip",
+		"30b3bee21307150894011e59a3d520d973b974b0bce6f9c8b9accb821f3b6853"},
+	"darwin/arm64": {"graal-native-sdk-3.18.0-aarch64-osx.zip",
+		"77529976ed6759c7b0a757c39e4da19b5e7530bb47553774108406958481aac4"},
+	"darwin/amd64": {"graal-native-sdk-3.18.0-x86_64-osx.zip",
+		"0fe56d40c23d900f705108d180e3e1a75898437a40f6da62fc6185236538077e"},
 }
 
 // DownloadURL returns the address of an archive of the pinned SDK release.
@@ -63,7 +63,7 @@ func CheckVersion(libraryVersion string) error {
 	return nil
 }
 
-// parseVersion parses "major.minor.patch"; a suffix after the patch number ("3.17.0-SNAPSHOT") is ignored.
+// parseVersion parses "major.minor.patch"; a suffix after the patch number ("3.18.0-SNAPSHOT") is ignored.
 func parseVersion(s string) ([3]int, error) {
 	var v [3]int
 	parts := strings.SplitN(s, ".", 3)

@@ -204,6 +204,14 @@ int32_t dxfg_v4_system_shutdown(graal_isolatethread_t *thread);
 #define DXFG_V4_FEATURE_RUNTIME_STATISTICS "runtime_statistics"
 
 /**
+ * @brief The name of the feature "message connector I/O statistics" (dxfg_v4_message_connector.h:
+ * dxfg_v4_MessageConnector_getIoStatistics(), dxfg_v4_message_connector_io_stats_t) for
+ * dxfg_v4_system_is_feature_supported().
+ * @since 3.18.0
+ */
+#define DXFG_V4_FEATURE_MESSAGE_CONNECTOR_IO_STATISTICS "message_connector_io_statistics"
+
+/**
  * @brief The runtime statistics of the isolate and its process (dxfg_v4_system_get_runtime_statistics()).
  *
  * Every field is -1 when the platform or the garbage collector does not give the value, otherwise it is 0 or more.
