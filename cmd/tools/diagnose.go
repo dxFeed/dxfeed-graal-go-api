@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -23,6 +24,8 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/candle"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/quote"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/trade"
 )
 
 const (
@@ -47,26 +50,45 @@ func (c Diagnose) ShortDescription() string {
 func (c Diagnose) Run(args []string) int {
 	return runTool("diagnose", args, diagnoseHelp, []toolargs.Option{toolargs.Compare, toolargs.Duration,
 		toolargs.Report, toolargs.Properties}, func(a toolargs.Args) error {
-		duration := diagnoseDefaultDuration
-		if value := a.Value(toolargs.Duration); value != nil {
-			var err error
-			if duration, err = parseDiagnoseDuration(*value); err != nil {
-				return usageError{err}
-			}
-		}
-		common, err := parseCommon(a, "", "")
-		if err != nil {
-			return err
-		}
-		_, typesArg, symbolsArg, _ := a.Common("", "")
-		d := &diagnosis{
-			printer:    &reportPrinter{},
-			common:     common,
-			duration:   time.Duration(duration) * time.Second,
-			properties: a.Value(toolargs.Properties),
-		}
-		return d.run(typesArg, symbolsArg, a.Value(toolargs.Compare), a.Value(toolargs.Report))
+		return redactError(c.run(a))
 	})
+}
+
+// redactError masks logins, passwords and tokens in the text of an error, which may quote the address or a property,
+// and keeps its kind.
+func redactError(err error) error {
+	var usage usageError
+	var status exitStatus
+	switch {
+	case err == nil || errors.As(err, &status):
+		return err
+	case errors.As(err, &usage):
+		return usageError{errors.New(diagnose.Redact(err.Error()))}
+	default:
+		return errors.New(diagnose.Redact(err.Error()))
+	}
+}
+
+func (c Diagnose) run(a toolargs.Args) error {
+	duration := diagnoseDefaultDuration
+	if value := a.Value(toolargs.Duration); value != nil {
+		var err error
+		if duration, err = parseDiagnoseDuration(*value); err != nil {
+			return usageError{err}
+		}
+	}
+	common, err := parseCommon(a, "", "")
+	if err != nil {
+		return err
+	}
+	_, typesArg, symbolsArg, _ := a.Common("", "")
+	d := &diagnosis{
+		printer:    &reportPrinter{},
+		common:     common,
+		duration:   time.Duration(duration) * time.Second,
+		properties: a.Value(toolargs.Properties),
+	}
+	return d.run(typesArg, symbolsArg, a.Value(toolargs.Compare), a.Value(toolargs.Report))
 }
 
 // parseDiagnoseDuration parses the --duration value: a whole number of seconds from 1 to diagnoseMaxDuration.
@@ -92,6 +114,13 @@ func (p *reportPrinter) printf(format string, args ...any) {
 	defer p.mu.Unlock()
 	fmt.Print(line)
 	p.report.WriteString(line)
+}
+
+// text returns the lines printed so far.
+func (p *reportPrinter) text() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.report.String()
 }
 
 type diagnosis struct {
@@ -148,7 +177,7 @@ func (d *diagnosis) run(typesArg, symbolsArg string, compare, report *string) er
 		worst = max(worst, result.verdict.Kind)
 	}
 	if report != nil {
-		if err := os.WriteFile(*report, []byte(p.report.String()), 0o644); err != nil {
+		if err := os.WriteFile(*report, []byte(p.text()), 0o644); err != nil {
 			fmt.Fprintf(os.Stderr, "The report is not written to %s: %v\n", *report, err)
 			return exitStatus(1)
 		}
@@ -239,7 +268,16 @@ func eventTimeMillis(event any) int64 {
 	if e, ok := event.(interface{ EventTime() int64 }); ok && e.EventTime() != 0 {
 		return e.EventTime()
 	}
-	if e, ok := event.(interface{ Time() int64 }); ok {
+	switch e := event.(type) {
+	case *quote.Quote:
+		return e.Time()
+	case *trade.Trade:
+		return e.Time()
+	case *trade.TradeETH:
+		return e.Time()
+	case *trade.NuamTrade:
+		return e.Time()
+	case events.TimeSeriesEvent:
 		return e.Time()
 	}
 	return 0
@@ -380,9 +418,11 @@ func (d *diagnosis) diagnoseAddress(address string) (*addressResult, error) {
 		for _, connector := range connectors {
 			p.printf("  connector: %s", connectorText(connector))
 		}
-		if lastError, err = endpoint.LastConnectionError(); err != nil {
-			p.printf("  the connectors are not available: %v", err)
-		}
+	}
+	if last, err := endpoint.LastConnectionError(); err != nil {
+		p.printf("  the last connection error is not available: %v", err)
+	} else {
+		lastError = last
 	}
 	if err := endpoint.CloseAndAwaitTermination(context.Background()); err != nil {
 		p.printf("  close failed: %v", err)
@@ -441,7 +481,7 @@ func (d *diagnosis) probe(address string) (noHostResolved, anyTCPConnected bool)
 			continue
 		}
 		anyResolved = true
-		p.printf("  %s: resolved to %d IP address(es)", name, len(probe.IPs))
+		p.printf("  %s: resolved to %d IP address(es)", name, probe.Resolved)
 		for _, ip := range probe.IPs {
 			if ip.Err == "" {
 				anyTCPConnected = true

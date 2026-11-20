@@ -32,7 +32,9 @@ type IPProbe struct {
 type HostProbe struct {
 	// Err is why the host did not resolve; empty when it did.
 	Err string
-	IPs []IPProbe
+	// Resolved is the number of the IP addresses of the host; only the first MaxProbedIPs are in IPs.
+	Resolved int
+	IPs      []IPProbe
 }
 
 // ProbeHost resolves the host and opens a TCP connection to the port of each of its IP addresses, at most
@@ -47,10 +49,10 @@ func ProbeHost(ctx context.Context, host string, port int, timeout time.Duration
 	if len(addresses) == 0 {
 		return HostProbe{Err: "no addresses"}
 	}
+	result := HostProbe{Resolved: len(addresses)}
 	if len(addresses) > MaxProbedIPs {
 		addresses = addresses[:MaxProbedIPs]
 	}
-	var result HostProbe
 	dialer := net.Dialer{Timeout: timeout}
 	for _, address := range addresses {
 		start := time.Now()

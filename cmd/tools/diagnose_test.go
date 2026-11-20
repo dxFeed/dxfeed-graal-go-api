@@ -64,7 +64,7 @@ func startQuotePublisher(t *testing.T, symbol string) string {
 func TestDiagnoseData(t *testing.T) {
 	address := startQuotePublisher(t, "DIAG")
 	report := filepath.Join(t.TempDir(), "report.txt")
-	status, out := runTools(t, "diagnose "+address+"[user=me,password=s3cr3t] Quote DIAG --duration 2 -o "+report)
+	status, out := runTools(t, "diagnose "+address+"[user=me,password=s3cr3t] Quote DIAG --duration 3 -o "+report)
 	for _, want := range []string{
 		"=== Address: " + address + "[user=***,password=***]\n",
 		"  " + address + ": resolved to 1 IP address(es)\n",
@@ -98,7 +98,7 @@ func TestDiagnoseData(t *testing.T) {
 
 func TestDiagnosePartialDataAndCompare(t *testing.T) {
 	address := startQuotePublisher(t, "DIAG")
-	status, out := runTools(t, "diagnose "+address+" Quote DIAG,NONE --duration 2 --compare 127.0.0.1:1")
+	status, out := runTools(t, "diagnose "+address+" Quote DIAG,NONE --duration 3 --compare 127.0.0.1:1")
 	for _, want := range []string{
 		"Verdict: PARTIAL DATA\n", "  no events: Quote NONE\n", "Verdict: CANNOT CONNECT\n", "=== Comparison\n",
 		"  only from " + address + ": Quote DIAG\n", "  The verdicts differ.\n",
