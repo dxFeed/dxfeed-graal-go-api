@@ -9,8 +9,6 @@ the [dxFeed Graal Native](https://github.com/dxFeed/dxfeed-graal-native-sdk) lib
 which was compiled with [GraalVM Native Image](https://www.graalvm.org/latest/reference-manual/native-image/)
 and [dxFeed Java API](https://docs.dxfeed.com/dxfeed/api/overview-summary.html) (our flagman API).
 
-:warning: It’s a **beta** version and still under active development.
-
 ![Build](https://github.com/dxFeed/dxfeed-graal-go-api/actions/workflows/build.yml/badge.svg)
 [![Go Reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/dxfeed/dxfeed-graal-go-api)
 ![Platform](https://img.shields.io/badge/platform-win--x64%20%7C%20linux--x64%20%7C%20linux--arm64%20%7C%20osx--x64%20%7C%20osx--arm64-lightgrey)
@@ -49,7 +47,6 @@ to your dxFeed support contact.
 What is left:
 
 * a prototype without cgo (purego), so that a build needs no C compiler
-* version 1.0.0 with a stable API
 
 The plans and the open tasks are in the [issues](https://github.com/dxFeed/dxfeed-graal-go-api/issues).
 
@@ -346,13 +343,15 @@ the feed. Each release has them built as archives on the
   the lag, as the
   [NetTest specification](https://github.com/dxFeed/dxfeed-graal-native-sdk/blob/v3.18.0/docs/wrapper-guide/nettest.md)
   `nettest/1` of the SDK defines them, so that its output compares with the NetTest of the other APIs, such as
-  `tools nettest p :7001 -S 1000 -r */100k -c stream` and `tools nettest c 127.0.0.1:7001 -S 1000 -c stream`; `--summary <file>` writes a JSON summary of the run and
-  `--metrics-port <port>` serves the metrics in the Prometheus text format
+  `tools nettest p :7001 -S 1000 -r */100k -c stream` and `tools nettest c 127.0.0.1:7001 -S 1000 -c stream`;
+  `--summary <file>` writes a JSON summary of the run and `--metrics-port [<host>:]<port>` serves the metrics in the
+  Prometheus text format
 * [qds](cmd/tools/qds.go)
   runs the QDS tools of the SDK with their command line in one argument, such as
   `tools qds "connect demo.dxfeed.com:7300 Quote AAPL -stat 5s"`; without arguments it lists them
 
-Run a tool as `tools <tool> <address> <types> <symbols> [<options>]`, or from a clone of this repository as
+Run a tool as `tools <tool> <address> <types> <symbols> [<options>]` (`nettest` and `qds` take the arguments shown
+above), or from a clone of this repository as
 `go run ./cmd/tools <tool> ...`; a tool without arguments or with `-h` prints its help, such as
 `go run ./cmd/tools connect`, and `tools --version` prints the versions of the tools and of the SDK. The options follow
 the tools of the dxFeed C++ API, such as `-p`/`--properties`, `-t`/`--tape`, `-q`/`--quiet` and `--force-stream`.
