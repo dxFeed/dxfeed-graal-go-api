@@ -132,11 +132,15 @@ func (a Args) Common(defaultTypes, defaultSymbols string) (address, types, symbo
 	return values[0], values[1], values[2], nil
 }
 
-// PositiveSeconds parses the value of an option that is a whole number of seconds from 1 on.
+// MaxSeconds is the greatest value of PositiveSeconds: a day.
+const MaxSeconds = 86400
+
+// PositiveSeconds parses the value of an option that is a whole number of seconds from 1 to MaxSeconds.
 func PositiveSeconds(o Option, value string) (int, error) {
 	seconds, err := strconv.Atoi(value)
-	if err != nil || seconds < 1 {
-		return 0, fmt.Errorf("option %s: %q is not a whole number of seconds from 1 on", o.Names[0], value)
+	if err != nil || seconds < 1 || seconds > MaxSeconds {
+		return 0, fmt.Errorf("option %s: %q is not a whole number of seconds from 1 to %d", o.Names[0], value,
+			MaxSeconds)
 	}
 	return seconds, nil
 }

@@ -98,21 +98,28 @@ type diag struct {
 // start takes the time and the CPU time from which the first interval counts.
 func (d *diag) start() {
 	d.lastTime = time.Now()
+	d.lastCPUTimeNs = -1
 	if s, err := api.GetRuntimeStatistics(); err == nil {
 		d.lastCPUTimeNs = s.ProcessCPUTimeNs
 	}
 }
 
 // cpuUsage returns the CPU usage of the process since the last call in percent: of all the processors, or of one
-// core with --cpu-usage-by-core (a fully loaded core is 100%); NaN when the CPU time is not available.
+// core with --cpu-usage-by-core (a fully loaded core is 100%); NaN when the CPU time of this interval or of the last
+// one is not available.
 func (d *diag) cpuUsage(now time.Time) float64 {
+	last := d.lastCPUTimeNs
+	d.lastCPUTimeNs = -1
 	s, err := api.GetRuntimeStatistics()
-	if err != nil || s.ProcessCPUTimeNs < 0 || d.lastCPUTimeNs < 0 {
+	if err != nil || s.ProcessCPUTimeNs < 0 {
+		return math.NaN()
+	}
+	d.lastCPUTimeNs = s.ProcessCPUTimeNs
+	if last < 0 {
 		return math.NaN()
 	}
 	elapsed := now.Sub(d.lastTime)
-	usage := float64(s.ProcessCPUTimeNs-d.lastCPUTimeNs) / float64(elapsed.Nanoseconds()) * 100
-	d.lastCPUTimeNs = s.ProcessCPUTimeNs
+	usage := float64(s.ProcessCPUTimeNs-last) / float64(elapsed.Nanoseconds()) * 100
 	if !d.cpuUsageByCore && s.AvailableProcessors > 0 {
 		usage /= float64(s.AvailableProcessors)
 	}

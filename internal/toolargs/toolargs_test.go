@@ -117,12 +117,12 @@ func TestCommon(t *testing.T) {
 }
 
 func TestPositiveSeconds(t *testing.T) {
-	for value, want := range map[string]int{"1": 1, "2": 2, "3600": 3600} {
+	for value, want := range map[string]int{"1": 1, "2": 2, "3600": 3600, "86400": 86400} {
 		if got, err := PositiveSeconds(Interval, value); err != nil || got != want {
 			t.Errorf("%q: %d, %v; want %d", value, got, err, want)
 		}
 	}
-	for _, value := range []string{"0", "-1", "1.5", "x", ""} {
+	for _, value := range []string{"0", "-1", "1.5", "x", "", "86401", "10000000000"} {
 		if _, err := PositiveSeconds(Interval, value); err == nil ||
 			!strings.Contains(err.Error(), "option --interval") {
 			t.Errorf("%q: error %v, want an error naming --interval", value, err)

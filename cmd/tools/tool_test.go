@@ -121,7 +121,7 @@ func TestToolArgumentErrors(t *testing.T) {
 		{"dump a --quiet --bogus", "dump: unknown option --bogus"},
 		{"perftest a Quote AAPL -q", "perftest: unknown option -q"},
 		{"latencytest a TimeAndSale AAPL --ignore-exchanges", "latency test: option --ignore-exchanges needs a value"},
-		{"latencytest a TimeAndSale AAPL --interval 0", `latency test: option --interval: "0" is not a whole number of seconds from 1 on`},
+		{"latencytest a TimeAndSale AAPL --interval 0", `latency test: option --interval: "0" is not a whole number of seconds from 1 to 86400`},
 		{"connect a Order AAPL -f 0 -s NTV", "connect: options --from-time and --source cannot be used together"},
 		{"connect a Quote", "connect: the symbols argument is missing"},
 		{"connect a Quote AAPL -X", "connect: unknown option -X"},

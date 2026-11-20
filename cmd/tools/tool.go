@@ -101,6 +101,9 @@ func parseCommon(a toolargs.Args, defaultTypes, defaultSymbols string) (commonAr
 // newEndpoint applies the -p properties as the tools of every API do: as system properties and as the properties of
 // the endpoint it creates.
 func newEndpoint(role common.Role, properties map[string]string) (*api.DXEndpoint, error) {
+	if err := setToolProperties(); err != nil {
+		return nil, err
+	}
 	for key, value := range properties {
 		if err := api.SetSystemProperty(key, value); err != nil {
 			return nil, fmt.Errorf("SetSystemProperty %s: %w", key, err)
