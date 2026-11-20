@@ -73,6 +73,10 @@ type Config struct {
 	Name     string
 	// Properties are the -D properties in the command-line order.
 	Properties []Property
+	// Summary is the path of the summary file, empty without one.
+	Summary string
+	// MetricsAddress is the host and the port of the metrics, empty without them.
+	MetricsAddress string
 }
 
 // Conflated tells whether the consumer receives conflated events: a FEED role with Trade.
@@ -132,6 +136,24 @@ func (c *Config) Settings() map[string]any {
 		"duration_ms":    ms(c.Duration),
 		"name":           c.Name,
 	}
+}
+
+// SummaryConfig returns the config of the summary file: the settings without the side and the name, the rate limit as
+// an integer, the reuse that takes effect (the API copies the events, so false on p) and the nanosecond part.
+func (c *Config) SummaryConfig(nanoTime bool) map[string]any {
+	config := c.Settings()
+	delete(config, "side")
+	delete(config, "name")
+	if c.Mode == Producer && c.Rate > 0 {
+		config["rate_limit"] = int64(math.Round(c.Rate))
+	}
+	config["reuse_effective"] = nil
+	if c.Mode == Producer {
+		config["reuse_effective"] = false
+	}
+	config["nano_time"] = nanoTime
+	config["isolate_arguments"] = []string{}
+	return config
 }
 
 // UsageError is an invalid command line: the tool prints "<tool>: <text>" and exits with 2.
@@ -278,8 +300,11 @@ func Parse(args []string) (Config, error) {
 			c.Duration, err = parseTime(name, value)
 		case "--warmup":
 			c.Warmup, err = parseTime(name, value)
-		case "--summary", "--metrics-port":
-			err = usage("unsupported option: %s (not yet implemented)", name)
+		case "--summary":
+			c.Summary = value
+			err = CheckSummaryPath(value)
+		case "--metrics-port":
+			c.MetricsAddress, err = ParseMetricsAddress(value)
 		}
 		if err != nil {
 			return c, err

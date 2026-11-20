@@ -6,8 +6,10 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"math"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/nettest"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
@@ -97,8 +100,9 @@ func TestNetTestCommandLine(t *testing.T) {
 		{"nettest c 127.0.0.1:7001 -S 100 --batch 10", 2, "nettest: --batch is an option of the mode p\n"},
 		{"nettest p :7001 -S 100 -Xmx512m", 2, "nettest: unsupported option: -Xmx512m\n"},
 		{"nettest p :7001 -S 100 --legacy", 2, "nettest: unsupported option: --legacy\n"},
-		{"nettest c 127.0.0.1:7001 -S 100 --summary s.json", 2,
-			"nettest: unsupported option: --summary (not yet implemented)\n"},
+		{"nettest c 127.0.0.1:7001 -S 100 --summary no-such-dir/s.json", 2,
+			"nettest: --summary cannot write to the directory of 'no-such-dir/s.json'\n"},
+		{"nettest c 127.0.0.1:7001 -S 100 --metrics-port 65536", 2, "nettest: --metrics-port needs [<host>:]<port>"},
 	} {
 		status, out := runTools(t, test.args)
 		if status != test.status || !strings.Contains(out, test.want) {
@@ -121,18 +125,53 @@ func TestNetTestPortInUse(t *testing.T) {
 	if status != 1 || !strings.Contains(out, "Error during nettest: the address :"+port+" cannot be listened on") {
 		t.Errorf("status %d, want 1:\n%s", status, out)
 	}
+	// Windows lets a socket bind 127.0.0.1 next to one on all interfaces: hold the metrics port on 127.0.0.1.
+	metricsListener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = metricsListener.Close() }()
+	metricsPort := strconv.Itoa(metricsListener.Addr().(*net.TCPAddr).Port)
+	status, out = runTools(t, "nettest c 127.0.0.1:"+port+" -S 10 --duration 2s --metrics-port 127.0.0.1:"+metricsPort)
+	if status != 1 || !strings.Contains(out, "Error during nettest: the metrics address 127.0.0.1:"+metricsPort+" cannot be "+
+		"listened on") {
+		t.Errorf("metrics: status %d, want 1:\n%s", status, out)
+	}
 }
 
 // TestNetTestLoopback runs a publisher and a consumer of the tool for some seconds: both print their lines, the
-// consumer's lag is positive and below 1 s, and --duration ends both with 0.
+// consumer's lag is positive and below 1 s, --duration ends both with 0, a scrape of the consumer's metrics has its
+// families, and both summary files validate against the schema of the kit.
 func TestNetTestLoopback(t *testing.T) {
 	re := netTestRegexes(t)
-	port := freePort(t)
-	producer := startTools(t, "nettest p :"+port+" -S 100 -r */5k -s 1s --duration 14s -c stream -n prod")
+	port, metricsPort := freePort(t), freePort(t)
+	dir := t.TempDir()
+	producerSummary, consumerSummary := filepath.Join(dir, "p.json"), filepath.Join(dir, "c.json")
+	producer := startTools(t, "nettest p :"+port+" -S 100 -r */5k -s 1s --duration 14s -c stream -n prod --summary "+
+		producerSummary)
 	time.Sleep(time.Second)
-	status, out := runTools(t, "nettest c 127.0.0.1:"+port+" -S 100 -C 2 -s 1s --duration 8s -c stream -n cons")
+	consumer := startTools(t, "nettest c 127.0.0.1:"+port+" -S 100 -C 2 -s 1s --duration 8s -c stream -n cons "+
+		"--warmup 2s --metrics-port 127.0.0.1:"+metricsPort+" --summary "+consumerSummary)
+	time.Sleep(4 * time.Second)
+	scrape := scrapeMetrics(t, "http://127.0.0.1:"+metricsPort+"/metrics")
+	status, out := consumer()
 	if status != 0 {
 		t.Fatalf("consumer: status %d:\n%s", status, out)
+	}
+	metricsLine := "{*NetTestMetrics-cons*} http://127.0.0.1:" + metricsPort + "/metrics"
+	if !re["metrics"].MatchString(metricsLine) || !strings.Contains(out, "{*NetTestMetrics-cons*} http://127.0.0.1:"+
+		metricsPort+"/metrics") {
+		t.Errorf("consumer: no metrics line:\n%s", out)
+	}
+	for _, family := range []string{"nettest_info gauge", "nettest_records_total counter",
+		"nettest_e2e_lag_seconds histogram", "nettest_e2e_lag_negative_total counter", "nettest_connections gauge",
+		"nettest_connector_read_records_total counter", "nettest_runtime_cpu_seconds_total counter"} {
+		if !strings.Contains(scrape, "# TYPE "+family+"\n") {
+			t.Errorf("the scrape has no %s:\n%s", family, scrape)
+		}
+	}
+	if !strings.Contains(scrape, `nettest_records_total{tool="go-api",side="consumer",name="cons",connection="2"} `) {
+		t.Errorf("the scrape has no records of the second instance:\n%s", scrape)
 	}
 	blocks, instances, runtimes := countLines(t, re, out, "Consumer", "cons", "2")
 	if blocks < 3 || instances != 2*blocks || runtimes != blocks {
@@ -145,6 +184,74 @@ func TestNetTestLoopback(t *testing.T) {
 		t.Errorf("producer: status %d, %d blocks, %d instance lines, %d runtime lines; want 0 and 3 or more blocks:\n%s",
 			status, blocks, instances, runtimes, out)
 	}
+	c := readSummary(t, consumerSummary)
+	if c["status"] != "ok" || c["symbols_seen"] != float64(100) || c["time_resolution"] != "ns" {
+		t.Errorf("consumer summary: status %v, symbols_seen %v, time_resolution %v", c["status"], c["symbols_seen"],
+			c["time_resolution"])
+	}
+	phases := map[any]int{}
+	for _, interval := range c["intervals"].([]any) {
+		phases[interval.(map[string]any)["phase"]]++
+	}
+	lag := c["e2e_lag"].(map[string]any)
+	if phases["warmup"] == 0 || phases["measure"] == 0 || lag["count"].(float64) <= 0 ||
+		lag["p50_ns"].(float64) <= 0 || lag["p50_ns"].(float64) >= 1e9 {
+		t.Errorf("consumer summary: phases %v, e2e_lag %v", phases, lag)
+	}
+	p := readSummary(t, producerSummary)
+	if p["status"] != "ok" || p["schedule_slip"] == nil || p["publish_call"].(map[string]any)["calls"].(float64) <= 0 ||
+		p["e2e_lag"] != nil {
+		t.Errorf("producer summary: status %v, schedule_slip %v, publish_call %v", p["status"], p["schedule_slip"],
+			p["publish_call"])
+	}
+}
+
+// scrapeMetrics returns a scrape of the metrics and checks its content type.
+func scrapeMetrics(t *testing.T, url string) string {
+	t.Helper()
+	response, err := http.Get(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = response.Body.Close() }()
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := response.Header.Get("Content-Type"); got != "text/plain; version=0.0.4; charset=utf-8" {
+		t.Errorf("the content type is %q", got)
+	}
+	return string(body)
+}
+
+// readSummary validates a summary file against the schema of the kit, checks that the records of its intervals add
+// up and returns it.
+func readSummary(t *testing.T, path string) map[string]any {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	schema, err := os.ReadFile(filepath.Join("..", "..", "internal", "nettest", "testdata",
+		"nettest-summary.schema.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := nettest.ValidateJSON(schema, data); err != nil {
+		t.Errorf("%s: %v\n%s", path, err, data)
+	}
+	var summary map[string]any
+	if err := json.Unmarshal(data, &summary); err != nil {
+		t.Fatal(err)
+	}
+	var records float64
+	for _, interval := range summary["intervals"].([]any) {
+		records += interval.(map[string]any)["records"].(float64)
+	}
+	if records != summary["records"] {
+		t.Errorf("%s: the intervals have %v records, the summary %v", path, records, summary["records"])
+	}
+	return summary
 }
 
 // countLines counts the statistics blocks, the instance lines and the runtime lines of the output of a side and checks
@@ -245,9 +352,13 @@ func TestNetTestNanoTime(t *testing.T) {
 			t.Errorf("nanoTime %v: %d of %d trades have a nanosecond part", nanoTime, nonzero, len(nanos))
 		}
 		if !nanoTime {
-			status, out := runTools(t, "nettest c 127.0.0.1:"+port+" -S 10 -s 1s --duration 20s")
+			summary := filepath.Join(t.TempDir(), "c.json")
+			status, out := runTools(t, "nettest c 127.0.0.1:"+port+" -S 10 -s 1s --duration 20s --summary "+summary)
 			if status != 1 || !strings.Contains(out, "Error during nettest: nano_missing: ") {
 				t.Errorf("consumer: status %d, want 1 and nano_missing:\n%s", status, out)
+			}
+			if s := readSummary(t, summary); s["status"] != "nano_missing" || s["exit_code"] != float64(1) {
+				t.Errorf("consumer summary: status %v, exit_code %v", s["status"], s["exit_code"])
 			}
 			status, out = runTools(t, "nettest c 127.0.0.1:"+port+" -S 10 -s 1s --duration 2s -Ddxscheme.nanoTime=false")
 			if status != 0 {
