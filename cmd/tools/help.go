@@ -57,7 +57,8 @@ Options:
   -p, --properties <name=value,...>
                           Set system properties before the QDS tools run, such as dxfeed.aggregationPeriod=1s.
 
-The exit status is that of the QDS tools: 0 if they succeed, 1 if they fail.
+-h, --help and -help print this help only as the first argument; later they go to the QDS tools. The exit status is
+that of the QDS tools, 0 if they succeed and 1 if they fail; a wrong option gives 2.
 
 Samples:
   tools qds "connect demo.dxfeed.com:7300 Quote AAPL -stat 5s"
