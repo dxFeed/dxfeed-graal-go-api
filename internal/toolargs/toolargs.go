@@ -114,6 +114,31 @@ func (a Args) Properties() (map[string]string, error) {
 	return properties, nil
 }
 
+// ParseQds parses the arguments of the Qds tool as the C++ tool does: the first argument is the command line of the
+// QDS tools in one string, the first -p or --properties option that follows sets the properties, and every other
+// argument, a second -p among them, is added to the command line. The command line is split on spaces. With no
+// arguments both results are empty.
+func ParseQds(args []string) (qdsArgs []string, a Args, err error) {
+	a = Args{values: map[string]string{}}
+	if len(args) == 0 {
+		return nil, a, nil
+	}
+	line := []string{args[0]}
+	for i := 1; i < len(args); i++ {
+		arg := args[i]
+		if !a.Has(Properties) && (arg == Properties.Names[0] || arg == Properties.Names[1]) {
+			if i+1 >= len(args) {
+				return nil, Args{}, fmt.Errorf("option %s needs a value", arg)
+			}
+			i++
+			a.values[Properties.Names[0]] = args[i]
+			continue
+		}
+		line = append(line, arg)
+	}
+	return strings.Fields(strings.Join(line, " ")), a, nil
+}
+
 // Common returns the address, the event types and the symbols: the positional arguments of the tools that connect
 // to an address. The address is required; a missing types or symbols argument gets its default, or is an error when
 // the default is "". More than three positional arguments are an error.

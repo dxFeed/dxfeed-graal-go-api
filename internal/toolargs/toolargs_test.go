@@ -130,6 +130,35 @@ func TestPositiveSeconds(t *testing.T) {
 	}
 }
 
+func TestParseQds(t *testing.T) {
+	for _, test := range []struct {
+		args       []string
+		want       []string
+		properties map[string]string
+	}{
+		{nil, nil, map[string]string{}},
+		{[]string{"connect  localhost:7700 Quote:AAPL "}, []string{"connect", "localhost:7700", "Quote:AAPL"},
+			map[string]string{}},
+		{[]string{"connect a", "-p", "x=1", "-stat", "5s"}, []string{"connect", "a", "-stat", "5s"},
+			map[string]string{"x": "1"}},
+		{[]string{"connect a", "--properties", "x=1", "-p", "y=2"}, []string{"connect", "a", "-p", "y=2"},
+			map[string]string{"x": "1"}},
+		{[]string{"-p", "x=1"}, []string{"-p", "x=1"}, map[string]string{}},
+	} {
+		got, a, err := ParseQds(test.args)
+		if err != nil {
+			t.Fatalf("%q: %v", test.args, err)
+		}
+		properties, err := a.Properties()
+		if !reflect.DeepEqual(got, test.want) || err != nil || !reflect.DeepEqual(properties, test.properties) {
+			t.Errorf("%q: %q, %v, %v; want %q, %v", test.args, got, properties, err, test.want, test.properties)
+		}
+	}
+	if _, _, err := ParseQds([]string{"connect a", "-p"}); err == nil || err.Error() != "option -p needs a value" {
+		t.Errorf("error %v, want option -p needs a value", err)
+	}
+}
+
 func TestIsHelp(t *testing.T) {
 	for arg, want := range map[string]bool{"-h": true, "--help": true, "-help": true, "help": false, "-H": false} {
 		if IsHelp(arg) != want {
