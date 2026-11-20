@@ -78,7 +78,7 @@ func TestSelectToolUnknown(t *testing.T) {
 func checkUsage(t *testing.T, args []string, usage string) {
 	t.Helper()
 	last := -1
-	for _, name := range []string{"connect", "dump", "latencytest", "perftest", "qds"} {
+	for _, name := range []string{"connect", "diagnose", "dump", "latencytest", "perftest", "qds"} {
 		line := "\t" + name + " "
 		if strings.Count(usage, line) != 1 {
 			t.Errorf("%q: usage lists %s %d times, want once:\n%s", args, name, strings.Count(usage, line), usage)
