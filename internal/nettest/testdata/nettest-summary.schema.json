@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nettest-summary/1",
+  "title": "The summary file of a NetTest run, version nettest-summary/1 (NetTest specification nettest/1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "spec_version", "tool", "side", "name", "args", "config", "start_epoch_ns", "end_epoch_ns",
+               "status", "exit_code", "error", "records", "rate", "time_source", "time_resolution", "intervals",
+               "e2e_lag", "publish_call", "schedule_slip", "symbols_seen", "runtime", "connectors"],
+  "properties": {
+    "schema": {"const": "nettest-summary/1"},
+    "spec_version": {"const": "nettest/1"},
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["implementation", "name", "version", "sdk_version", "qd_version", "build"],
+      "properties": {
+        "implementation": {"enum": ["qd", "c-api", "java-api", "cpp-api", "net-api", "rust-api", "go-api"]},
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": ["string", "null"]},
+        "sdk_version": {"type": ["string", "null"]},
+        "qd_version": {"type": ["string", "null"]},
+        "build": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["vendor", "march", "gc"],
+          "properties": {
+            "vendor": {"type": ["string", "null"]},
+            "march": {"type": ["string", "null"]},
+            "gc": {"type": ["string", "null"]}
+          }
+        }
+      }
+    },
+    "side": {"enum": ["producer", "consumer"]},
+    "name": {"type": "string", "minLength": 1},
+    "args": {"type": "array", "items": {"type": "string"}},
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["address", "symbols", "symbols_source", "instances", "rate_limit", "batch", "event", "collector",
+                   "role", "reuse", "reuse_effective", "conflated", "period_ms", "warmup_ms", "duration_ms",
+                   "nano_time", "isolate_arguments"],
+      "properties": {
+        "address": {"type": "string", "minLength": 1},
+        "symbols": {"type": "integer", "minimum": 1, "maximum": 100000000},
+        "symbols_source": {"enum": ["generated", "file"]},
+        "instances": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "rate_limit": {"type": ["integer", "null"], "minimum": 1},
+        "batch": {"type": ["integer", "null"], "minimum": 1, "maximum": 4194304},
+        "event": {"enum": ["Trade", "TimeAndSale"]},
+        "collector": {"enum": ["stream", "ticker", null]},
+        "role": {"enum": ["PUBLISHER", "STREAM_PUBLISHER", "FEED", "STREAM_FEED"]},
+        "reuse": {"type": ["boolean", "null"]},
+        "reuse_effective": {"type": ["boolean", "null"]},
+        "conflated": {"type": "boolean"},
+        "period_ms": {"type": "integer", "minimum": 1},
+        "warmup_ms": {"type": ["integer", "null"], "minimum": 1},
+        "duration_ms": {"type": ["integer", "null"], "minimum": 1},
+        "nano_time": {"type": "boolean"},
+        "isolate_arguments": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "start_epoch_ns": {"type": "integer", "minimum": 0},
+    "end_epoch_ns": {"type": "integer", "minimum": 0},
+    "status": {"enum": ["ok", "stopped_by_signal", "error", "no_data", "nano_missing"]},
+    "exit_code": {"enum": [0, 1]},
+    "error": {"type": ["string", "null"]},
+    "records": {"type": "integer", "minimum": 0},
+    "rate": {"type": "integer", "minimum": 0},
+    "time_source": {"const": "actual"},
+    "time_resolution": {"enum": ["ns", "ms"]},
+    "intervals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start_epoch_ms", "end_epoch_ms", "phase", "records", "rate", "lag_mean_ns", "lag_p50_ns",
+                     "lag_p99_ns", "lag_max_ns", "publish_ns_per_event", "slip_max_ns", "slip_end_ns", "connections"],
+        "properties": {
+          "start_epoch_ms": {"type": "integer", "minimum": 0},
+          "end_epoch_ms": {"type": "integer", "minimum": 0},
+          "phase": {"enum": ["warmup", "measure"]},
+          "records": {"type": "integer", "minimum": 0},
+          "rate": {"type": "integer", "minimum": 0},
+          "lag_mean_ns": {"type": ["integer", "null"]},
+          "lag_p50_ns": {"type": ["integer", "null"], "minimum": 0},
+          "lag_p99_ns": {"type": ["integer", "null"], "minimum": 0},
+          "lag_max_ns": {"type": ["integer", "null"]},
+          "publish_ns_per_event": {"type": ["integer", "null"], "minimum": 0},
+          "slip_max_ns": {"type": ["integer", "null"], "minimum": 0},
+          "slip_end_ns": {"type": ["integer", "null"], "minimum": 0},
+          "connections": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "e2e_lag": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["count", "negative", "p50_ns", "p90_ns", "p99_ns", "p999_ns", "p9999_ns", "max_ns", "mean_ns",
+                   "histogram"],
+      "properties": {
+        "count": {"type": "integer", "minimum": 0},
+        "negative": {"type": "integer", "minimum": 0},
+        "p50_ns": {"type": ["integer", "null"], "minimum": 0},
+        "p90_ns": {"type": ["integer", "null"], "minimum": 0},
+        "p99_ns": {"type": ["integer", "null"], "minimum": 0},
+        "p999_ns": {"type": ["integer", "null"], "minimum": 0},
+        "p9999_ns": {"type": ["integer", "null"], "minimum": 0},
+        "max_ns": {"type": ["integer", "null"]},
+        "mean_ns": {"type": ["integer", "null"]},
+        "histogram": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lowest", "highest", "digits"],
+          "properties": {
+            "lowest": {"const": 1},
+            "highest": {"const": 3600000000000},
+            "digits": {"const": 3}
+          }
+        }
+      }
+    },
+    "publish_call": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["calls", "events", "ns_total", "ns_per_event_mean"],
+      "properties": {
+        "calls": {"type": "integer", "minimum": 0},
+        "events": {"type": "integer", "minimum": 0},
+        "ns_total": {"type": "integer", "minimum": 0},
+        "ns_per_event_mean": {"type": ["integer", "null"], "minimum": 0}
+      }
+    },
+    "schedule_slip": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["max_ns", "end_ns", "growth_ns_per_s"],
+      "properties": {
+        "max_ns": {"type": "integer", "minimum": 0},
+        "end_ns": {"type": "integer", "minimum": 0},
+        "growth_ns_per_s": {"type": ["integer", "null"]}
+      }
+    },
+    "symbols_seen": {"type": ["integer", "null"], "minimum": 0},
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["heap_used_mb", "heap_committed_mb", "gc_count", "gc_time_ms", "cpu_percent_mean"],
+      "properties": {
+        "heap_used_mb": {"type": ["integer", "null"], "minimum": 0},
+        "heap_committed_mb": {"type": ["integer", "null"], "minimum": 0},
+        "gc_count": {"type": ["integer", "null"], "minimum": 0},
+        "gc_time_ms": {"type": ["integer", "null"], "minimum": 0},
+        "cpu_percent_mean": {"type": ["integer", "null"], "minimum": 0}
+      }
+    },
+    "connectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["address", "v1", "v2"],
+        "properties": {
+          "address": {"type": "string"},
+          "v1": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["read_bytes", "written_bytes", "read_data_records", "written_data_records",
+                         "active_connections", "closed_connections"],
+            "properties": {
+              "read_bytes": {"type": "integer", "minimum": 0},
+              "written_bytes": {"type": "integer", "minimum": 0},
+              "read_data_records": {"type": "integer", "minimum": 0},
+              "written_data_records": {"type": "integer", "minimum": 0},
+              "active_connections": {"type": "integer", "minimum": 0},
+              "closed_connections": {"type": "integer", "minimum": 0}
+            }
+          },
+          "v2": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["read_sub_records", "written_sub_records", "data_read_lag_us", "data_write_lag_us",
+                         "read_rtt_us", "write_rtt_us"],
+            "properties": {
+              "read_sub_records": {"type": "integer", "minimum": 0},
+              "written_sub_records": {"type": "integer", "minimum": 0},
+              "data_read_lag_us": {"type": "integer", "minimum": 0},
+              "data_write_lag_us": {"type": "integer", "minimum": 0},
+              "read_rtt_us": {"type": "integer", "minimum": 0},
+              "write_rtt_us": {"type": "integer", "minimum": 0}
+            }
+          }
+        }
+      }
+    }
+  }
+}
