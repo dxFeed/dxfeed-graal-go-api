@@ -6,11 +6,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"sync/atomic"
+
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/toolargs"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 )
 
 type Dump struct{}
@@ -20,135 +20,114 @@ func (c Dump) ShortDescription() string {
 }
 
 func (c Dump) Run(args []string) int {
-	return runTool("dump", args, dumpHelp, []option{tapeOption, propertiesOption, quietOption},
-		func(a toolArguments) error {
-			properties, err := a.properties()
-			if err != nil {
-				return usageError{err}
-			}
-			address, types, symbols, err := parseCommon(a)
+	return runTool("dump", args, dumpHelp, []toolargs.Option{toolargs.Tape, toolargs.Properties, toolargs.Quiet},
+		func(a toolargs.Args) error {
+			common, err := parseCommon(a, "all", "all")
 			if err != nil {
 				return err
 			}
-			return dump(address, a.value(tapeOption), symbols, types, properties, a.has(quietOption))
+			return dump(common, a.Value(toolargs.Tape), a.Has(toolargs.Quiet))
 		})
 }
 
-func dump(
-	inputFile string,
-	outputFile *string,
-	symbols []osub.Symbol,
-	types []eventcodes.EventCode,
-	properties map[string]string,
-	quiet bool,
-) error {
-	for key, value := range properties {
-		if err := api.SetSystemProperty(key, value); err != nil {
-			return fmt.Errorf("SetSystemProperty %s: %w", key, err)
-		}
-	}
-	var listeners []common.EventListener
-
-	if !quiet {
-		listeners = append(listeners, DumpEvents(func(eventsList []interface{}) {
-			for _, event := range eventsList {
-				switch v := event.(type) {
-				case events.StringConverter:
-					fmt.Printf("%s\n", v.String())
-				default:
-					fmt.Printf("Unsupported event %T!\n", v)
-				}
-			}
-		}))
-	}
-
-	inputEndpoint, err := api.NewEndpointWithProperties(api.StreamFeed, properties)
+func dump(common commonArgs, tape *string, quiet bool) error {
+	inputEndpoint, err := newEndpoint(api.StreamFeed, common.properties)
 	if err != nil {
-		return fmt.Errorf("NewEndpoint: %w", err)
+		return err
 	}
-
-	if err != nil {
-		return fmt.Errorf("Connect to %s: %w", inputFile, err)
-	}
+	defer func() { _ = inputEndpoint.Close() }()
 	feed, err := inputEndpoint.GetFeed()
 	if err != nil {
 		return fmt.Errorf("GetFeed: %w", err)
 	}
-
-	subscription, err := feed.CreateSubscription(types...)
+	subscription, err := feed.CreateSubscription(common.types...)
 	if err != nil {
 		return fmt.Errorf("CreateSubscription: %w", err)
 	}
 	defer func() { _ = subscription.Close() }()
-	count := 0
-	var outputEndpoint *api.DXEndpoint
-
-	if outputFile != nil {
-		outputEndpoint, err = api.NewEndpointWithProperties(api.StreamPublisher, properties)
-		if err != nil {
-			return fmt.Errorf("NewEndpoint Publisher: %w", err)
-		}
-
-		publisher, err := outputEndpoint.GetPublisher()
-		if err != nil {
-			return fmt.Errorf("GetPublisher: %w", err)
-		}
-
-		listeners = append(listeners, DumpEvents(func(eventsList []interface{}) {
-			count = count + len(eventsList)
-			err := publisher.Publish(eventsList)
-			if err != nil {
-				fmt.Printf("Publish error %v", err)
-			}
-		}))
-		err = outputEndpoint.Connect(fmt.Sprintf("tape:%s", *outputFile))
-		if err != nil {
-			return fmt.Errorf("Connect to %s: %w", *outputFile, err)
-		}
-	}
-	for _, listener := range listeners {
-		err = subscription.AddListener(listener)
-		if err != nil {
+	if !quiet {
+		if err := subscription.AddListener(printEvents()); err != nil {
 			return fmt.Errorf("AddListener: %w", err)
 		}
 	}
-
-	for _, symbol := range symbols {
-		err = subscription.AddSymbol(symbol)
-		if err != nil {
+	var writer *tapeWriter
+	if tape != nil {
+		if writer, err = newTapeWriter(*tape, common.properties); err != nil {
+			return err
+		}
+		defer writer.close()
+		if err := subscription.AddListener(writer); err != nil {
+			return fmt.Errorf("AddListener: %w", err)
+		}
+	}
+	for _, symbol := range common.symbols {
+		if err := subscription.AddSymbol(symbol); err != nil {
 			return fmt.Errorf("AddSymbol: %w", err)
 		}
 	}
-
-	err = inputEndpoint.Connect(inputFile)
-	if err != nil {
-		return fmt.Errorf("Connect to %s: %w", inputFile, err)
+	if err := inputEndpoint.Connect(common.address); err != nil {
+		return fmt.Errorf("Connect to %s: %w", common.address, err)
 	}
-
-	err = inputEndpoint.AwaitNotConnected(context.Background())
-	if err != nil {
+	if err := inputEndpoint.AwaitNotConnected(context.Background()); err != nil {
 		return fmt.Errorf("AwaitNotConnected: %w", err)
 	}
-	err = inputEndpoint.CloseAndAwaitTermination(context.Background())
-	if err != nil {
+	if err := inputEndpoint.CloseAndAwaitTermination(context.Background()); err != nil {
 		return fmt.Errorf("CloseAndAwaitTermination: %w", err)
 	}
-	if outputEndpoint != nil {
-		err = outputEndpoint.AwaitProcessed(context.Background())
-		if err != nil {
-			return fmt.Errorf("AwaitProcessed: %w", err)
+	if writer != nil {
+		if err := writer.finish(); err != nil {
+			return err
 		}
-		err = outputEndpoint.CloseAndAwaitTermination(context.Background())
-		if err != nil {
-			return fmt.Errorf("CloseAndAwaitTermination: %w", err)
-		}
+		fmt.Printf("Published %d events\n", writer.count.Load())
 	}
-	fmt.Printf("Published %d events\n", count)
 	return nil
 }
 
-type DumpEvents func(events []interface{})
+// tapeWriter is a listener that publishes the events it gets to a tape file through a StreamPublisher endpoint, as
+// the -t option of the tools does.
+type tapeWriter struct {
+	endpoint  *api.DXEndpoint
+	publisher *api.DXPublisher
+	count     atomic.Int64
+}
 
-func (dm DumpEvents) Update(events []any) {
-	dm(events)
+func newTapeWriter(file string, properties map[string]string) (*tapeWriter, error) {
+	endpoint, err := newEndpoint(api.StreamPublisher, properties)
+	if err != nil {
+		return nil, err
+	}
+	publisher, err := endpoint.GetPublisher()
+	if err != nil {
+		_ = endpoint.Close()
+		return nil, fmt.Errorf("GetPublisher: %w", err)
+	}
+	if err := endpoint.Connect("tape:" + file); err != nil {
+		_ = endpoint.Close()
+		return nil, fmt.Errorf("Connect to tape:%s: %w", file, err)
+	}
+	return &tapeWriter{endpoint: endpoint, publisher: publisher}, nil
+}
+
+// Update publishes the events to the tape.
+func (w *tapeWriter) Update(events []any) {
+	w.count.Add(int64(len(events)))
+	if err := w.publisher.Publish(events); err != nil {
+		fmt.Fprintf(os.Stderr, "Publish error: %v\n", err)
+	}
+}
+
+// finish waits until the published events are written and closes the endpoint.
+func (w *tapeWriter) finish() error {
+	if err := w.endpoint.AwaitProcessed(context.Background()); err != nil {
+		return fmt.Errorf("AwaitProcessed: %w", err)
+	}
+	if err := w.endpoint.CloseAndAwaitTermination(context.Background()); err != nil {
+		return fmt.Errorf("CloseAndAwaitTermination: %w", err)
+	}
+	return nil
+}
+
+// close closes the endpoint without waiting; it does nothing after finish.
+func (w *tapeWriter) close() {
+	_ = w.endpoint.Close()
 }

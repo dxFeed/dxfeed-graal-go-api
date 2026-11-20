@@ -14,8 +14,9 @@ func main() {
 	if tool == nil {
 		os.Exit(status)
 	}
-	// Enable experimental feature, and set scheme for dxLink.
+	// As the tools of the C++ API: the wildcard symbol "all", the experimental dxLink and its scheme.
 	for _, property := range [][2]string{
+		{"dxfeed.wildcard.enable", "true"},
 		{"dxfeed.experimental.dxlink.enable", "true"},
 		{"scheme", "ext:opt:sysprops,resource:dxlink.xml"},
 	} {

@@ -3,8 +3,8 @@
 
 package main
 
-// The help of the tools. A tool prints it when it gets fewer than three arguments or -h, --help or -help, and with an
-// error of its arguments. The options may stand anywhere; an option with a value takes the next argument.
+// The help of the tools. A tool prints it when it gets no arguments or -h, --help or -help, and with an error of its
+// arguments. The options may stand anywhere; an option with a value takes the next argument.
 
 const addressArgument = `  <address>  The address to connect to: host:port, a dxLink URL or a tape file, such as demo.dxfeed.com:7300.
              To pass an authorization token, add it to the address: demo.dxfeed.com:7300[login=entitle:<token>].
@@ -27,38 +27,46 @@ Where:
 ` + addressArgument + allTypesArgument + symbolsArgument + `
 Options:
   -f, --from-time <time>  Subscribe to the time series from the time, such as 20230901Z or 2023-09-01T10:00:00Z.
+  -s, --source <source>   Subscribe to the indexed events of the order source, such as NTV; not with -f.
   -p, --properties <name=value,...>
-                          Set the properties of the endpoint, such as dxfeed.experimental.dxlink.enable=true.
+                          Set the properties of the endpoints, also as system properties, such as
+                          dxfeed.aggregationPeriod=1s.
+  -t, --tape <file>       Write the received events to the tape file, such as out.txt[format=text].
   -q, --quiet             Do not print the events.
   --force-stream          Enforce a streaming contract for the subscription: the StreamFeed role instead of Feed.
 
 Samples:
   tools connect demo.dxfeed.com:7300 Quote AAPL
   tools connect demo.dxfeed.com:7300 Candle "AAPL{=d}" -f 20230901Z
-  tools connect dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws Quote AAPL -p dxfeed.experimental.dxlink.enable=true
+  tools connect demo.dxfeed.com:7300 Order AAPL -s NTV
+  tools connect dxlink:wss://demo.dxfeed.com/market-data/dxlink-ws Quote AAPL
 `
 
 const dumpHelp = `Dump: prints the events received from the address and, with -t, writes them to a tape file. It uses the StreamFeed
 role, so the events of a tape file come as they are, without conflation.
 
 Usage:
-  tools dump <address> <types> <symbols> [<options>]
+  tools dump <address> [<types> [<symbols>]] [<options>]
 
 Where:
-` + addressArgument + allTypesArgument + symbolsArgument + `
+` + addressArgument + allTypesArgument + `             The default is all.
+` + symbolsArgument + `             The default is all.
+
 Options:
   -t, --tape <file>       Write the events to the tape file, such as out.txt[format=text].
   -p, --properties <name=value,...>
-                          Set the properties of the endpoints, such as dxfeed.wildcard.enable=true for the symbol all.
+                          Set the properties of the endpoints, also as system properties, such as
+                          dxfeed.aggregationPeriod=1s.
   -q, --quiet             Do not print the events.
 
 Samples:
   tools dump demo.dxfeed.com:7300 Quote AAPL,IBM -t out.txt[format=text] -q
-  tools dump in.tape[speed=max] Quote,Profile,TimeAndSale all -t out.tape -q -p dxfeed.wildcard.enable=true
+  tools dump in.tape[speed=max] Quote,Profile,TimeAndSale all -t out.tape -q
+  tools dump in.tape[speed=max]
 `
 
-const perfTestHelp = `PerfTest: connects to the address and prints every 2 seconds the rate of events, the rate of listener calls and the
-number of events in a call.
+const perfTestHelp = `PerfTest: connects to the address and prints every 2 seconds the rate of events, the rate of listener calls, the
+number of events in a call and the CPU usage of the process.
 
 Usage:
   tools perftest <address> <types> <symbols> [<options>]
@@ -66,7 +74,12 @@ Usage:
 Where:
 ` + addressArgument + allTypesArgument + symbolsArgument + `
 Options:
+  -p, --properties <name=value,...>
+                          Set the properties of the endpoints, also as system properties, such as
+                          dxfeed.aggregationPeriod=1s.
   --force-stream          Enforce a streaming contract for the subscription: the StreamFeed role instead of Feed.
+  --cpu-usage-by-core     Show the CPU usage relative to one core (a fully loaded core is 100%), not to all of them.
+  --detach-listener       Do not add a listener to the subscription: the events are received but not counted.
 
 Sample:
   tools perftest demo.dxfeed.com:7300 TimeAndSale AAPL,IBM,MSFT
@@ -76,12 +89,17 @@ const latencyTestHelp = `LatencyTest: connects to the address, subscribes to Tim
 between the time of an event and its receipt, in milliseconds (min, max, mean, 99th percentile, etc).
 
 Usage:
-  tools latencytest <address> <types> <symbols> [<options>]
+  tools latencytest <address> [<types> [<symbols>]] [<options>]
 
 Where:
-` + addressArgument + `  <types>    TimeAndSale, case-insensitive; only these events are measured.
-` + symbolsArgument + `
+` + addressArgument + allTypesArgument + `             The default is all. Only TimeAndSale events are measured; the others are counted.
+` + symbolsArgument + `             The default is all.
+
 Options:
+  -p, --properties <name=value,...>
+                          Set the properties of the endpoints, also as system properties, such as
+                          dxfeed.aggregationPeriod=1s.
+  --interval <seconds>    The measurement interval in seconds, 2 by default.
   --ignore-exchanges <codes>
                           Leave out the events of the exchange codes, a comma-separated list without spaces, such
                           as Q,N.

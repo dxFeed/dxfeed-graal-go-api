@@ -6,9 +6,8 @@ package main
 import (
 	"fmt"
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/formatutil"
+	"github.com/dxfeed/dxfeed-graal-go-api/internal/toolargs"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
-	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/timeandsale"
 	"github.com/montanaflynn/stats"
 	"math"
@@ -25,17 +24,25 @@ func (c LatencyTest) ShortDescription() string {
 }
 
 func (c LatencyTest) Run(args []string) int {
-	return runTool("latency test", args, latencyTestHelp, []option{ignoreExchangesOption, forceStreamOption},
-		func(a toolArguments) error {
-			address, types, symbols, err := parseCommon(a)
-			if err != nil {
-				return err
+	return runTool("latency test", args, latencyTestHelp, []toolargs.Option{toolargs.Properties,
+		toolargs.ForceStream, toolargs.Interval, toolargs.IgnoreExchanges}, func(a toolargs.Args) error {
+		interval := 2
+		if value := a.Value(toolargs.Interval); value != nil {
+			var err error
+			if interval, err = toolargs.PositiveSeconds(toolargs.Interval, *value); err != nil {
+				return usageError{err}
 			}
-			return latency(address, types, symbols, a.has(forceStreamOption), a.value(ignoreExchangesOption))
-		})
+		}
+		common, err := parseCommon(a, "all", "all")
+		if err != nil {
+			return err
+		}
+		return latency(common, a.Has(toolargs.ForceStream), a.Value(toolargs.IgnoreExchanges),
+			time.Duration(interval)*time.Second)
+	})
 }
 
-func latency(address string, types []eventcodes.EventCode, symbols []osub.Symbol, forceStream bool, ignoreExchanges *string) error {
+func latency(common commonArgs, forceStream bool, ignoreExchanges *string, interval time.Duration) error {
 	role := api.Feed
 	if forceStream {
 		role = api.StreamFeed
@@ -45,19 +52,16 @@ func latency(address string, types []eventcodes.EventCode, symbols []osub.Symbol
 		ignoredExchanges = strings.Split(*ignoreExchanges, ",")
 	}
 
-	endpoint, err := api.NewEndpoint(role)
+	endpoint, err := newEndpoint(role, common.properties)
 	if err != nil {
-		return fmt.Errorf("NewEndpoint: %w", err)
+		return err
 	}
-	err = endpoint.Connect(address)
-	if err != nil {
-		return fmt.Errorf("Connect: %w", err)
-	}
+	defer func() { _ = endpoint.Close() }()
 	feed, err := endpoint.GetFeed()
 	if err != nil {
 		return fmt.Errorf("GetFeed: %w", err)
 	}
-	sub, err := feed.CreateSubscription(types...)
+	sub, err := feed.CreateSubscription(common.types...)
 	if err != nil {
 		return fmt.Errorf("CreateSubscription: %w", err)
 	}
@@ -71,43 +75,33 @@ func latency(address string, types []eventcodes.EventCode, symbols []osub.Symbol
 		for _, event := range eventsList {
 			switch v := event.(type) {
 			case *timeandsale.TimeAndSale:
-				{
-					if len(ignoredExchanges) > 0 && slices.Contains(ignoredExchanges, formatutil.FormatChar(rune(v.ExchangeCode()))) {
-						continue
-					}
-					if v.IsNew() {
-						d.addSymbols(v.EventSymbol())
-						delta := float64(currentTime - v.Time())
-						d.addDeltas(delta)
-					}
+				if len(ignoredExchanges) > 0 && slices.Contains(ignoredExchanges, formatutil.FormatChar(rune(v.ExchangeCode()))) {
+					continue
 				}
-
-			default:
-				fmt.Printf("Unsupported event %T!\n", v)
+				if v.IsNew() {
+					d.addSymbols(v.EventSymbol())
+					delta := float64(currentTime - v.Time())
+					d.addDeltas(delta)
+				}
 			}
+			// The latency is measured on TimeAndSale events only; the other events are counted.
 		}
 		d.mu.Unlock()
 	}))
 	if err != nil {
 		return fmt.Errorf("AddListener: %w", err)
 	}
-	for _, symbol := range symbols {
-		err = sub.AddSymbol(symbol)
-		if err != nil {
+	for _, symbol := range common.symbols {
+		if err := sub.AddSymbol(symbol); err != nil {
 			return fmt.Errorf("AddSymbol: %w", err)
-
 		}
 	}
-
-	go func() {
-		for {
-			interval := 2
-			time.Sleep(time.Duration(interval) * time.Second)
-			d.PrintDiag(interval)
-		}
-	}()
-
-	time.Sleep(time.Duration(math.MaxInt64))
+	if err := endpoint.Connect(common.address); err != nil {
+		return fmt.Errorf("Connect: %w", err)
+	}
+	for range time.Tick(interval) {
+		d.PrintDiag(interval)
+	}
 	return nil
 }
 
@@ -148,7 +142,7 @@ func (d *latencyDiag) addDeltas(delta float64) {
 	d.deltas = append(d.deltas, delta)
 }
 
-func (d *latencyDiag) PrintDiag(interval int) {
+func (d *latencyDiag) PrintDiag(interval time.Duration) {
 	d.mu.Lock()
 
 	t := time.Now()
@@ -160,8 +154,8 @@ func (d *latencyDiag) PrintDiag(interval int) {
 	stdDev, _ := stats.StdDevP(d.deltas)
 	stdErr := stdDev / math.Sqrt(float64(len(d.deltas)))
 
-	eventPerSec := float64(d.eventCounter) / 2.0
-	listenerCallsPerSec := float64(d.listenerCounter) / 2.0
+	eventPerSec := float64(d.eventCounter) / interval.Seconds()
+	listenerCallsPerSec := float64(d.listenerCounter) / interval.Seconds()
 	if !math.IsNaN(minValue) {
 		d.minTotal = math.Min(d.minTotal, minValue)
 	}
@@ -185,7 +179,7 @@ func (d *latencyDiag) PrintDiag(interval int) {
 	fmt.Printf("Error                          : %s (ms)\n", format(stdErr))
 	fmt.Printf("Sample size (N)                : %d (events)\n", len(d.deltas))
 
-	fmt.Printf("Measurement interval           : %d (s)\n", interval)
+	fmt.Printf("Measurement interval           : %d (s)\n", int(interval.Seconds()))
 	fmt.Printf("Running time                   : %s \n", time.Since(d.startTime))
 	fmt.Printf("Timestamp                      : %s \n", t.Format("20060102-150405.000000"))
 
