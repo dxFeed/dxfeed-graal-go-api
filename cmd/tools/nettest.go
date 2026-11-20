@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math"
 	"net"
 	"os"
 	"os/signal"
@@ -79,6 +80,8 @@ type netTestRun struct {
 	stop     chan struct{}
 	stopOnce sync.Once
 	failure  error
+	// workers are the goroutines that use the endpoints: the publishers and the watchdog of the consumer.
+	workers sync.WaitGroup
 	// The consumer: the events received, those with a nanosecond part, and the time of the last record.
 	received     atomic.Int64
 	withNano     atomic.Int64
@@ -118,7 +121,12 @@ func runNetTest(config *nettest.Config) error {
 		nanoTime = value
 	}
 	r := &netTestRun{config: config, stop: make(chan struct{}), nanoCheck: nanoTime == "true"}
-	defer r.close()
+	defer func() {
+		// Stop the goroutines that use the endpoints before closing them.
+		r.end()
+		r.workers.Wait()
+		r.close()
+	}()
 	for i := 1; i <= config.Instances; i++ {
 		builder := api.NewEndpointBuilder().WithRole(netTestRole(config.Role)).
 			WithName(config.Name+"."+strconv.Itoa(i)).WithProperty(nanoTimeProperty, nanoTime)
@@ -234,6 +242,7 @@ func (r *netTestRun) startConsumers(symbols []string) error {
 			return fmt.Errorf("connect to %s: %w", r.config.Address, err)
 		}
 	}
+	r.workers.Add(1)
 	go r.watchConsumer()
 	return nil
 }
@@ -276,6 +285,7 @@ func (l *netTestListener) Update(events []any) {
 // watchConsumer stops the consumer without data: with open connections and no records for 30 s after the last
 // record, or for 60 s after the connection when no record came.
 func (r *netTestRun) watchConsumer() {
+	defer r.workers.Done()
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	var connectedSince time.Time
@@ -292,10 +302,15 @@ func (r *netTestRun) watchConsumer() {
 				connectedSince = now
 			}
 			last := r.lastRecordNs.Load()
+			// After a reconnect the time without records counts from the connection.
+			since := time.Unix(0, last)
+			if since.Before(connectedSince) {
+				since = connectedSince
+			}
 			switch {
 			case last == 0 && now.Sub(connectedSince) >= noDataAfterConnection:
 				r.fail(fmt.Errorf("no_data: no records for %v after the connection", noDataAfterConnection))
-			case last != 0 && now.Sub(time.Unix(0, last)) >= noDataAfterFirstRecord:
+			case last != 0 && now.Sub(since) >= noDataAfterFirstRecord:
 				r.fail(fmt.Errorf("no_data: no records for %v", noDataAfterFirstRecord))
 			}
 		}
@@ -316,6 +331,7 @@ func (r *netTestRun) startProducers(symbols []string) error {
 		if err != nil {
 			return err
 		}
+		r.workers.Add(1)
 		go r.publish(i+1, instance, publisher, symbols, schedule)
 	}
 	return nil
@@ -325,6 +341,7 @@ func (r *netTestRun) startProducers(symbols []string) error {
 // batch from the pool and publish it.
 func (r *netTestRun) publish(number int, instance *netTestInstance, publisher *api.DXPublisher, symbols []string,
 	schedule *nettest.Schedule) {
+	defer r.workers.Done()
 	random := nettest.NewRandom(number)
 	table := nettest.NewTable(random)
 	timeAndSale := r.config.Event == nettest.EventTimeAndSale
@@ -334,7 +351,7 @@ func (r *netTestRun) publish(number int, instance *netTestInstance, publisher *a
 		if timeAndSale {
 			sales = append(sales, timeandsale.NewTimeAndSale(symbol))
 		} else {
-			trades = append(trades, trade.NewTrade(symbol))
+			trades = append(trades, newPoolTrade(symbol))
 		}
 	}
 	batch := make([]any, r.config.Batch)
@@ -397,6 +414,18 @@ func (r *netTestRun) publish(number int, instance *netTestInstance, publisher *a
 	}
 }
 
+// newPoolTrade returns the pool trade of a symbol: NaN in the price, the change, the size, the day volume and the day
+// turnover, as the Trade of the other APIs.
+func newPoolTrade(symbol string) *trade.Trade {
+	t := trade.NewTrade(symbol)
+	t.SetPrice(math.NaN())
+	t.SetChange(math.NaN())
+	t.SetSize(math.NaN())
+	t.SetDayVolume(math.NaN())
+	t.SetDayTurnover(math.NaN())
+	return t
+}
+
 // connections returns the open connections of the connectors of all instances.
 func (r *netTestRun) connections() int {
 	total := 0
@@ -445,9 +474,10 @@ func (r *netTestRun) waitAndPrint() {
 	}
 }
 
-// nextTick returns the next multiple of the period on the wall clock after now.
+// nextTick returns the next multiple of the period since the Unix epoch after now.
 func nextTick(now time.Time, period time.Duration) time.Time {
-	return now.Truncate(period).Add(period)
+	p := period.Nanoseconds()
+	return time.Unix(0, now.UnixNano()/p*p+p)
 }
 
 // printBlock takes the counts of the interval since the last tick and prints them with the runtime line in one write;

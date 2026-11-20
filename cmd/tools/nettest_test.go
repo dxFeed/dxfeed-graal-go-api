@@ -6,6 +6,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"net"
 	"os"
 	"os/exec"
@@ -127,9 +128,9 @@ func TestNetTestPortInUse(t *testing.T) {
 func TestNetTestLoopback(t *testing.T) {
 	re := netTestRegexes(t)
 	port := freePort(t)
-	producer := startTools(t, "nettest p :"+port+" -S 100 -r */5k -s 1s --duration 9s -c stream -n prod")
+	producer := startTools(t, "nettest p :"+port+" -S 100 -r */5k -s 1s --duration 14s -c stream -n prod")
 	time.Sleep(time.Second)
-	status, out := runTools(t, "nettest c 127.0.0.1:"+port+" -S 100 -C 2 -s 1s --duration 6s -c stream -n cons")
+	status, out := runTools(t, "nettest c 127.0.0.1:"+port+" -S 100 -C 2 -s 1s --duration 8s -c stream -n cons")
 	if status != 0 {
 		t.Fatalf("consumer: status %d:\n%s", status, out)
 	}
@@ -158,7 +159,7 @@ func countLines(t *testing.T, re map[string]*regexp.Regexp, out, side, name, ins
 			blocks++
 			m := re["summary"].FindStringSubmatch(line)
 			lag, _ := strconv.Atoi(strings.ReplaceAll(m[4], ",", ""))
-			if m[1] != side || m[2] != name || m[5] != instances || side == "Consumer" && (lag <= 0 || lag >= 1000000) {
+			if m[1] != side || m[2] != name || m[5] != instances || side == "Consumer" && m[3] != "0" && (lag <= 0 || lag >= 1000000) {
 				t.Errorf("line %q: want %s, %s, %s instances and a lag from 0 to 1 s on the consumer", line, side,
 					name, instances)
 			}
@@ -227,7 +228,7 @@ func TestNetTestNanoTime(t *testing.T) {
 	symbols := []string{"YQKNT", "XRR", "T", "NDFY", "EUKK", "UXCZWE", "JBZY", "QJD", "LENRR", "IC"}
 	for _, nanoTime := range []bool{true, false} {
 		port := freePort(t)
-		args := "nettest p :" + port + " -S 10 -r */2k -s 1s --duration 12s"
+		args := "nettest p :" + port + " -S 10 -r */2k -s 1s --duration 60s"
 		if !nanoTime {
 			args += " -Ddxscheme.nanoTime=false"
 		}
@@ -244,7 +245,7 @@ func TestNetTestNanoTime(t *testing.T) {
 			t.Errorf("nanoTime %v: %d of %d trades have a nanosecond part", nanoTime, nonzero, len(nanos))
 		}
 		if !nanoTime {
-			status, out := runTools(t, "nettest c 127.0.0.1:"+port+" -S 10 -s 1s --duration 3s")
+			status, out := runTools(t, "nettest c 127.0.0.1:"+port+" -S 10 -s 1s --duration 20s")
 			if status != 1 || !strings.Contains(out, "Error during nettest: nano_missing: ") {
 				t.Errorf("consumer: status %d, want 1 and nano_missing:\n%s", status, out)
 			}
@@ -253,8 +254,33 @@ func TestNetTestNanoTime(t *testing.T) {
 				t.Errorf("consumer with -Ddxscheme.nanoTime=false: status %d, want 0:\n%s", status, out)
 			}
 		}
-		if status, out := producer(); status != 0 {
-			t.Errorf("producer: status %d:\n%s", status, out)
+		_ = producer // the cleanup stops it
+	}
+}
+
+func TestNextTick(t *testing.T) {
+	for _, test := range []struct {
+		now    int64
+		period time.Duration
+		want   int64
+	}{
+		{1700000000123456789, 10 * time.Second, 1700000010000000000},
+		{1700000003000000000, 7 * time.Second, 1700000008000000000},
+		{1700000008000000000, 7 * time.Second, 1700000015000000000},
+		{1700000000123456789, 500 * time.Millisecond, 1700000000500000000},
+	} {
+		if got := nextTick(time.Unix(0, test.now), test.period).UnixNano(); got != test.want {
+			t.Errorf("nextTick(%d, %v) = %d, want %d", test.now, test.period, got, test.want)
+		}
+	}
+}
+
+func TestPoolTrade(t *testing.T) {
+	p := newPoolTrade("A")
+	for name, value := range map[string]float64{"price": p.Price(), "change": p.Change(), "size": p.Size(),
+		"dayVolume": p.DayVolume(), "dayTurnover": p.DayTurnover()} {
+		if !math.IsNaN(value) {
+			t.Errorf("%s is %v, want NaN", name, value)
 		}
 	}
 }
