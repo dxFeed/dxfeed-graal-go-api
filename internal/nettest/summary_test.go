@@ -194,7 +194,8 @@ func TestSummarySchema(t *testing.T) {
 }
 
 func TestSummaryPath(t *testing.T) {
-	for _, path := range []string{"", filepath.Join(t.TempDir(), "no-such-dir", "s.json")} {
+	dir := t.TempDir()
+	for _, path := range []string{"", filepath.Join(dir, "no-such-dir", "s.json"), dir, dir + string(filepath.Separator)} {
 		if err := CheckSummaryPath(path); err == nil || !strings.HasPrefix(err.Error(), "--summary cannot write") {
 			t.Errorf("%q: %v", path, err)
 		}

@@ -107,6 +107,7 @@ type netTestRun struct {
 	stopOnce sync.Once
 	failure  error
 	signaled bool
+	signals  chan os.Signal
 	// workers are the goroutines that use the endpoints: the publishers and the watchdog of the consumer.
 	workers sync.WaitGroup
 	// The consumer: the events received, those with a nanosecond part, the time of the last record and the lags.
@@ -154,7 +155,10 @@ func runNetTest(config *nettest.Config, args []string) int {
 		nanoTime = value
 	}
 	r := &netTestRun{config: config, nanoTime: nanoTime == "true", start: time.Now(), stop: make(chan struct{}),
-		summary: nettest.NewSummaryBuilder(config.Mode)}
+		summary: nettest.NewSummaryBuilder(config.Mode), signals: make(chan os.Signal, 1)}
+	// A signal during the start ends the run as soon as it starts, with the summary and the exit code 0.
+	signal.Notify(r.signals, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(r.signals)
 	if config.Mode == nettest.Consumer {
 		r.lag = nettest.NewLagRecorder()
 	}
@@ -634,9 +638,6 @@ func (r *netTestRun) scrape() *nettest.MetricsSnapshot {
 // waitAndPrint ends an interval at each multiple of the period on the wall clock until the run stops, and the last
 // one at the stop.
 func (r *netTestRun) waitAndPrint() {
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
-	defer signal.Stop(signals)
 	var deadline <-chan time.Time
 	if r.config.Duration > 0 {
 		deadline = time.After(r.config.Duration)
@@ -651,7 +652,7 @@ func (r *netTestRun) waitAndPrint() {
 			r.workers.Wait()
 			r.tick(time.Now(), true)
 			return
-		case <-signals:
+		case <-r.signals:
 			r.signaled = true
 			r.end()
 		case <-deadline:
@@ -754,7 +755,7 @@ func (r *netTestRun) buildSummary(args []string, err error, code int) *nettest.S
 			Version: nettest.String(moduleVersion()), SDKVersion: nettest.String(sdk.Version)},
 		Side: side, Name: config.Name, Args: append([]string{}, args...), Config: config.SummaryConfig(r.nanoTime),
 		StartEpochNs: r.start.UnixNano(), EndEpochNs: end.UnixNano(), Status: status, ExitCode: code, Error: errorText,
-		Records: r.summary.Records, Rate: nettest.Rate(r.summary.Records, end.Sub(r.start).Nanoseconds()),
+		Records: r.summary.Records, Rate: nettest.Rate(r.summary.Records, end.Sub(r.countStart).Nanoseconds()),
 		TimeSource: "actual", TimeResolution: resolution, Intervals: r.summary.Intervals,
 		Connectors: r.snapshot.connectors,
 	}

@@ -112,9 +112,10 @@ func (h *Histogram) Count() int64 { return h.total }
 
 // ValueAtPercentile returns the value at the percentile (0 to 100), 0 when the histogram is empty.
 func (h *Histogram) ValueAtPercentile(percentile float64) int64 {
-	// As HdrHistogram 2.1.9, one ulp below the percentile, so that 99.9 of 1000 values is the 999th, not the 1000th.
-	requested := math.Min(math.Max(math.Nextafter(percentile, math.Inf(-1)), 0), 100)
-	countAtPercentile := max(int64(math.Ceil(requested/100*float64(h.total))), 1)
+	// As HdrHistogram 2.1.9: the count at the percentile rounded to the nearest, at least 1 (later versions take the
+	// ceiling one ulp below the percentile, which differs when the fraction of the count is below 0.5).
+	requested := math.Max(math.Min(percentile, 100), 0)
+	countAtPercentile := max(int64(requested/100*float64(h.total)+0.5), 1)
 	var total int64
 	for i, count := range h.counts {
 		total += count

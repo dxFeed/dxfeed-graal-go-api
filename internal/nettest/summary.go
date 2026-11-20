@@ -187,6 +187,9 @@ func CheckSummaryPath(path string) error {
 	if path == "" {
 		return usage("--summary cannot write to the directory of ''")
 	}
+	if info, err := os.Stat(path); err == nil && info.IsDir() || os.IsPathSeparator(path[len(path)-1]) {
+		return usage("--summary cannot write to the directory of '%s'", path)
+	}
 	file, err := os.CreateTemp(filepath.Dir(path), ".nettest-*.tmp")
 	if err != nil {
 		return usage("--summary cannot write to the directory of '%s'", path)
@@ -206,5 +209,9 @@ func WriteSummary(path string, s *Summary) error {
 	if err := os.WriteFile(path+".tmp", append(data, '\n'), 0o644); err != nil {
 		return err
 	}
-	return os.Rename(path+".tmp", path)
+	if err := os.Rename(path+".tmp", path); err != nil {
+		_ = os.Remove(path + ".tmp")
+		return err
+	}
+	return nil
 }

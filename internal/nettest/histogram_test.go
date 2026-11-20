@@ -66,3 +66,14 @@ func TestHistogramLimits(t *testing.T) {
 		t.Errorf("add/reset: %d %d", h.Count(), other.Count())
 	}
 }
+
+func TestHistogramRoundedCount(t *testing.T) {
+	// 7 values: the count at p90 is 6.3, which HdrHistogram 2.1.9 rounds to 6 (later versions take 7).
+	h := NewHistogram()
+	for i := int64(1); i <= 7; i++ {
+		h.Record(i*1000, 1)
+	}
+	if got := h.ValueAtPercentile(90); got != 6003 {
+		t.Errorf("p90 of 1000..7000 = %d, want 6003", got)
+	}
+}
