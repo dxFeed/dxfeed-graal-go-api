@@ -247,6 +247,92 @@ func (e *DXEndpoint) Connectors() ([]MessageConnectorInfo, error) {
 	return result, nil
 }
 
+// ErrIOStatisticsUnsupported is returned by DXEndpoint.ConnectorIOStatistics when the loaded SDK library does not
+// support the I/O statistics of message connectors.
+var ErrIOStatisticsUnsupported = native.ErrIOStatisticsUnsupported
+
+// MessageConnectorIOStatistics are the I/O statistics of a message connector, from QD's statistics of the connector.
+//
+// The counters cover all the connections of the connector since it was created, the closed ones included, and are
+// never reset: take the differences between two reads. The lags and the round-trip times are sums over the records,
+// in microseconds: for each record the current value of its connection is added. Divide the growth of a sum by the
+// growth of the matching record count for an average per record, and check that this growth is not 0 first:
+//   - ReadDataLagSumUs / ReadDataRecords is the average lag of the data received (a feed): the lag the peer reported plus
+//     the round-trip time. It stays 0 on a publisher.
+//   - WrittenDataLagSumUs / WrittenDataRecords is the average time a record spent in this process; on a publisher it is
+//     close to 0.
+//   - ReadRTTSumUs / (ReadDataRecords + ReadSubRecords) and WrittenRTTSumUs / (WrittenDataRecords + WrittenSubRecords)
+//     are the round-trip times of the connections, weighted by their records.
+//
+// The round-trip time is measured with the heartbeats: it is 0 for about a second after a connect. A single lag or
+// round-trip time of more than about 537 s comes out wrong, as QD's time marks wrap every 2^30 us. A stopped connector
+// (after a Connect to another address, a Disconnect or the close of the endpoint) reads 0 for all the counters except
+// the connection counts. The bytes are those of the QTP messages, heartbeats included; they may differ from the
+// socket bytes of MessageConnectorStatistics, for example with TLS.
+type MessageConnectorIOStatistics struct {
+	// Name is the name of the connector, as MessageConnectorInfo.Name.
+	Name string
+	// Address is the address the connector was configured with, as MessageConnectorInfo.Address.
+	Address string
+	// ReadDataRecords is the number of data records read.
+	ReadDataRecords int64
+	// WrittenDataRecords is the number of data records written.
+	WrittenDataRecords int64
+	// ReadSubRecords is the number of subscription records read: those a publisher receives.
+	ReadSubRecords int64
+	// WrittenSubRecords is the number of subscription records written: those a feed sends.
+	WrittenSubRecords int64
+	// ReadBytes is the number of bytes of the QTP messages read, heartbeats included.
+	ReadBytes int64
+	// WrittenBytes is the number of bytes of the QTP messages written, heartbeats included.
+	WrittenBytes int64
+	// ReadDataLagSumUs is the sum over the data records read of their lag, in microseconds.
+	ReadDataLagSumUs int64
+	// WrittenDataLagSumUs is the sum over the data records written of their lag, in microseconds.
+	WrittenDataLagSumUs int64
+	// ReadRTTSumUs is the sum over the records read of the round-trip time of the connection, in microseconds.
+	ReadRTTSumUs int64
+	// WrittenRTTSumUs is the sum over the records written of the round-trip time of the connection, in microseconds.
+	WrittenRTTSumUs int64
+	// ActiveConnectionCount is the number of the open connections.
+	ActiveConnectionCount int64
+	// ClosedConnectionCount is the number of the connections closed since the connector was created.
+	ClosedConnectionCount int64
+}
+
+// ConnectorIOStatistics returns the I/O statistics of each message connector of the endpoint, in the order of
+// Connectors. It returns an error that wraps ErrIOStatisticsUnsupported when the loaded SDK library does not support
+// them. The values of a connector are read one by one, not as one consistent set; reading them resets nothing.
+func (e *DXEndpoint) ConnectorIOStatistics() ([]MessageConnectorIOStatistics, error) {
+	data, err := e.endpointHandle.ConnectorIOStatistics()
+	if err != nil {
+		if errors.Is(err, native.ErrIOStatisticsUnsupported) {
+			return nil, fmt.Errorf("dxfeed: %w", err)
+		}
+		return nil, err
+	}
+	result := make([]MessageConnectorIOStatistics, len(data))
+	for i, d := range data {
+		result[i] = MessageConnectorIOStatistics{
+			Name:                  d.Name,
+			Address:               d.Address,
+			ReadDataRecords:       d.ReadDataRecords,
+			WrittenDataRecords:    d.WrittenDataRecords,
+			ReadSubRecords:        d.ReadSubRecords,
+			WrittenSubRecords:     d.WrittenSubRecords,
+			ReadBytes:             d.ReadBytes,
+			WrittenBytes:          d.WrittenBytes,
+			ReadDataLagSumUs:      d.ReadDataLagSumUs,
+			WrittenDataLagSumUs:   d.WrittenDataLagSumUs,
+			ReadRTTSumUs:          d.ReadRTTSumUs,
+			WrittenRTTSumUs:       d.WrittenRTTSumUs,
+			ActiveConnectionCount: d.ActiveConnections,
+			ClosedConnectionCount: d.ClosedConnections,
+		}
+	}
+	return result, nil
+}
+
 // LastConnectionError returns the newest connection error of all the connectors of the endpoint, or nil when there is
 // none. A successful connection does not clear it: compare the Time or the Count with those seen before. Read it in a
 // MessageConnectorListener, which is called after the error is recorded; a ConnectionStateListener may be called

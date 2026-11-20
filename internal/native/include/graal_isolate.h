@@ -92,6 +92,7 @@ enum { __graal_create_isolate_params_version = 5 };
  *   properties that must be set before the first endpoint is created);
  * - `-Xmx<size>`, `-Xms<size>`, `-Xmn<size>` set the maximum, the initial and the young generation sizes of the heap
  *   (`64m`, `1g`);
+ * - `-Xss<size>` sets the stack size of the threads that the isolate starts (`1m`);
  * - `-XX:<option>=<value>`, `-XX:+<option>`, `-XX:-<option>` set the runtime options of the isolate, for example
  *   `-XX:TearDownWarningSeconds=<seconds>` (prints the threads that block graal_tear_down_isolate(); the debug builds
  *   of the SDK use 10 seconds) or `-XX:-EnableSignalHandling` (on Linux and macOS the isolate does not install its

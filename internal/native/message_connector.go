@@ -162,6 +162,115 @@ func (e *DXEndpointHandle) Connectors() ([]MessageConnectorData, error) {
 	return result, err
 }
 
+// MessageConnectorIOData holds the name and the address of a message connector of the SDK and the values of its
+// dxfg_v4_message_connector_io_stats_t.
+type MessageConnectorIOData struct {
+	Name                string
+	Address             string
+	ReadDataRecords     int64
+	WrittenDataRecords  int64
+	ReadSubRecords      int64
+	WrittenSubRecords   int64
+	ReadBytes           int64
+	WrittenBytes        int64
+	ReadDataLagSumUs    int64
+	WrittenDataLagSumUs int64
+	ReadRTTSumUs        int64
+	WrittenRTTSumUs     int64
+	ActiveConnections   int64
+	ClosedConnections   int64
+}
+
+// ErrIOStatisticsUnsupported is returned by ConnectorIOStatistics when the library does not report the feature
+// DXFG_V4_FEATURE_MESSAGE_CONNECTOR_IO_STATISTICS.
+var ErrIOStatisticsUnsupported = errors.New("the dxFeed Graal Native SDK library does not support the I/O statistics " +
+	"of message connectors (feature " + C.DXFG_V4_FEATURE_MESSAGE_CONNECTOR_IO_STATISTICS + ")")
+
+// IsFeatureSupported reports whether the library supports the feature of the given name (a DXFG_V4_FEATURE_ macro).
+func IsFeatureSupported(name string) (bool, error) {
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+	var supported C.int32_t
+	err := executeInIsolateThread(func(thread *isolateThread) error {
+		return checkStatus(thread, C.dxfg_v4_system_is_feature_supported(thread.ptr, cName, &supported))
+	})
+	return supported != 0, err
+}
+
+// readMessageConnectorIO reads the name, the address and the I/O statistics of a connector.
+func readMessageConnectorIO(thread *isolateThread, c *C.dxfg_v4_message_connector_t) (MessageConnectorIOData, error) {
+	var d MessageConnectorIOData
+	var name, address *C.char
+	var s C.dxfg_v4_message_connector_io_stats_t
+	err := checkStatus(thread, C.dxfg_v4_MessageConnector_getName(thread.ptr, c, &name))
+	d.Name = takeString(thread, name)
+	if err != nil {
+		return d, err
+	}
+	err = checkStatus(thread, C.dxfg_v4_MessageConnector_getAddress(thread.ptr, c, &address))
+	d.Address = takeString(thread, address)
+	if err != nil {
+		return d, err
+	}
+	if err := checkStatus(thread, C.dxfg_v4_MessageConnector_getIoStatistics(thread.ptr, c, &s)); err != nil {
+		return d, err
+	}
+	d.ReadDataRecords = int64(s.read_data_records)
+	d.WrittenDataRecords = int64(s.written_data_records)
+	d.ReadSubRecords = int64(s.read_sub_records)
+	d.WrittenSubRecords = int64(s.written_sub_records)
+	d.ReadBytes = int64(s.read_bytes)
+	d.WrittenBytes = int64(s.written_bytes)
+	d.ReadDataLagSumUs = int64(s.read_data_lag_sum_us)
+	d.WrittenDataLagSumUs = int64(s.written_data_lag_sum_us)
+	d.ReadRTTSumUs = int64(s.read_rtt_sum_us)
+	d.WrittenRTTSumUs = int64(s.written_rtt_sum_us)
+	d.ActiveConnections = int64(s.active_connection_count)
+	d.ClosedConnections = int64(s.closed_connection_count)
+	return d, nil
+}
+
+// ConnectorIOStatistics returns the I/O statistics of each message connector of the endpoint, or
+// ErrIOStatisticsUnsupported when the library does not support them.
+func (e *DXEndpointHandle) ConnectorIOStatistics() ([]MessageConnectorIOData, error) {
+	supported, err := IsFeatureSupported(C.DXFG_V4_FEATURE_MESSAGE_CONNECTOR_IO_STATISTICS)
+	if err != nil {
+		return nil, err
+	}
+	if !supported {
+		return nil, ErrIOStatisticsUnsupported
+	}
+	ptr := e.ptr()
+	if ptr == nil {
+		return nil, errors.New("native: the endpoint is closed")
+	}
+	var result []MessageConnectorIOData
+	err = executeInIsolateThread(func(thread *isolateThread) error {
+		var list *C.dxfg_v4_message_connector_list
+		if err := checkStatus(thread, C.dxfg_v4_DXEndpoint_getConnectors(thread.ptr, ptr, &list)); err != nil {
+			return err
+		}
+		defer C.dxfg_v4_message_connector_list_release(thread.ptr, list)
+		if list == nil || list.elements == nil || list.size <= 0 {
+			return nil
+		}
+		connectors := unsafe.Slice(list.elements, int(list.size))
+		result = make([]MessageConnectorIOData, 0, len(connectors))
+		for _, c := range connectors {
+			if c == nil {
+				continue
+			}
+			d, err := readMessageConnectorIO(thread, c)
+			if err != nil {
+				return err
+			}
+			result = append(result, d)
+		}
+		return nil
+	})
+	return result, err
+}
+
 // LastConnectionError returns the newest connection error of all the connectors of the endpoint; nil when there is
 // none.
 func (e *DXEndpointHandle) LastConnectionError() (*ConnectionErrorData, error) {
