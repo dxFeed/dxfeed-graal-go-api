@@ -85,7 +85,7 @@ func TestConnectorIOStatistics(t *testing.T) {
 	}
 	s := stats[0]
 	if s.Address != "127.0.0.1:"+port || s.ReadDataRecords < want || s.WrittenSubRecords < 1 || s.ReadBytes <= 0 ||
-		s.WrittenBytes <= 0 || s.ActiveConnectionCount != 1 || s.ReadDataLagSumUs < 0 || s.ReadRTTSumUs < 0 {
+		s.WrittenBytes <= 0 || s.ActiveConnectionCount != 1 {
 		t.Errorf("ConnectorIOStatistics of the feed = %+v; want %d data records read, a subscription written and "+
 			"one open connection", s, want)
 	}

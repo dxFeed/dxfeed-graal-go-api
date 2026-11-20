@@ -11,8 +11,8 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/misc"
 )
 
-// TestNullAttachment checks that a NULL attachment of Message and Configuration becomes a nil attachment. Since SDK
-// 3.18.0 an attachment of a class outside the allow-list of the SDK comes as NULL.
+// TestNullAttachment checks that the mappers of Message and Configuration turn a NULL attachment into a nil one: since
+// SDK 3.18.0 the SDK passes NULL for an attachment of a class it does not deserialize.
 func TestNullAttachment(t *testing.T) {
 	available := mappers.AvailableMappers()
 	for _, event := range []events.EventType{misc.NewMessage("MESSAGE"), misc.NewConfiguration("CONFIGURATION")} {
