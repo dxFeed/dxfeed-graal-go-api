@@ -182,6 +182,7 @@ func tools() map[string]Tool {
 		"dump":        Dump{},
 		"perftest":    PerfTest{},
 		"latencytest": LatencyTest{},
+		"nettest":     NetTest{},
 		"qds":         Qds{},
 	}
 }

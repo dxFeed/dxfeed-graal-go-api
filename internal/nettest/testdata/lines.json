@@ -1,0 +1,237 @@
+{
+  "spec_version": "nettest/1",
+  "about": "Byte samples of the output lines of the NetTest specification (section 'Output lines'). statistics: the deltas of an interval of the real length interval_ns, per instance, and the text of the block, lines separated by \\n without the last line break. runtime: the samples at the start and the end of the interval (cumulative gc_count, gc_time_ms, cpu_ns; null when absent) and the line. grouping: integers and their text. captured: lines printed by the SDK tools.",
+  "grouping": [
+    {
+      "value": 0,
+      "text": "0"
+    },
+    {
+      "value": 7,
+      "text": "7"
+    },
+    {
+      "value": 999,
+      "text": "999"
+    },
+    {
+      "value": 1000,
+      "text": "1,000"
+    },
+    {
+      "value": -1,
+      "text": "-1"
+    },
+    {
+      "value": -999,
+      "text": "-999"
+    },
+    {
+      "value": -1000,
+      "text": "-1,000"
+    },
+    {
+      "value": 123456,
+      "text": "123,456"
+    },
+    {
+      "value": 1234567,
+      "text": "1,234,567"
+    },
+    {
+      "value": -1234567,
+      "text": "-1,234,567"
+    },
+    {
+      "value": 9223372036854775807,
+      "text": "9,223,372,036,854,775,807"
+    },
+    {
+      "value": -9223372036854775808,
+      "text": "-9,223,372,036,854,775,808"
+    }
+  ],
+  "statistics": [
+    {
+      "side": "producer",
+      "name": "NetTest",
+      "interval_ns": 10000000000,
+      "connections": 1,
+      "instances": [
+        {
+          "records": 10000120,
+          "weighted_ns": 410004920000
+        }
+      ],
+      "text": "{*NetTestProducerSide-NetTest*} data 1,000,012 rps, lag 41 us, instances 1, connections 1\n    NetTest.1 data 1,000,012 rps, lag 41 us"
+    },
+    {
+      "side": "producer",
+      "name": "bench",
+      "interval_ns": 10003000000,
+      "connections": 3,
+      "instances": [
+        {
+          "records": 5000000,
+          "weighted_ns": 250000000000
+        },
+        {
+          "records": 4999900,
+          "weighted_ns": 0
+        },
+        {
+          "records": 0,
+          "weighted_ns": 0
+        }
+      ],
+      "text": "{*NetTestProducerSide-bench*} data 999,690 rps, lag 25 us, instances 3, connections 3\n    bench.1 data 499,850 rps, lag 50 us\n    bench.2 data 499,840 rps, lag 0 us\n    bench.3 data 0 rps, lag 0 us"
+    },
+    {
+      "side": "producer",
+      "name": "NetTest",
+      "interval_ns": 1500000000,
+      "connections": 0,
+      "instances": [
+        {
+          "records": 0,
+          "weighted_ns": 0
+        }
+      ],
+      "text": "{*NetTestProducerSide-NetTest*} data 0 rps, lag 0 us, instances 1, connections 0\n    NetTest.1 data 0 rps, lag 0 us"
+    },
+    {
+      "side": "producer",
+      "name": "a b",
+      "interval_ns": 999999999,
+      "connections": 12,
+      "instances": [
+        {
+          "records": 9223372036,
+          "weighted_ns": 9223372036854
+        }
+      ],
+      "text": "{*NetTestProducerSide-a b*} data 9,223,372,045 rps, lag 1 us, instances 1, connections 12\n    a b.1 data 9,223,372,045 rps, lag 1 us"
+    },
+    {
+      "side": "consumer",
+      "name": "NetTest",
+      "interval_ns": 10000000000,
+      "connections": 1,
+      "instances": [
+        {
+          "records": 5000000,
+          "lag_sum_ns": 2060000000000
+        }
+      ],
+      "text": "{*NetTestConsumerSide-NetTest*} data 500,000 rps, lag 412 us, instances 1, connections 1\n    NetTest.1 data 500,000 rps, lag 412 us"
+    },
+    {
+      "side": "consumer",
+      "name": "bench",
+      "interval_ns": 10000000000,
+      "connections": 2,
+      "instances": [
+        {
+          "records": 1000,
+          "lag_sum_ns": -12345678
+        },
+        {
+          "records": 3,
+          "lag_sum_ns": -2999
+        }
+      ],
+      "text": "{*NetTestConsumerSide-bench*} data 100 rps, lag -12 us, instances 2, connections 2\n    bench.1 data 100 rps, lag -12 us\n    bench.2 data 0 rps, lag 0 us"
+    }
+  ],
+  "runtime": [
+    {
+      "name": "NetTest",
+      "interval_ns": 10000000000,
+      "previous": {
+        "heap_used_bytes": 104857600,
+        "heap_committed_bytes": 268435456,
+        "gc_count": 10,
+        "gc_time_ms": 40,
+        "cpu_ns": 5000000000
+      },
+      "current": {
+        "heap_used_bytes": 125829125,
+        "heap_committed_bytes": 268435456,
+        "gc_count": 13,
+        "gc_time_ms": 55,
+        "cpu_ns": 13500000000
+      },
+      "text": "{*NetTestRuntime-NetTest*} heap 120 MB of 256 MB, gc 3 (15 ms), cpu 85%"
+    },
+    {
+      "name": "NetTest",
+      "interval_ns": 10000000000,
+      "previous": {
+        "heap_used_bytes": 1073741824,
+        "heap_committed_bytes": 2147483648,
+        "gc_count": null,
+        "gc_time_ms": null,
+        "cpu_ns": 1000000000
+      },
+      "current": {
+        "heap_used_bytes": 1610612736000,
+        "heap_committed_bytes": 2147483648000,
+        "gc_count": null,
+        "gc_time_ms": null,
+        "cpu_ns": 41000000000
+      },
+      "text": "{*NetTestRuntime-NetTest*} heap 1,536,000 MB of 2,048,000 MB, gc n/a, cpu 400%"
+    },
+    {
+      "name": "bench",
+      "interval_ns": 2500000000,
+      "previous": {
+        "heap_used_bytes": null,
+        "heap_committed_bytes": null,
+        "gc_count": 5,
+        "gc_time_ms": 7,
+        "cpu_ns": null
+      },
+      "current": {
+        "heap_used_bytes": null,
+        "heap_committed_bytes": 67108864,
+        "gc_count": 3,
+        "gc_time_ms": 9,
+        "cpu_ns": 1000000
+      },
+      "text": "{*NetTestRuntime-bench*} heap n/a of 64 MB, gc n/a, cpu n/a"
+    },
+    {
+      "name": "NetTest",
+      "interval_ns": 10000000000,
+      "previous": {
+        "heap_used_bytes": 0,
+        "heap_committed_bytes": 0,
+        "gc_count": 0,
+        "gc_time_ms": 0,
+        "cpu_ns": 0
+      },
+      "current": {
+        "heap_used_bytes": 1048575,
+        "heap_committed_bytes": 1048576,
+        "gc_count": 0,
+        "gc_time_ms": 0,
+        "cpu_ns": 0
+      },
+      "text": "{*NetTestRuntime-NetTest*} heap 0 MB of 1 MB, gc 0 (0 ms), cpu 0%"
+    }
+  ],
+  "captured": [
+    "{*NetTestProducerSide-NetTest*} data 20,036 rps, lag 302 us, instances 1, connections 0",
+    "    NetTest.1 data 20,036 rps, lag 302 us",
+    "{*NetTestRuntime-NetTest*} heap 16 MB of 51 MB, gc 0 (0 ms), cpu 0%",
+    "{*NetTestProducerSide-NetTest*} data 20,027 rps, lag 245 us, instances 1, connections 0",
+    "    NetTest.1 data 20,027 rps, lag 245 us",
+    "{*NetTestRuntime-NetTest*} heap 19 MB of 51 MB, gc 0 (0 ms), cpu 0%",
+    "{*NetTestProducerSide-bench*} data 2,741,996 rps, lag 68 us, instances 2, connections 0",
+    "    bench.1 data 1,377,475 rps, lag 68 us",
+    "    bench.2 data 1,364,520 rps, lag 68 us",
+    "{*NetTestRuntime-bench*} heap 9 MB of 47 MB, gc 10 (4 ms), cpu 197%",
+    "NetTest: the isolate rejected one of the options: -Xmx64m -XX:+NetTestNoSuchOption"
+  ]
+}

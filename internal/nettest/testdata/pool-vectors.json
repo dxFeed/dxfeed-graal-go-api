@@ -1,0 +1,280 @@
+{
+  "spec_version": "nettest/1",
+  "about": "The event pool of the NetTest specification (section 'Events and pools'). 64-bit values are hex strings. first_draws are the first draws of the instance, which build table rows 0 to 3; the table takes 2048 draws, then each event takes one: first_events are the events of the first batch.",
+  "instances": [
+    {
+      "instance": 1,
+      "seed": "0x9E3779B97F4A7C15",
+      "initial_state": "0x048A21B41DB536D6",
+      "first_draws": [
+        "0x3FCC48AD8E82BC14",
+        "0x8DA477E5FD57E707",
+        "0xFAF90CF7928C14E7",
+        "0xCA42300AAAED9B11",
+        "0x2FA7FE2E4231A671",
+        "0x7750F4E821952C21",
+        "0x113131CD38DD012B",
+        "0x56F9D3E6B3C86141"
+      ],
+      "table_rows": [
+        {
+          "row": 0,
+          "price": 84.72,
+          "size": 112.0
+        },
+        {
+          "row": 1,
+          "price": 467.95,
+          "size": 26.0
+        },
+        {
+          "row": 2,
+          "price": 934.93,
+          "size": 170.0
+        },
+        {
+          "row": 3,
+          "price": 617.11,
+          "size": 418.0
+        },
+        {
+          "row": 511,
+          "price": 245.69,
+          "size": 810.0
+        },
+        {
+          "row": 1023,
+          "price": 180.29,
+          "size": 257.0
+        }
+      ],
+      "events": {
+        "pool_size": 100,
+        "first_events": [
+          {
+            "draw": "0x1854E2CAD09F1E8C",
+            "symbol_index": 66,
+            "row": 798,
+            "price": 638.23,
+            "size": 749.0
+          },
+          {
+            "draw": "0x22CAA8BA4F1C3631",
+            "symbol_index": 10,
+            "row": 54,
+            "price": 359.72,
+            "size": 959.0
+          },
+          {
+            "draw": "0x44F3FAFF8BFAFE7E",
+            "symbol_index": 91,
+            "row": 766,
+            "price": 393.07,
+            "size": 78.0
+          },
+          {
+            "draw": "0xE37CBDC97B893B68",
+            "symbol_index": 81,
+            "row": 315,
+            "price": 411.73,
+            "size": 906.0
+          },
+          {
+            "draw": "0x940A6AD2025E6E97",
+            "symbol_index": 74,
+            "row": 622,
+            "price": 836.05,
+            "size": 689.0
+          },
+          {
+            "draw": "0x4DDE025CEDA5574C",
+            "symbol_index": 28,
+            "row": 343,
+            "price": 417.72,
+            "size": 485.0
+          },
+          {
+            "draw": "0x07729CE9D08543FA",
+            "symbol_index": 85,
+            "row": 323,
+            "price": 772.77,
+            "size": 532.0
+          },
+          {
+            "draw": "0x69C2C84956ACF3D5",
+            "symbol_index": 37,
+            "row": 243,
+            "price": 115.11,
+            "size": 471.0
+          },
+          {
+            "draw": "0x58A0BBFA2167EDA6",
+            "symbol_index": 90,
+            "row": 1005,
+            "price": 654.92,
+            "size": 964.0
+          },
+          {
+            "draw": "0x92375D58AD66DEFC",
+            "symbol_index": 12,
+            "row": 734,
+            "price": 968.56,
+            "size": 248.0
+          }
+        ]
+      }
+    },
+    {
+      "instance": 2,
+      "seed": "0x3C6EF372FE94F82A",
+      "initial_state": "0xE3CE4ED6EBFD908F",
+      "first_draws": [
+        "0xC6A9D7EC064DC717",
+        "0xE056DA4E28E2FE19",
+        "0x761441F016BF9FBE",
+        "0xE447CB0962C13D18",
+        "0xAD2DC1E0C7F30D1D",
+        "0xFECC3CD46D43B512",
+        "0xC7CE8BB8C1828E8F",
+        "0x3298D8AA4FA7E15F"
+      ],
+      "table_rows": [
+        {
+          "row": 0,
+          "price": 465.23,
+          "size": 162.0
+        },
+        {
+          "row": 1,
+          "price": 231.7,
+          "size": 433.0
+        },
+        {
+          "row": 2,
+          "price": 422.09,
+          "size": 691.0
+        },
+        {
+          "row": 3,
+          "price": 566.91,
+          "size": 720.0
+        },
+        {
+          "row": 511,
+          "price": 92.85,
+          "size": 270.0
+        },
+        {
+          "row": 1023,
+          "price": 674.77,
+          "size": 518.0
+        }
+      ],
+      "events": {
+        "pool_size": 100,
+        "first_events": [
+          {
+            "draw": "0xF5099B60F1B5ECD0",
+            "symbol_index": 20,
+            "row": 492,
+            "price": 27.87,
+            "size": 982.0
+          },
+          {
+            "draw": "0xBAC9C627E5A8DD07",
+            "symbol_index": 39,
+            "row": 221,
+            "price": 580.83,
+            "size": 739.0
+          },
+          {
+            "draw": "0xA4776E4035EB47C4",
+            "symbol_index": 32,
+            "row": 839,
+            "price": 429.04,
+            "size": 593.0
+          },
+          {
+            "draw": "0xEBC8E53E7180E80F",
+            "symbol_index": 46,
+            "row": 232,
+            "price": 47.86,
+            "size": 470.0
+          },
+          {
+            "draw": "0x628C1217A6043530",
+            "symbol_index": 39,
+            "row": 53,
+            "price": 953.68,
+            "size": 151.0
+          },
+          {
+            "draw": "0x2D5AFB2A43392845",
+            "symbol_index": 58,
+            "row": 296,
+            "price": 302.91,
+            "size": 653.0
+          },
+          {
+            "draw": "0x6D4D4FD713A3DECF",
+            "symbol_index": 55,
+            "row": 990,
+            "price": 906.1,
+            "size": 968.0
+          },
+          {
+            "draw": "0xDD431253F98DD516",
+            "symbol_index": 39,
+            "row": 469,
+            "price": 573.99,
+            "size": 501.0
+          },
+          {
+            "draw": "0x45CFF20982F3814F",
+            "symbol_index": 17,
+            "row": 897,
+            "price": 592.95,
+            "size": 391.0
+          },
+          {
+            "draw": "0xF3D535FB42C73B79",
+            "symbol_index": 75,
+            "row": 827,
+            "price": 667.48,
+            "size": 374.0
+          }
+        ]
+      }
+    }
+  ],
+  "pack_time_sequence": [
+    {
+      "epoch_ns": 1763380800123456789,
+      "sequence": 0,
+      "time_ms": 1763380800123,
+      "nano_part": 456789,
+      "packed": "0x691B0E401EC00000"
+    },
+    {
+      "epoch_ns": 1763380800999999999,
+      "sequence": 4194303,
+      "time_ms": 1763380800999,
+      "nano_part": 999999,
+      "packed": "0x691B0E40F9FFFFFF"
+    },
+    {
+      "epoch_ns": 1763380801000000000,
+      "sequence": 4194304,
+      "time_ms": 1763380801000,
+      "nano_part": 0,
+      "packed": "0x691B0E4100000000"
+    },
+    {
+      "epoch_ns": 1700000000000000000,
+      "sequence": 12345,
+      "time_ms": 1700000000000,
+      "nano_part": 0,
+      "packed": "0x6553F10000003039"
+    }
+  ]
+}
