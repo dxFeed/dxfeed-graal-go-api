@@ -5,7 +5,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"math"
 	"net"
@@ -23,6 +26,7 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/nettest"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/api/osub"
+	"github.com/dxfeed/dxfeed-graal-go-api/pkg/common"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/eventcodes"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events/trade"
 )
@@ -95,6 +99,10 @@ func TestNetTestCommandLine(t *testing.T) {
 		{"nettest", 2, "Usage:\n  tools nettest "},
 		{"nettest --help", 0, "spec_version nettest/1\n"},
 		{"nettest p :7001 -S 100 -h", 0, "spec_version nettest/1\n"},
+		{"nettest p :7001 -S 100 -h --foo", 0, "spec_version nettest/1\n"},
+		{"nettest p :7001 --foo --help", 2, "nettest: unknown flag --foo\n"},
+		{"nettest p :7001 -n --help -S 0", 2, "nettest: -S "},
+		{"nettest p :7001 -S 100 --help=x", 2, "nettest: --help takes no value: '--help=x'\n"},
 		{"nettest p :7001 -S 100 --foo", 2, "nettest: unknown flag --foo\n"},
 		{"nettest p :7001", 2, "nettest: -S is missing\n"},
 		{"nettest c 127.0.0.1:7001 -S 100 --batch 10", 2, "nettest: --batch is an option of the mode p\n"},
@@ -331,7 +339,7 @@ func (f listenerFunc) Update(events []any) { f(events) }
 
 // TestNetTestNanoTime checks the nanosecond part: the tool's publisher sends it, and does not with
 // -Ddxscheme.nanoTime=false; the tool's consumer stops with nano_missing against such a publisher, and runs to the
-// end with -Ddxscheme.nanoTime=false.
+// end with -Ddxscheme.nanoTime=false; the property is case-insensitive.
 func TestNetTestNanoTime(t *testing.T) {
 	symbols := []string{"YQKNT", "XRR", "T", "NDFY", "EUKK", "UXCZWE", "JBZY", "QJD", "LENRR", "IC"}
 	for _, nanoTime := range []bool{true, false} {
@@ -360,6 +368,11 @@ func TestNetTestNanoTime(t *testing.T) {
 			}
 			if s := readSummary(t, summary); s["status"] != "nano_missing" || s["exit_code"] != float64(1) {
 				t.Errorf("consumer summary: status %v, exit_code %v", s["status"], s["exit_code"])
+			}
+			status, out = runTools(t, "nettest c 127.0.0.1:"+port+" -S 10 -s 1s --duration 20s -Ddxscheme.nanoTime=TRUE")
+			if status != 1 || !strings.Contains(out, "Error during nettest: nano_missing: ") {
+				t.Errorf("consumer with -Ddxscheme.nanoTime=TRUE: status %d, want 1 and nano_missing:\n%s",
+					status, out)
 			}
 			status, out = runTools(t, "nettest c 127.0.0.1:"+port+" -S 10 -s 1s --duration 2s -Ddxscheme.nanoTime=false")
 			if status != 0 {
@@ -394,5 +407,87 @@ func TestPoolTrade(t *testing.T) {
 		if !math.IsNaN(value) {
 			t.Errorf("%s is %v, want NaN", name, value)
 		}
+	}
+}
+
+// TestNetTestWatchdog checks the times without data: they count only with open connections, from the connection
+// again after the connections were all closed.
+func TestNetTestWatchdog(t *testing.T) {
+	w := netTestWatchdog{afterRecord: 30 * time.Second, afterConnection: 60 * time.Second}
+	start := time.Unix(1700000000, 0)
+	at := func(seconds int) time.Time { return start.Add(time.Duration(seconds) * time.Second) }
+	for _, step := range []struct {
+		now, connections, lastRecord int
+		want                         string
+	}{
+		{0, 0, -1, ""}, {100, 0, -1, ""}, // listening without peers: no limit
+		{101, 1, -1, ""}, {160, 1, -1, ""}, {161, 1, -1, "no records for 60000 ms after the connection, with 1 open " +
+			"connections"},
+		{162, 0, -1, ""}, {170, 2, -1, ""}, {229, 2, -1, ""}, // the connections closed and opened again
+		{230, 2, 201, ""}, {259, 2, 230, ""}, {260, 2, 230, "no records for 30000 ms after the last record, with 2 open " +
+			"connections"},
+		{261, 0, 230, ""}, {300, 1, 230, ""}, {329, 1, 230, ""}, // the time counts from the new connection
+		{330, 1, 230, "no records for 30000 ms after the last record, with 1 open connections"},
+	} {
+		var lastRecord time.Time
+		if step.lastRecord >= 0 {
+			lastRecord = at(step.lastRecord)
+		}
+		err := w.check(at(step.now), step.connections, lastRecord)
+		if got := fmt.Sprint(err); err == nil && step.want != "" || err != nil && got != step.want {
+			t.Errorf("at %d s with %d connections: %v, want %q", step.now, step.connections, err, step.want)
+		}
+	}
+}
+
+// TestNetTestWatchdogListening runs the watchdog on a consumer endpoint that listens on a port: it does not stop
+// without a peer, although the endpoint is in the state CONNECTED, and stops with no_data when a peer connects and
+// sends nothing.
+func TestNetTestWatchdogListening(t *testing.T) {
+	port := freePort(t)
+	endpoint, err := api.NewEndpointBuilder().WithRole(api.StreamFeed).Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = endpoint.CloseAndAwaitTermination(context.Background()) }()
+	if err := endpoint.Connect(":" + port); err != nil {
+		t.Fatal(err)
+	}
+	r := &netTestRun{start: time.Now(), stop: make(chan struct{}),
+		instances: []*netTestInstance{{endpoint: endpoint}},
+		watchdog:  netTestWatchdog{afterRecord: time.Second, afterConnection: time.Second}}
+	r.connections = r.openConnections
+	r.workers.Add(1)
+	go r.watchConsumer()
+	defer func() {
+		r.end()
+		r.workers.Wait()
+	}()
+	time.Sleep(2500 * time.Millisecond)
+	if state, _ := endpoint.State(); state != common.Connected || r.openConnections() != 0 {
+		t.Errorf("the listening endpoint: state %v, %d open connections", state, r.openConnections())
+	}
+	select {
+	case <-r.stop:
+		t.Fatalf("stopped without a peer: %v", r.failure)
+	default:
+	}
+	peer, err := api.NewEndpointBuilder().WithRole(api.Publisher).Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = peer.CloseAndAwaitTermination(context.Background()) }()
+	if err := peer.Connect("127.0.0.1:" + port); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-r.stop:
+	case <-time.After(15 * time.Second):
+		t.Fatal("no stop with a silent peer")
+	}
+	var statusErr *netTestStatusError
+	if !errors.As(r.failure, &statusErr) || statusErr.status != nettest.StatusNoData ||
+		!strings.Contains(r.failure.Error(), "after the connection, with 1 open connections") {
+		t.Errorf("the failure %v, want no_data after the connection", r.failure)
 	}
 }

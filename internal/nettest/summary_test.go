@@ -68,6 +68,18 @@ func TestMetricsWithoutV2AndRuntime(t *testing.T) {
 	}
 }
 
+// TestMetricsSlip checks that the slip family has a sample only with a schedule, as in the SDK C tool.
+func TestMetricsSlip(t *testing.T) {
+	for _, scheduled := range []bool{false, true} {
+		got := FormatMetrics(&MetricsSnapshot{Info: MetricsInfo{Tool: "go-api", Side: "producer", Name: "n"},
+			Records: []int64{1}, Connections: []int{0}, SlipNs: 12000, Scheduled: scheduled})
+		sample := strings.Contains(got, `nettest_schedule_slip_seconds{tool="go-api",side="producer",name="n"} 1.2e-05`)
+		if !strings.Contains(got, "# TYPE nettest_schedule_slip_seconds gauge") || sample != scheduled {
+			t.Errorf("scheduled %v:\n%s", scheduled, got)
+		}
+	}
+}
+
 func TestLagRecorder(t *testing.T) {
 	l := NewLagRecorder()
 	l.Record([]int64{-5, 0, 50000, 60000}, []string{"A", "B", "A", "C"})
@@ -151,6 +163,22 @@ func TestSummaryBuilder(t *testing.T) {
 	if NewSummaryBuilder(Producer).Slip() != nil {
 		t.Error("a slip without a schedule")
 	}
+	// The maximum leaves out the warm-up when an interval is measured, and the growth is truncated as in the C tool.
+	b = NewSummaryBuilder(Producer)
+	for i, slip := range []int64{9000, 1000, 1999, 2000} {
+		b.Add(IntervalCounts{Start: start.Add(time.Duration(i) * time.Second),
+			End: start.Add(time.Duration(i+1)*time.Second + time.Duration(i)*time.Millisecond), Warmup: i == 0,
+			Slip: true, SlipMax: slip, SlipEnd: slip})
+	}
+	// The measured ends are 1000 ns at 2001 ms and 2000 ns at 4003 ms: 1000 * 1000 / 2002 = 499.5, truncated.
+	if slip := b.Slip(); slip.MaxNs != 2000 || *slip.GrowthNsPerS != 499 {
+		t.Errorf("slip after a warm-up %+v", slip)
+	}
+	b = NewSummaryBuilder(Producer)
+	b.Add(IntervalCounts{Start: start, End: start.Add(time.Second), Warmup: true, Slip: true, SlipMax: 7, SlipEnd: 5})
+	if slip := b.Slip(); slip.MaxNs != 7 || slip.GrowthNsPerS != nil {
+		t.Errorf("slip of the warm-up only %+v", slip)
+	}
 }
 
 func TestSummarySchema(t *testing.T) {
@@ -213,5 +241,22 @@ func TestParseMetricsAddress(t *testing.T) {
 		if _, err := ParseMetricsAddress(value); err == nil {
 			t.Errorf("%q: no error", value)
 		}
+	}
+}
+
+// TestSummaryRuntime checks the runtime of the summary as the SDK C tool computes it: the heap at the end, the growth
+// of the collections by kind, null when a counter is not given or went back, and the truncated mean CPU.
+func TestSummaryRuntime(t *testing.T) {
+	first := RuntimeSample{GCCounts: [2]int64{10, 1}, GCTimesMs: [2]int64{100, 50}, CPUTimeNs: 1000000000}
+	last := RuntimeSample{HeapUsedBytes: 3 << 20, HeapCommittedBytes: -1, GCCounts: [2]int64{15, 2},
+		GCTimesMs: [2]int64{130, 40}, CPUTimeNs: 2999999999}
+	r := NewSummaryRuntime(first, last, 4e9)
+	if *r.HeapUsedMb != 3 || r.HeapCommittedMb != nil || *r.GCCount != 6 || r.GCTimeMs != nil ||
+		*r.CPUPercentMean != 49 {
+		t.Errorf("runtime %+v", r)
+	}
+	last.GCCounts[0] = -1
+	if r := NewSummaryRuntime(first, last, 0); r.GCCount != nil || r.CPUPercentMean != nil {
+		t.Errorf("runtime without the young collections or the period %+v", r)
 	}
 }

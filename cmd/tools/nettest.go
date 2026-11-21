@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -28,13 +29,15 @@ import (
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/ipf"
 )
 
-// The limits of the consumer: the events checked for the nanosecond part and the times without data.
+// The limits of the consumer: the events checked for the nanosecond part, the times without data and how often the
+// watchdog checks them.
 const (
-	nanoCheckEvents        = 1000
-	noDataAfterFirstRecord = 30 * time.Second
-	noDataAfterConnection  = 60 * time.Second
-	nanoTimeProperty       = "dxscheme.nanoTime"
-	netTestImplementation  = "go-api"
+	nanoCheckEvents       = 1000
+	noDataAfterRecord     = 30 * time.Second
+	noDataAfterConnection = 60 * time.Second
+	watchdogPeriod        = 200 * time.Millisecond
+	nanoTimeProperty      = "dxscheme.nanoTime"
+	netTestImplementation = "go-api"
 )
 
 type NetTest struct{}
@@ -46,13 +49,11 @@ func (c NetTest) ShortDescription() string {
 // Run runs NetTest as the NetTest specification nettest/1 defines it: an invalid command line or none exits with 2,
 // an error of the run with 1, the end of --duration or a signal with 0.
 func (c NetTest) Run(args []string) int {
-	for _, arg := range args {
-		if nettest.IsHelp(arg) {
-			fmt.Print(nettest.HelpText)
-			return 0
-		}
-	}
 	config, err := nettest.Parse(args)
+	if err == nil && config.Help {
+		fmt.Print(nettest.HelpText)
+		return 0
+	}
 	if err == nettest.ErrNoArguments {
 		fmt.Fprint(os.Stderr, nettest.HelpText)
 		return 2
@@ -99,7 +100,8 @@ type netTestSnapshot struct {
 type netTestRun struct {
 	config   *nettest.Config
 	nanoTime bool
-	start    time.Time
+	// start is the start of the run and the base of now.
+	start time.Time
 	// instances are the endpoints, built after the checks of the start.
 	instances []*netTestInstance
 	// stop ends the run; failure holds the error that ended it, if any; signaled tells that a signal ended it.
@@ -115,6 +117,9 @@ type netTestRun struct {
 	withNano     atomic.Int64
 	lastRecordNs atomic.Int64
 	lag          *nettest.LagRecorder
+	// watchdog stops the consumer without data; connections returns the open connections of the instances.
+	watchdog    netTestWatchdog
+	connections func() int
 	// The publisher: the fills and the publishing calls, and the schedule slip of the last batch and of the interval.
 	schedule      *nettest.Schedule
 	publishCalls  atomic.Int64
@@ -130,8 +135,11 @@ type netTestRun struct {
 	intervalStart time.Time
 	lastTick      time.Time
 	lastRuntime   nettest.RuntimeSample
-	startRuntime  nettest.RuntimeSample
-	summary       *nettest.SummaryBuilder
+	// startRuntime is the runtime once the instances have started, and startRuntimeAt its time: the start of the
+	// growths of the runtime in the summary, as the first sample of the SDK C tool.
+	startRuntime   nettest.RuntimeSample
+	startRuntimeAt time.Time
+	summary        *nettest.SummaryBuilder
 	// snapshot is read by the scrapes of the metrics.
 	snapshotLock sync.Mutex
 	snapshot     netTestSnapshot
@@ -147,6 +155,11 @@ func (r *netTestRun) fail(err error) {
 
 func (r *netTestRun) end() { r.fail(nil) }
 
+// now returns the wall-clock time of the events: the start of the run plus the monotonic time since it. time.Now()
+// on Windows steps by about 0.5 ms, which would quantize the event times and the e2e lags; the monotonic clock has
+// the nanosecond resolution.
+func (r *netTestRun) now() time.Time { return r.start.Add(time.Since(r.start)) }
+
 // runNetTest runs the tool and returns its exit code: it stops the workers, writes the summary file and only then
 // closes the endpoints.
 func runNetTest(config *nettest.Config, args []string) int {
@@ -154,8 +167,11 @@ func runNetTest(config *nettest.Config, args []string) int {
 	if value, ok := config.Property(nanoTimeProperty); ok {
 		nanoTime = value
 	}
-	r := &netTestRun{config: config, nanoTime: nanoTime == "true", start: time.Now(), stop: make(chan struct{}),
-		summary: nettest.NewSummaryBuilder(config.Mode), signals: make(chan os.Signal, 1)}
+	// Any case of true is on, as Boolean.parseBoolean of Java reads the property.
+	r := &netTestRun{config: config, nanoTime: strings.EqualFold(nanoTime, "true"), start: time.Now(),
+		stop: make(chan struct{}), summary: nettest.NewSummaryBuilder(config.Mode), signals: make(chan os.Signal, 1),
+		watchdog: netTestWatchdog{afterRecord: noDataAfterRecord, afterConnection: noDataAfterConnection}}
+	r.connections = r.openConnections
 	// A signal during the start ends the run as soon as it starts, with the summary and the exit code 0.
 	signal.Notify(r.signals, os.Interrupt, syscall.SIGTERM)
 	defer signal.Stop(r.signals)
@@ -227,7 +243,6 @@ func (r *netTestRun) run(nanoTime string) error {
 	r.snapshotLock.Lock()
 	r.snapshot.all = r.instances
 	r.snapshotLock.Unlock()
-	r.startRuntime = netTestRuntimeSample()
 	if config.Mode == nettest.Consumer {
 		err = r.startConsumers(symbols)
 	} else {
@@ -236,6 +251,7 @@ func (r *netTestRun) run(nanoTime string) error {
 	if err != nil {
 		return err
 	}
+	r.startRuntime, r.startRuntimeAt = netTestRuntimeSample(), time.Now()
 	r.waitAndPrint()
 	return r.failure
 }
@@ -345,7 +361,7 @@ type netTestListener struct {
 
 func (l *netTestListener) Update(events []any) {
 	r := l.run
-	now := time.Now().UnixNano()
+	now := r.now().UnixNano()
 	r.warmupStartNs.CompareAndSwap(0, now)
 	var lagSum, withNano int64
 	lags := make([]int64, 0, len(events))
@@ -384,51 +400,75 @@ func (l *netTestListener) Update(events []any) {
 	}
 }
 
-// watchConsumer stops the consumer without data: connected and no records for 30 s after the last record, or for
-// 60 s after the connection when no record came. It reads the state of the endpoints, not the connector statistics.
+// watchConsumer stops the consumer without data, as the watchdog tells, until the run stops.
 func (r *netTestRun) watchConsumer() {
 	defer r.workers.Done()
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(watchdogPeriod)
 	defer ticker.Stop()
-	var connectedSince time.Time
 	for {
 		select {
 		case <-r.stop:
 			return
-		case now := <-ticker.C:
-			if !r.connected() {
-				connectedSince = time.Time{}
-				continue
+		case <-ticker.C:
+			var lastRecord time.Time
+			if last := r.lastRecordNs.Load(); last != 0 {
+				lastRecord = time.Unix(0, last)
 			}
-			if connectedSince.IsZero() {
-				connectedSince = now
-			}
-			last := r.lastRecordNs.Load()
-			// After a reconnect the time without records counts from the connection.
-			since := time.Unix(0, last)
-			if since.Before(connectedSince) {
-				since = connectedSince
-			}
-			switch {
-			case last == 0 && now.Sub(connectedSince) >= noDataAfterConnection:
-				r.fail(&netTestStatusError{nettest.StatusNoData,
-					fmt.Errorf("no records for %v after the connection", noDataAfterConnection)})
-			case last != 0 && now.Sub(since) >= noDataAfterFirstRecord:
-				r.fail(&netTestStatusError{nettest.StatusNoData,
-					fmt.Errorf("no records for %v", noDataAfterFirstRecord)})
+			if err := r.watchdog.check(r.now(), r.connections(), lastRecord); err != nil {
+				r.fail(&netTestStatusError{nettest.StatusNoData, err})
 			}
 		}
 	}
 }
 
-// connected tells whether an instance is connected.
-func (r *netTestRun) connected() bool {
+// netTestWatchdog tells when the consumer has no data, as the specification says: with open connections, no records
+// for 30 s after the last record, or for 60 s after the connection when no record came. The open connections are
+// those of the connector statistics, as in the statistics lines: a listening endpoint in the state CONNECTED without
+// peers has none. After the connections were all closed, the time counts from the next connection again.
+type netTestWatchdog struct {
+	afterRecord, afterConnection time.Duration
+	// connectedSince is the time since which connections are open, zero while there are none.
+	connectedSince time.Time
+}
+
+// check returns the error of no data at the time, or nil; lastRecord is zero before the first record.
+func (w *netTestWatchdog) check(now time.Time, connections int, lastRecord time.Time) error {
+	if connections <= 0 {
+		w.connectedSince = time.Time{}
+		return nil
+	}
+	if w.connectedSince.IsZero() {
+		w.connectedSince = now
+	}
+	if lastRecord.IsZero() {
+		if now.Sub(w.connectedSince) >= w.afterConnection {
+			return fmt.Errorf("no records for %d ms after the connection, with %d open connections",
+				w.afterConnection.Milliseconds(), connections)
+		}
+		return nil
+	}
+	since := lastRecord
+	if since.Before(w.connectedSince) {
+		since = w.connectedSince
+	}
+	if now.Sub(since) >= w.afterRecord {
+		return fmt.Errorf("no records for %d ms after the last record, with %d open connections",
+			w.afterRecord.Milliseconds(), connections)
+	}
+	return nil
+}
+
+// openConnections returns the open connections of the connectors of all instances.
+func (r *netTestRun) openConnections() int {
+	count := 0
 	for _, instance := range r.instances {
-		if state, err := instance.endpoint.State(); err == nil && state == common.Connected {
-			return true
+		if connectors, err := instance.endpoint.Connectors(); err == nil {
+			for _, connector := range connectors {
+				count += connector.ConnectionCount
+			}
 		}
 	}
-	return false
+	return count
 }
 
 // startProducers connects each instance and starts its publishing loop.
@@ -489,7 +529,8 @@ func (r *netTestRun) publish(number int, instance *netTestInstance, publisher *a
 				}
 			}
 		}
-		start := time.Now()
+		// One clock read: the monotonic part for the slip and the elapsed time, the wall-clock part for the events.
+		start := r.now()
 		if r.schedule != nil {
 			slip := max(start.Sub(due).Nanoseconds(), 0)
 			r.slipLast.Store(slip)
@@ -613,6 +654,7 @@ func (r *netTestRun) scrape() *nettest.MetricsSnapshot {
 			Collector: config.Collector},
 		Records:   make([]int64, config.Instances),
 		PublishNs: r.publishNs.Load(), PublishCalls: r.publishCalls.Load(), SlipNs: r.slipLast.Load(),
+		Scheduled: config.Mode == nettest.Producer && config.Rate > 0,
 	}
 	if r.lag != nil {
 		lag := r.lag.Metrics()
@@ -629,8 +671,7 @@ func (r *netTestRun) scrape() *nettest.MetricsSnapshot {
 	s.Connector = snapshot.connector
 	s.Runtime = snapshot.runtime
 	if !snapshot.taken {
-		s.Runtime = nettest.RuntimeSample{HeapUsedBytes: -1, HeapCommittedBytes: -1, GCCount: -1, GCTimeMs: -1,
-			CPUTimeNs: -1}
+		s.Runtime = nettest.UnknownRuntimeSample()
 	}
 	return s
 }
@@ -771,17 +812,9 @@ func (r *netTestRun) buildSummary(args []string, err error, code int) *nettest.S
 			NsPerEventMean: nettest.IntIf(events > 0, ns/max(events, 1))}
 		s.ScheduleSlip = r.summary.Slip()
 	}
-	if !r.lastTick.IsZero() {
-		runtime := r.snapshot.runtime
-		given := func(value int64) *int64 { return nettest.IntIf(value >= 0, value) }
-		s.Runtime = nettest.SummaryRuntime{HeapUsedMb: given(runtime.HeapUsedBytes >> 20),
-			HeapCommittedMb: given(runtime.HeapCommittedBytes >> 20), GCCount: given(runtime.GCCount),
-			GCTimeMs: given(runtime.GCTimeMs)}
-		if cpu, start := runtime.CPUTimeNs, r.startRuntime.CPUTimeNs; cpu >= 0 && start >= 0 && cpu >= start {
-			if length := r.lastTick.Sub(r.countStart).Nanoseconds(); length > 0 {
-				s.Runtime.CPUPercentMean = nettest.Int((cpu - start) * 100 / length)
-			}
-		}
+	if !r.lastTick.IsZero() && !r.startRuntimeAt.IsZero() {
+		s.Runtime = nettest.NewSummaryRuntime(r.startRuntime, r.snapshot.runtime,
+			r.lastTick.Sub(r.startRuntimeAt).Nanoseconds())
 	}
 	return s
 }
@@ -791,8 +824,7 @@ func (r *netTestRun) buildSummary(args []string, err error, code int) *nettest.S
 func netTestRuntimeSample() nettest.RuntimeSample {
 	s, err := api.GetRuntimeStatistics()
 	if err != nil {
-		return nettest.RuntimeSample{HeapUsedBytes: -1, HeapCommittedBytes: -1, GCCount: -1, GCTimeMs: -1,
-			CPUTimeNs: -1}
+		return nettest.UnknownRuntimeSample()
 	}
 	sum := func(a, b int64) int64 {
 		if a < 0 || b < 0 {
@@ -805,6 +837,8 @@ func netTestRuntimeSample() nettest.RuntimeSample {
 		HeapCommittedBytes: s.HeapCommittedBytes,
 		GCCount:            sum(s.YoungGCCount, s.FullGCCount),
 		GCTimeMs:           sum(s.YoungGCTimeMs, s.FullGCTimeMs),
+		GCCounts:           [2]int64{s.YoungGCCount, s.FullGCCount},
+		GCTimesMs:          [2]int64{s.YoungGCTimeMs, s.FullGCTimeMs},
 		CPUTimeNs:          s.ProcessCPUTimeNs,
 	}
 }

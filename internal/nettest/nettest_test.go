@@ -51,17 +51,13 @@ func TestCLIVectors(t *testing.T) {
 			continue
 		}
 		name := fmt.Sprintf("%q", v.Args)
-		help := false
-		for _, arg := range v.Args {
-			help = help || IsHelp(arg)
-		}
-		if help {
+		c, err := Parse(v.Args)
+		if err == nil && c.Help {
 			if v.Exit != 0 || !strings.Contains(HelpText, v.StdoutContains) {
 				t.Errorf("%s: the help has no %q", name, v.StdoutContains)
 			}
 			continue
 		}
-		c, err := Parse(v.Args)
 		if v.Exit == 0 {
 			if err != nil {
 				t.Errorf("%s: %v", name, err)
@@ -175,8 +171,8 @@ func TestLines(t *testing.T) {
 			}
 			return -1
 		}
-		return RuntimeSample{value("heap_used_bytes"), value("heap_committed_bytes"), value("gc_count"),
-			value("gc_time_ms"), value("cpu_ns")}
+		return RuntimeSample{HeapUsedBytes: value("heap_used_bytes"), HeapCommittedBytes: value("heap_committed_bytes"),
+			GCCount: value("gc_count"), GCTimeMs: value("gc_time_ms"), CPUTimeNs: value("cpu_ns")}
 	}
 	for _, r := range kit.Runtime {
 		got := RuntimeLine(r.Name, r.IntervalNs, sample(r.Previous), sample(r.Current))
@@ -321,6 +317,21 @@ func TestSlice(t *testing.T) {
 	}{{1, 1, "A B C D E"}, {1, 2, "A C E"}, {2, 2, "B D"}, {3, 3, "C"}, {4, 8, "D"}, {6, 8, ""}} {
 		if got := strings.Join(Slice(symbols, test.instance, test.instances), " "); got != test.want {
 			t.Errorf("Slice(%d, %d) = %q, want %q", test.instance, test.instances, got, test.want)
+		}
+	}
+}
+
+// TestRateBounds checks the bounds of -r: below 1 and above 1000G are bad rates, with the text of the SDK tools.
+func TestRateBounds(t *testing.T) {
+	for _, test := range []struct {
+		rate string
+		ok   bool
+	}{{"*/1", true}, {"*/0.001k", true}, {"*/1000G", true}, {"*/0.5", false}, {"*/0.0009k", false},
+		{"*/1000.1G", false}, {"*/2000G", false}} {
+		_, err := Parse([]string{"p", ":7001", "-S", "10", "-r", test.rate})
+		want := "-r has a bad rate (a positive number with an optional k, M or G): '" + test.rate + "'"
+		if test.ok && err != nil || !test.ok && (err == nil || err.Error() != want) {
+			t.Errorf("-r %s: %v", test.rate, err)
 		}
 	}
 }
