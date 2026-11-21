@@ -4,7 +4,6 @@
 package nettest
 
 import (
-	"math"
 	"sync"
 	"time"
 )
@@ -133,13 +132,14 @@ type SummaryBuilder struct {
 	// The e2e lag after the warm-up.
 	lag                                   *Histogram
 	lagCount, lagSum, lagMax, lagNegative int64
-	// The schedule slip: its maximum, its value at the end and the slip at the ends of the measured intervals.
-	slip             bool
-	slipMax, slipEnd int64
-	slipEnds         []slipPoint
+	// The schedule slip: its maximum over all intervals and over the measured ones, its value at the end and the slip
+	// at the ends of the measured intervals.
+	slip                              bool
+	slipMax, slipMaxMeasured, slipEnd int64
+	slipEnds                          []slipPoint
 }
 
-type slipPoint struct{ timeNs, slipNs int64 }
+type slipPoint struct{ timeMs, slipNs int64 }
 
 // NewSummaryBuilder returns a builder of the mode.
 func NewSummaryBuilder(mode string) *SummaryBuilder {
@@ -181,7 +181,8 @@ func (b *SummaryBuilder) Add(c IntervalCounts) {
 		b.slipMax = max(b.slipMax, c.SlipMax)
 		b.slipEnd = c.SlipEnd
 		if !c.Warmup {
-			b.slipEnds = append(b.slipEnds, slipPoint{c.End.UnixNano(), c.SlipEnd})
+			b.slipMaxMeasured = max(b.slipMaxMeasured, c.SlipMax)
+			b.slipEnds = append(b.slipEnds, slipPoint{c.End.UnixMilli(), c.SlipEnd})
 		}
 	}
 	b.Intervals = append(b.Intervals, in)
@@ -192,17 +193,21 @@ func (b *SummaryBuilder) Lag() *SummaryLag {
 	return NewLag(b.lag, b.lagNegative, b.lagSum, b.lagMax)
 }
 
-// Slip returns the schedule slip, nil without a schedule. Its growth is the slope of the slip at the ends of the
-// measured intervals over their time, null with fewer than two of them.
+// Slip returns the schedule slip, nil without a schedule, as the SDK C tool computes it: the maximum of the measured
+// intervals (of all intervals when none is measured), and the growth as the slope of the slip at the ends of the
+// measured intervals over their end times in milliseconds, truncated, null with fewer than two of them.
 func (b *SummaryBuilder) Slip() *SummarySlip {
 	if !b.slip {
 		return nil
 	}
 	s := &SummarySlip{MaxNs: b.slipMax, EndNs: b.slipEnd}
+	if len(b.slipEnds) > 0 {
+		s.MaxNs = b.slipMaxMeasured
+	}
 	if n := len(b.slipEnds); n >= 2 {
 		first, last := b.slipEnds[0], b.slipEnds[n-1]
-		if span := last.timeNs - first.timeNs; span > 0 {
-			s.GrowthNsPerS = Int(int64(math.Round(float64(last.slipNs-first.slipNs) * 1e9 / float64(span))))
+		if millis := last.timeMs - first.timeMs; millis > 0 {
+			s.GrowthNsPerS = Int((last.slipNs - first.slipNs) * 1000 / millis)
 		}
 	}
 	return s

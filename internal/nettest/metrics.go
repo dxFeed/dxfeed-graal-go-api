@@ -41,8 +41,10 @@ type MetricsSnapshot struct {
 	Lag *LagMetrics
 	// The publisher: the time of the fills and the publishing calls, the calls and the slip of the last batch.
 	PublishNs, PublishCalls, SlipNs int64
-	Connector                       ConnectorMetrics
-	Runtime                         RuntimeSample
+	// Scheduled tells whether the publisher has a schedule (-r); without one the slip family has no sample.
+	Scheduled bool
+	Connector ConnectorMetrics
+	Runtime   RuntimeSample
 }
 
 // metricsWriter writes the families of the exposition format.
@@ -124,8 +126,11 @@ func FormatMetrics(s *MetricsSnapshot) string {
 		w.metric("nettest_publish_seconds_total", "counter", "The time of the batch fills and the publishing calls.",
 			seconds(s.PublishNs, time.Nanosecond))
 		w.metric("nettest_publish_calls_total", "counter", "The publishing calls.", integer(s.PublishCalls))
-		w.metric("nettest_schedule_slip_seconds", "gauge", "The schedule slip of the last batch.",
-			seconds(s.SlipNs, time.Nanosecond))
+		slip := ""
+		if s.Scheduled {
+			slip = seconds(s.SlipNs, time.Nanosecond)
+		}
+		w.metric("nettest_schedule_slip_seconds", "gauge", "The schedule slip of the last batch.", slip)
 	}
 	w.family("nettest_connections", "gauge", "The open connections.")
 	for n, connections := range s.Connections {

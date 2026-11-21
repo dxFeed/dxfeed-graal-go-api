@@ -84,9 +84,37 @@ func StatisticsBlock(mode, name string, intervalNs int64, connections int, insta
 type RuntimeSample struct {
 	HeapUsedBytes      int64
 	HeapCommittedBytes int64
-	GCCount            int64
-	GCTimeMs           int64
-	CPUTimeNs          int64
+	// GCCount and GCTimeMs are the sums of the collections of both kinds and of their time.
+	GCCount   int64
+	GCTimeMs  int64
+	CPUTimeNs int64
+	// GCCounts and GCTimesMs are the collections and their time by kind, young and full, for the summary.
+	GCCounts, GCTimesMs [2]int64
+}
+
+// UnknownRuntimeSample returns a sample with no value given: every field, the sums and the values by kind, is -1.
+func UnknownRuntimeSample() RuntimeSample {
+	return RuntimeSample{HeapUsedBytes: -1, HeapCommittedBytes: -1, GCCount: -1, GCTimeMs: -1,
+		GCCounts: [2]int64{-1, -1}, GCTimesMs: [2]int64{-1, -1}, CPUTimeNs: -1}
+}
+
+// NewSummaryRuntime returns the runtime of the summary from the samples at the start and at the end of the run, as
+// the SDK C tool: the heap at the end, the growth of the collections and of their time over the run (null when a
+// value is not given or a counter went back), and the mean CPU of the run.
+func NewSummaryRuntime(first, last RuntimeSample, periodNs int64) SummaryRuntime {
+	megabytes := func(bytes int64) *int64 { return IntIf(bytes >= 0, bytes>>20) }
+	growth := func(from, to int64) (int64, bool) { return to - from, from >= 0 && to >= from }
+	both := func(from, to [2]int64) *int64 {
+		young, youngOK := growth(from[0], to[0])
+		full, fullOK := growth(from[1], to[1])
+		return IntIf(youngOK && fullOK, young+full)
+	}
+	r := SummaryRuntime{HeapUsedMb: megabytes(last.HeapUsedBytes), HeapCommittedMb: megabytes(last.HeapCommittedBytes),
+		GCCount: both(first.GCCounts, last.GCCounts), GCTimeMs: both(first.GCTimesMs, last.GCTimesMs)}
+	if cpu, ok := growth(first.CPUTimeNs, last.CPUTimeNs); ok && periodNs > 0 {
+		r.CPUPercentMean = Int(cpu * 100 / periodNs)
+	}
+	return r
 }
 
 // RuntimeLine returns the runtime line of an interval from the samples at its start and its end.

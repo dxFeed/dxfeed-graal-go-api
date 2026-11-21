@@ -51,6 +51,9 @@ type Property struct{ Key, Value string }
 
 // Config is a parsed command line.
 type Config struct {
+	// Help tells that a help option came where an option may come: the tool prints the usage and exits with 0. An
+	// option that takes a value takes the next argument whatever it is, as in the SDK C tool, so "-n --help" is a name.
+	Help bool
 	// Mode is Producer or Consumer.
 	Mode    string
 	Address string
@@ -166,7 +169,7 @@ func usage(format string, args ...any) error { return &UsageError{fmt.Sprintf(fo
 // ErrNoArguments is the error of an empty command line: the tool prints its usage and exits with 2.
 var ErrNoArguments = &UsageError{"the mode is missing"}
 
-// IsHelp tells whether the argument asks for the help.
+// IsHelp tells whether the argument is a help option.
 func IsHelp(arg string) bool {
 	return arg == "--help" || arg == "-help" || arg == "-h"
 }
@@ -191,12 +194,16 @@ var (
 	ratePattern = regexp.MustCompile(`^([0-9]+[.]?[0-9]*|[.][0-9]+)([kMG]?)$`)
 )
 
-// Parse parses the command line that follows the name of the tool. The first error found wins; a help option is not
-// handled here (see IsHelp).
+// Parse parses the command line that follows the name of the tool. The first error found wins; a help option ends the
+// parsing with Help set, so an error before it wins and the arguments after it are not checked, as in the SDK C tool.
 func Parse(args []string) (Config, error) {
 	c := Config{Instances: 1, Batch: 100, Event: EventTrade, Period: 10 * time.Second, Name: "NetTest"}
 	if len(args) == 0 {
 		return c, ErrNoArguments
+	}
+	if IsHelp(args[0]) {
+		c.Help = true
+		return c, nil
 	}
 	c.Mode = args[0]
 	if c.Mode != Producer && c.Mode != Consumer {
@@ -206,6 +213,9 @@ func Parse(args []string) (Config, error) {
 	for i := 1; i < len(args); i++ {
 		arg := args[i]
 		switch {
+		case IsHelp(arg):
+			c.Help = true
+			return c, nil
 		case strings.HasPrefix(arg, "-D"):
 			key, value, ok := strings.Cut(arg[2:], "=")
 			if !ok || key == "" {
@@ -238,7 +248,7 @@ func Parse(args []string) (Config, error) {
 		}
 		canonical, ok := valueOptions[name]
 		if !ok {
-			if inline && (name == "--reuse" || name == "--legacy" || name == "--wildcard") {
+			if inline && (name == "--reuse" || name == "--legacy" || name == "--wildcard" || name == "--help") {
 				return c, usage("%s takes no value: '%s'", name, arg)
 			}
 			return c, usage("unknown flag %s", name)
@@ -413,9 +423,10 @@ func parseRate(name, value string) (float64, error) {
 	if err != nil || rate <= 0 {
 		return 0, bad
 	}
+	// A rate below 1 or above 1000G is a bad rate too, as in the SDK tools.
 	rate *= map[string]float64{"": 1, "k": 1e3, "M": 1e6, "G": 1e9}[m[2]]
 	if rate < 1 || rate > MaxRate {
-		return 0, usage("%s needs a rate from 1 to 1000G: '%s'", name, value)
+		return 0, bad
 	}
 	return rate, nil
 }
