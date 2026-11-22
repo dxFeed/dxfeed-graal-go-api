@@ -10,7 +10,7 @@
     time at the start plus the monotonic time since then.
   * `-Ddxscheme.nanoTime` is on for `true` in any case, as in Java.
   * An option that takes a value takes the next argument whatever it is, as in the other NetTest tools: `-n --help`
-    names the run `--help`, and a help option after an invalid argument does not hide the error.
+    names the run `--help`; a help option anywhere else prints the usage, even after an invalid argument.
   * The `no_data` error gives its limit in milliseconds, as the other NetTest tools do.
   * A signal while the symbols are read ends the run with the summary `stopped_by_signal` and without the endpoints;
     a second signal ends the process at once, with the exit code 128 plus the signal number.
