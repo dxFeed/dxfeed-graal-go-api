@@ -347,8 +347,6 @@ the feed. Each release has them built as archives on the
   `--summary <file>` writes a JSON summary of the run and `--metrics-port [<host>:]<port>` serves the metrics in the
   Prometheus text format. Differences from the specification:
   * the optional `-X<option>`, `-XX:<option>` and `--legacy` are not supported and exit with the status 2;
-  * `-h` and `-help` print the help as `--help` does, as in the other Go tools; the specification defines only
-    `--help`;
   * the event time is the wall-clock time at the start plus the monotonic time since then, as the specification
     allows for .NET, not `time.Now()`, which steps by about 0.5 ms on Windows
 * [qds](cmd/tools/qds.go)

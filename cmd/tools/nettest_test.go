@@ -147,6 +147,15 @@ func TestNetTestPortInUse(t *testing.T) {
 	}
 }
 
+// TestNetTestShortRun checks that a run shorter than the period prints its last block, counted from the start, when
+// it lasts at least one second.
+func TestNetTestShortRun(t *testing.T) {
+	status, out := runTools(t, "nettest p :"+freePort(t)+" -S 10 -s 60m --duration 2s")
+	if status != 0 || strings.Count(out, "{*NetTestProducerSide-NetTest*} data ") != 1 {
+		t.Errorf("status %d, want 0 and one statistics block:\n%s", status, out)
+	}
+}
+
 // TestNetTestLoopback runs a publisher and a consumer of the tool for some seconds: both print their lines, the
 // consumer's lag is positive and below 1 s, --duration ends both with 0, a scrape of the consumer's metrics has its
 // families, and both summary files validate against the schema of the kit.
