@@ -108,8 +108,7 @@ type netTestRun struct {
 	stop     chan struct{}
 	stopOnce sync.Once
 	failure  error
-	signaled bool
-	signals  chan os.Signal
+	signaled atomic.Bool
 	// workers are the goroutines that use the endpoints: the publishers and the watchdog of the consumer.
 	workers sync.WaitGroup
 	// The consumer: the events received, those with a nanosecond part, the time of the last record and the lags.
@@ -155,6 +154,38 @@ func (r *netTestRun) fail(err error) {
 
 func (r *netTestRun) end() { r.fail(nil) }
 
+// stopped tells whether the run has been stopped.
+func (r *netTestRun) stopped() bool {
+	select {
+	case <-r.stop:
+		return true
+	default:
+		return false
+	}
+}
+
+// watchSignals ends the run at the first SIGINT or SIGTERM, as the end of --duration does, and the process at once at
+// the second one, without the summary and with 128 plus the signal number: the tool may wait for something that does
+// not check the stop, such as the reading of a large symbol file.
+func (r *netTestRun) watchSignals(signals <-chan os.Signal, done <-chan struct{}) {
+	select {
+	case <-signals:
+	case <-done:
+		return
+	}
+	r.signaled.Store(true)
+	r.end()
+	select {
+	case s := <-signals:
+		code := 1
+		if number, ok := s.(syscall.Signal); ok {
+			code = 128 + int(number)
+		}
+		os.Exit(code)
+	case <-done:
+	}
+}
+
 // now returns the wall-clock time of the events: the start of the run plus the monotonic time since it. time.Now()
 // on Windows steps by about 0.5 ms, which would quantize the event times and the e2e lags; the monotonic clock has
 // the nanosecond resolution.
@@ -169,12 +200,17 @@ func runNetTest(config *nettest.Config, args []string) int {
 	}
 	// Any case of true is on, as Boolean.parseBoolean of Java reads the property.
 	r := &netTestRun{config: config, nanoTime: strings.EqualFold(nanoTime, "true"), start: time.Now(),
-		stop: make(chan struct{}), summary: nettest.NewSummaryBuilder(config.Mode), signals: make(chan os.Signal, 1),
+		stop: make(chan struct{}), summary: nettest.NewSummaryBuilder(config.Mode),
 		watchdog: netTestWatchdog{afterRecord: noDataAfterRecord, afterConnection: noDataAfterConnection}}
 	r.connections = r.openConnections
-	// A signal during the start ends the run as soon as it starts, with the summary and the exit code 0.
-	signal.Notify(r.signals, os.Interrupt, syscall.SIGTERM)
-	defer signal.Stop(r.signals)
+	// The signals are taken from here on: a signal while the symbols are read ends the run with the summary too.
+	signals, done := make(chan os.Signal, 2), make(chan struct{})
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+	go r.watchSignals(signals, done)
+	defer func() {
+		signal.Stop(signals)
+		close(done)
+	}()
 	if config.Mode == nettest.Consumer {
 		r.lag = nettest.NewLagRecorder()
 	}
@@ -202,6 +238,10 @@ func (r *netTestRun) run(nanoTime string) error {
 	symbols, err := netTestSymbols(config)
 	if err != nil {
 		return err
+	}
+	// A signal before the start of the endpoints: the summary of the empty run, without the endpoints.
+	if r.stopped() {
+		return nil
 	}
 	if config.MetricsAddress != "" {
 		r.metrics, err = nettest.ListenMetrics(config.MetricsAddress)
@@ -693,9 +733,6 @@ func (r *netTestRun) waitAndPrint() {
 			r.workers.Wait()
 			r.tick(time.Now(), true)
 			return
-		case <-r.signals:
-			r.signaled = true
-			r.end()
 		case <-deadline:
 			r.end()
 		case now := <-timer.C:
@@ -723,7 +760,8 @@ func (r *netTestRun) warmup(start time.Time) bool {
 
 // tick ends an interval: it takes the counts, reads the connectors and the runtime once for the metrics, adds the
 // interval to the summary and prints the statistics block with the runtime line in one write. The first tick prints
-// nothing, and the last block is printed only when it is at least one second long and the run did not fail.
+// nothing; the last block, since the last tick or since the start of the instances when no tick came, is printed only
+// when it is at least one second long and the run did not fail.
 func (r *netTestRun) tick(now time.Time, final bool) {
 	statistics := make([]nettest.InstanceStatistics, len(r.instances))
 	counts := nettest.IntervalCounts{Start: r.intervalStart, End: now, Warmup: r.warmup(r.intervalStart)}
@@ -755,6 +793,10 @@ func (r *netTestRun) tick(now time.Time, final bool) {
 	r.intervalStart = now
 	previous, previousRuntime := r.lastTick, r.lastRuntime
 	r.lastTick, r.lastRuntime = now, snapshot.runtime
+	if previous.IsZero() && final {
+		// A run shorter than the period: the last block counts from the start of the instances.
+		previous, previousRuntime = r.startRuntimeAt, r.startRuntime
+	}
 	if previous.IsZero() || final && (now.Sub(previous) < time.Second || r.failure != nil) {
 		return
 	}
@@ -775,7 +817,7 @@ func (r *netTestRun) buildSummary(args []string, err error, code int) *nettest.S
 		status = statusErr.status
 	case err != nil:
 		status = nettest.StatusError
-	case r.signaled:
+	case r.signaled.Load():
 		status = nettest.StatusStoppedBySignal
 	}
 	var errorText *string

@@ -42,7 +42,7 @@ Options:
                           the host is 127.0.0.1 by default, the port 0 takes a free port.
   -D<key>=<value>         Set a system property before the first endpoint, also on the endpoints;
                           -Ddxscheme.nanoTime=false turns off the nanosecond time for peers without it.
-  -h, --help              Print this help.
+  -h, -help, --help       Print this help.
 
 Not supported: -X and -XX (the options of a Graal isolate), --legacy.
 
