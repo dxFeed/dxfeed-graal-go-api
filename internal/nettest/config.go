@@ -51,8 +51,8 @@ type Property struct{ Key, Value string }
 
 // Config is a parsed command line.
 type Config struct {
-	// Help tells that a help option came where an option may come: the tool prints the usage and exits with 0. An
-	// option that takes a value takes the next argument whatever it is, as in the SDK C tool, so "-n --help" is a name.
+	// Help tells that a help option came anywhere but as the value of an option: the tool prints the usage and exits
+	// with 0. An option that takes a value takes the next argument whatever it is, so "-n --help" is a name.
 	Help bool
 	// Mode is Producer or Consumer.
 	Mode    string
@@ -194,14 +194,28 @@ var (
 	ratePattern = regexp.MustCompile(`^([0-9]+[.]?[0-9]*|[.][0-9]+)([kMG]?)$`)
 )
 
-// Parse parses the command line that follows the name of the tool. The first error found wins; a help option ends the
-// parsing with Help set, so an error before it wins and the arguments after it are not checked, as in the SDK C tool.
+// wantsHelp tells whether a help option comes anywhere but as the value of an option: "-n --help" is a name.
+func wantsHelp(args []string) bool {
+	for i := 0; i < len(args); i++ {
+		if IsHelp(args[i]) {
+			return true
+		}
+		if _, ok := valueOptions[args[i]]; ok {
+			i++ // the value, whatever it is
+		}
+	}
+	return false
+}
+
+// Parse parses the command line that follows the name of the tool. A help option anywhere but as the value of an
+// option sets Help and wins over any invalid argument, as the specification says; otherwise the first error found
+// wins.
 func Parse(args []string) (Config, error) {
 	c := Config{Instances: 1, Batch: 100, Event: EventTrade, Period: 10 * time.Second, Name: "NetTest"}
 	if len(args) == 0 {
 		return c, ErrNoArguments
 	}
-	if IsHelp(args[0]) {
+	if wantsHelp(args) {
 		c.Help = true
 		return c, nil
 	}
@@ -213,9 +227,6 @@ func Parse(args []string) (Config, error) {
 	for i := 1; i < len(args); i++ {
 		arg := args[i]
 		switch {
-		case IsHelp(arg):
-			c.Help = true
-			return c, nil
 		case strings.HasPrefix(arg, "-D"):
 			key, value, ok := strings.Cut(arg[2:], "=")
 			if !ok || key == "" {
