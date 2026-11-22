@@ -341,7 +341,7 @@ the feed. Each release has them built as archives on the
 * [nettest](cmd/tools/nettest.go)
   publishes (`p`) or receives (`c`) generated Trade or TimeAndSale events at a controlled rate and prints the rate and
   the lag, as the
-  [NetTest specification](https://github.com/dxFeed/dxfeed-graal-native-sdk/blob/v3.18.0/docs/wrapper-guide/nettest.md)
+  [NetTest specification](https://github.com/dxFeed/dxfeed-graal-native-sdk/blob/v3.19.0/docs/wrapper-guide/nettest.md)
   `nettest/1` of the SDK defines them, so that its output compares with the NetTest of the other APIs, such as
   `tools nettest p :7001 -S 1000 -r */100k -c stream` and `tools nettest c 127.0.0.1:7001 -S 1000 -c stream`;
   `--summary <file>` writes a JSON summary of the run and `--metrics-port [<host>:]<port>` serves the metrics in the

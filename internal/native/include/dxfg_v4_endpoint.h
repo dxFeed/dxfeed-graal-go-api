@@ -306,6 +306,11 @@ int32_t dxfg_v4_DXEndpoint_close(graal_isolatethread_t *thread, dxfg_v4_endpoint
  *
  * Do not call it from a listener of this endpoint: it would wait for the notification that is calling it.
  *
+ * If the endpoint has the executor of dxfg_v4_ExecutorBaseOnConcurrentLinkedQueue_new(), the function runs the tasks of
+ * that executor on the calling thread while it waits, as
+ * dxfg_v4_ExecutorBaseOnConcurrentLinkedQueue_processAllPendingTasks() would: the endpoint terminates only after they
+ * run, so the active listeners of the endpoint may be called on this thread before the function returns.
+ *
  * Java: `DXEndpoint.closeAndAwaitTermination()`.
  *
  * @param[in] thread The current GraalVM Isolate's thread.

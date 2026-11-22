@@ -853,9 +853,7 @@ int32_t dxfg_v4_ObservableListModel_toArray(graal_isolatethread_t *thread, dxfg_
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_newBuilder(graal_isolatethread_t* thread, dxfg_v4_event_clazz_t eventType,
                                           DXFG_OUT dxfg_v4_indexed_tx_model_builder_t **indexedTxModelBuilder);
 
@@ -870,9 +868,7 @@ int32_t dxfg_v4_IndexedTxModel_newBuilder(graal_isolatethread_t* thread, dxfg_v4
  * dxfg_v4_indexed_event_source_list_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_getSources(graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_t* source,
                                           DXFG_OUT dxfg_v4_indexed_event_source_list **sources);
 
@@ -888,9 +884,7 @@ int32_t dxfg_v4_IndexedTxModel_getSources(graal_isolatethread_t* thread, dxfg_v4
  * @param[in] sources The new sources of the model; an empty list means all the sources.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_setSources(graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_t* source,
                                           dxfg_v4_indexed_event_source_list* sources);
 
@@ -904,9 +898,7 @@ int32_t dxfg_v4_IndexedTxModel_setSources(graal_isolatethread_t* thread, dxfg_v4
  * @param[out] batchProcessing The pointer to the variable that receives 1 if enabled, 0 otherwise; must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_isBatchProcessing(graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_t* source,
                                                  DXFG_OUT int32_t *batchProcessing);
 
@@ -920,9 +912,7 @@ int32_t dxfg_v4_IndexedTxModel_isBatchProcessing(graal_isolatethread_t* thread, 
  * @param[out] snapshotProcessing The pointer to the variable that receives 1 if enabled, 0 otherwise; must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_isSnapshotProcessing(graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_t* source,
                                                     DXFG_OUT int32_t *snapshotProcessing);
 
@@ -936,9 +926,7 @@ int32_t dxfg_v4_IndexedTxModel_isSnapshotProcessing(graal_isolatethread_t* threa
  * @param[in] feed The feed to attach to.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_attach(graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_t* source,
                                       dxfg_v4_feed_t* feed);
 
@@ -952,9 +940,7 @@ int32_t dxfg_v4_IndexedTxModel_attach(graal_isolatethread_t* thread, dxfg_v4_ind
  * @param[in] feed The feed to detach from.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_detach(graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_t* source,
                                       dxfg_v4_feed_t* feed);
 
@@ -968,9 +954,7 @@ int32_t dxfg_v4_IndexedTxModel_detach(graal_isolatethread_t* thread, dxfg_v4_ind
  * @param[in] aggregationPeriod The new aggregation period of the events.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_setAggregationPeriod(graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_t* source,
                                                     dxfg_v4_time_period_t* aggregationPeriod);
 
@@ -983,9 +967,7 @@ int32_t dxfg_v4_IndexedTxModel_setAggregationPeriod(graal_isolatethread_t* threa
  * @param[in] source The model handle.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_close(graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_t* source);
 
 /**
@@ -1000,9 +982,7 @@ int32_t dxfg_v4_IndexedTxModel_close(graal_isolatethread_t* thread, dxfg_v4_inde
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_Builder_withSources(graal_isolatethread_t* thread,
                                                    dxfg_v4_indexed_tx_model_builder_t* source,
                                                    dxfg_v4_indexed_event_source_list* sources,
@@ -1019,9 +999,7 @@ int32_t dxfg_v4_IndexedTxModel_Builder_withSources(graal_isolatethread_t* thread
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_Builder_build(graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_builder_t* source,
                                              DXFG_OUT dxfg_v4_indexed_tx_model_t **indexedTxModel);
 
@@ -1037,9 +1015,7 @@ int32_t dxfg_v4_IndexedTxModel_Builder_build(graal_isolatethread_t* thread, dxfg
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_Builder_withBatchProcessing(
     graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_builder_t* source, int32_t isBatchProcessing,
     DXFG_OUT dxfg_v4_indexed_tx_model_builder_t **indexedTxModelBuilder);
@@ -1058,9 +1034,7 @@ int32_t dxfg_v4_IndexedTxModel_Builder_withBatchProcessing(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_Builder_withSnapshotProcessing(
     graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_builder_t* source, int32_t isSnapshotProcessing,
     DXFG_OUT dxfg_v4_indexed_tx_model_builder_t **indexedTxModelBuilder);
@@ -1077,9 +1051,7 @@ int32_t dxfg_v4_IndexedTxModel_Builder_withSnapshotProcessing(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_Builder_withFeed(graal_isolatethread_t* thread,
                                                 dxfg_v4_indexed_tx_model_builder_t* source, dxfg_v4_feed_t* feed,
                                                 DXFG_OUT dxfg_v4_indexed_tx_model_builder_t **indexedTxModelBuilder);
@@ -1096,9 +1068,7 @@ int32_t dxfg_v4_IndexedTxModel_Builder_withFeed(graal_isolatethread_t* thread,
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_Builder_withAggregationPeriod(
     graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_builder_t* source, dxfg_v4_time_period_t* aggregationPeriod,
     DXFG_OUT dxfg_v4_indexed_tx_model_builder_t **indexedTxModelBuilder);
@@ -1115,9 +1085,7 @@ int32_t dxfg_v4_IndexedTxModel_Builder_withAggregationPeriod(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_Builder_withSymbol(graal_isolatethread_t* thread,
                                                   dxfg_v4_indexed_tx_model_builder_t* source, dxfg_v4_symbol_t* symbol,
                                                   DXFG_OUT dxfg_v4_indexed_tx_model_builder_t **indexedTxModelBuilder);
@@ -1134,9 +1102,7 @@ int32_t dxfg_v4_IndexedTxModel_Builder_withSymbol(graal_isolatethread_t* thread,
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_Builder_withListener(
     graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_builder_t* source, dxfg_v4_tx_model_listener_t* listener,
     DXFG_OUT dxfg_v4_indexed_tx_model_builder_t **indexedTxModelBuilder);
@@ -1157,9 +1123,7 @@ int32_t dxfg_v4_IndexedTxModel_Builder_withListener(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_IndexedTxModel_Builder_withExecutor(
     graal_isolatethread_t* thread, dxfg_v4_indexed_tx_model_builder_t* source, dxfg_v4_executor_t* executor,
     DXFG_OUT dxfg_v4_indexed_tx_model_builder_t **indexedTxModelBuilder);
@@ -1175,9 +1139,7 @@ int32_t dxfg_v4_IndexedTxModel_Builder_withExecutor(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_newBuilder(
     graal_isolatethread_t* thread, dxfg_v4_event_clazz_t eventType,
     DXFG_OUT dxfg_v4_time_series_tx_model_builder_t **timeSeriesTxModelBuilder);
@@ -1193,9 +1155,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_newBuilder(
  * the model is not subscribed); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_getFromTime(graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_t* source,
                                               DXFG_OUT int64_t *fromTime);
 
@@ -1209,9 +1169,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_getFromTime(graal_isolatethread_t* thread, dxf
  * @param[in] fromTime The time to subscribe from, in milliseconds since the epoch; INT64_MAX unsubscribes.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_setFromTime(graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_t* source,
                                               int64_t fromTime);
 
@@ -1225,9 +1183,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_setFromTime(graal_isolatethread_t* thread, dxf
  * @param[out] batchProcessing The pointer to the variable that receives 1 if enabled, 0 otherwise; must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_isBatchProcessing(graal_isolatethread_t* thread,
                                                     dxfg_v4_time_series_tx_model_t* source,
                                                     DXFG_OUT int32_t *batchProcessing);
@@ -1242,9 +1198,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_isBatchProcessing(graal_isolatethread_t* threa
  * @param[out] snapshotProcessing The pointer to the variable that receives 1 if enabled, 0 otherwise; must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_isSnapshotProcessing(graal_isolatethread_t* thread,
                                                        dxfg_v4_time_series_tx_model_t* source,
                                                        DXFG_OUT int32_t *snapshotProcessing);
@@ -1259,9 +1213,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_isSnapshotProcessing(graal_isolatethread_t* th
  * @param[in] feed The feed to attach to.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_attach(graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_t* source,
                                          dxfg_v4_feed_t* feed);
 
@@ -1275,9 +1227,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_attach(graal_isolatethread_t* thread, dxfg_v4_
  * @param[in] feed The feed to detach from.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_detach(graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_t* source,
                                          dxfg_v4_feed_t* feed);
 
@@ -1291,9 +1241,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_detach(graal_isolatethread_t* thread, dxfg_v4_
  * @param[in] aggregationPeriod The new aggregation period of the events.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_setAggregationPeriod(graal_isolatethread_t* thread,
                                                        dxfg_v4_time_series_tx_model_t* source,
                                                        dxfg_v4_time_period_t* aggregationPeriod);
@@ -1307,9 +1255,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_setAggregationPeriod(graal_isolatethread_t* th
  * @param[in] source The model handle.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_close(graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_t* source);
 
 /**
@@ -1324,9 +1270,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_close(graal_isolatethread_t* thread, dxfg_v4_t
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_withFromTime(
     graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_builder_t* source, int64_t fromTime,
     DXFG_OUT dxfg_v4_time_series_tx_model_builder_t **timeSeriesTxModelBuilder);
@@ -1343,9 +1287,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_withFromTime(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_withSorting(
     graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_builder_t* source,
     dxfg_v4_TimeSeriesTxModelSortOrder_t sortOrder,
@@ -1363,9 +1305,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_withSorting(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_ignoreRemoveEvents(
     graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_builder_t* source, int32_t ignoreRemoveEvents,
     DXFG_OUT dxfg_v4_time_series_tx_model_builder_t **timeSeriesTxModelBuilder);
@@ -1385,9 +1325,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_ignoreRemoveEvents(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_ignoreEventsFromPast(
     graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_builder_t* source, int32_t ignoreEventFromPast,
     DXFG_OUT dxfg_v4_time_series_tx_model_builder_t **timeSeriesTxModelBuilder);
@@ -1407,9 +1345,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_ignoreEventsFromPast(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_withConfirmationTick(
     graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_builder_t* source, int32_t confirmationTick,
     DXFG_OUT dxfg_v4_time_series_tx_model_builder_t **timeSeriesTxModelBuilder);
@@ -1496,9 +1432,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_withEventPeekFunction(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_build(graal_isolatethread_t* thread,
                                                 dxfg_v4_time_series_tx_model_builder_t* source,
                                                 DXFG_OUT dxfg_v4_time_series_tx_model_t **timeSeriesTxModel);
@@ -1515,9 +1449,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_build(graal_isolatethread_t* thread,
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_withBatchProcessing(
     graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_builder_t* source, int32_t isBatchProcessing,
     DXFG_OUT dxfg_v4_time_series_tx_model_builder_t **timeSeriesTxModelBuilder);
@@ -1536,9 +1468,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_withBatchProcessing(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_withSnapshotProcessing(
     graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_builder_t* source, int32_t isSnapshotProcessing,
     DXFG_OUT dxfg_v4_time_series_tx_model_builder_t **timeSeriesTxModelBuilder);
@@ -1555,9 +1485,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_withSnapshotProcessing(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_withFeed(
     graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_builder_t* source, dxfg_v4_feed_t* feed,
     DXFG_OUT dxfg_v4_time_series_tx_model_builder_t **timeSeriesTxModelBuilder);
@@ -1574,9 +1502,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_withFeed(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_withAggregationPeriod(
     graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_builder_t* source,
     dxfg_v4_time_period_t* aggregationPeriod,
@@ -1594,9 +1520,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_withAggregationPeriod(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_withSymbol(
     graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_builder_t* source, dxfg_v4_symbol_t* symbol,
     DXFG_OUT dxfg_v4_time_series_tx_model_builder_t **timeSeriesTxModelBuilder);
@@ -1613,9 +1537,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_withSymbol(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_withListener(
     graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_builder_t* source,
     dxfg_v4_tx_model_listener_t* listener, DXFG_OUT dxfg_v4_time_series_tx_model_builder_t **timeSeriesTxModelBuilder);
@@ -1636,9 +1558,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_withListener(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TimeSeriesTxModel_Builder_withExecutor(
     graal_isolatethread_t* thread, dxfg_v4_time_series_tx_model_builder_t* source, dxfg_v4_executor_t* executor,
     DXFG_OUT dxfg_v4_time_series_tx_model_builder_t **timeSeriesTxModelBuilder);
@@ -1660,9 +1580,7 @@ int32_t dxfg_v4_TimeSeriesTxModel_Builder_withExecutor(
  * dxfg_v4_JavaObjectHandler_release()); must not be NULL.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_TxModelListener_new(graal_isolatethread_t* thread,
                                     dxfg_v4_TxModelListener_function_eventsReceived function_eventsReceived,
                                     void* user_data, DXFG_OUT dxfg_v4_tx_model_listener_t **txModelListener);

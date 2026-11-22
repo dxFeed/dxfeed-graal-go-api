@@ -161,7 +161,7 @@ dxfg_subscription_t*      dxfg_DXFeedSubscription_new2(graal_isolatethread_t *th
  * The controller manages the same subscription: attaching to feeds, the batch limit, the aggregation period and the
  * executor (see the group @ref SubscriptionController).
  *
- * @deprecated Use dxfg_v4_DXFeedSubscription_getSubscriptionController() (experimental).
+ * @deprecated Use dxfg_v4_DXFeedSubscription_getSubscriptionController().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] sub The subscription handle.
@@ -173,7 +173,7 @@ dxfg_subscription_t*      dxfg_DXFeedSubscription_new2(graal_isolatethread_t *th
  *
  * Java: `DXFeedSubscription.getSubscriptionController()`.
  */
-DXFG_DEPRECATED("use dxfg_v4_DXFeedSubscription_getSubscriptionController() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_DXFeedSubscription_getSubscriptionController()")
 int32_t                   dxfg_DXFeedSubscription_getSubscriptionController(graal_isolatethread_t *thread, dxfg_subscription_t *sub, DXFG_OUT dxfg_subscription_controller_t **subscriptionController);
 
 /**
@@ -591,11 +591,11 @@ int32_t dxfg_DXFeedSubscription_getAggregationPeriodInfo(graal_isolatethread_t *
 /**
  * Returns the number of the events that were dropped because of a buffer overflow since the subscription was created.
  *
- * The function is experimental: the Java method is marked `@Experimental` and may change.
+ * The Java method is marked `@Experimental`; a change of it does not reach this function (see @ref V4_Conventions).
  *
  * Java: `DXFeedSubscription.getTotalDroppedEvents()`.
  *
- * @deprecated Use dxfg_v4_DXFeedSubscription_getTotalDroppedEvents() (experimental).
+ * @deprecated Use dxfg_v4_DXFeedSubscription_getTotalDroppedEvents().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] sub The subscription handle.
@@ -603,7 +603,7 @@ int32_t dxfg_DXFeedSubscription_getAggregationPeriodInfo(graal_isolatethread_t *
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error (also
  * when `droppedEvents` is NULL). Use dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  */
-DXFG_DEPRECATED("use dxfg_v4_DXFeedSubscription_getTotalDroppedEvents() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_DXFeedSubscription_getTotalDroppedEvents()")
 int32_t dxfg_DXFeedSubscription_getTotalDroppedEvents(graal_isolatethread_t *thread, dxfg_subscription_t *sub,
                                                       DXFG_OUT int64_t *droppedEvents);
 

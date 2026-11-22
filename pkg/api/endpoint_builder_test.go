@@ -4,6 +4,7 @@
 package api
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -227,6 +228,57 @@ func TestInPlaceExecutor(t *testing.T) {
 			t.Fatal("no event within 5 s")
 		}
 		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// TestInPlaceExecutorCloseAndAwaitTermination checks that closing an endpoint with an in-place executor ends although
+// nobody runs its pending tasks: since SDK 3.19.0 the closing call runs them itself while it waits, so the listener
+// gets the pending event on the closing goroutine.
+func TestInPlaceExecutorCloseAndAwaitTermination(t *testing.T) {
+	executor, err := NewInPlaceExecutor()
+	if err != nil {
+		t.Fatalf("NewInPlaceExecutor: %v", err)
+	}
+	defer func() { _ = executor.Close() }()
+	endpoint := buildEndpoint(t, NewEndpointBuilder().WithRole(LocalHub).WithExecutor(executor))
+	feed, err := endpoint.GetFeed()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sub, err := feed.CreateSubscription(eventcodes.Quote)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = sub.Close() }()
+	collector := &eventCollector{events: make(chan interface{}, 10)}
+	if err := sub.AddListener(collector); err != nil {
+		t.Fatal(err)
+	}
+	if err := sub.AddSymbol(osub.String("IBM")); err != nil {
+		t.Fatal(err)
+	}
+	publisher, err := endpoint.GetPublisher()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The subscription and the events reach the listener only through the executor: run the subscription once, then
+	// leave the notification of the published event pending.
+	if err := executor.ProcessAllPendingTasks(); err != nil {
+		t.Fatalf("ProcessAllPendingTasks: %v", err)
+	}
+	if err := publisher.Publish([]interface{}{quote.NewQuote("IBM")}); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(200 * time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := endpoint.CloseAndAwaitTermination(ctx); err != nil {
+		t.Fatalf("CloseAndAwaitTermination: %v", err)
+	}
+	select {
+	case <-collector.events:
+	default:
+		t.Error("the pending event did not reach the listener while the endpoint was closed")
 	}
 }
 

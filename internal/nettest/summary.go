@@ -55,7 +55,8 @@ type SummaryTool struct {
 	Build          SummaryBuild `json:"build"`
 }
 
-// SummaryBuild describes the build of a native tool; null for the Go tool.
+// SummaryBuild describes the runtime of the tool: for the Go tool, the build of the SDK library; a value the tool
+// cannot tell is null.
 type SummaryBuild struct {
 	Vendor *string `json:"vendor"`
 	March  *string `json:"march"`

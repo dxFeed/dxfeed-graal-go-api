@@ -88,7 +88,9 @@ int32_t dxfg_v4_system_release_property(graal_isolatethread_t *thread, const cha
  *
  * The function blocks the calling thread until the endpoints are terminated: do not call it from a listener of an
  * endpoint, it would wait for the notification that is calling it. The endpoints and connections created after the
- * call are not closed by it. The function is a function of the SDK: there is no QD method that it calls.
+ * call are not closed by it. The function is a function of the SDK: there is no QD method that it calls. For an
+ * endpoint with the executor of dxfg_v4_ExecutorBaseOnConcurrentLinkedQueue_new(), it runs the tasks of that executor on
+ * the calling thread while it waits, as dxfg_v4_DXEndpoint_closeAndAwaitTermination() does.
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error (also if
@@ -104,12 +106,38 @@ int32_t dxfg_v4_system_close_all_and_await_termination(graal_isolatethread_t *th
  * The function calls dxfg_v4_NativeListener_deactivateAll(), which also closes the event queues, and then
  * dxfg_v4_system_close_all_and_await_termination(), so that no listener is called and no poll waits while the
  * endpoints are closed. Both steps wait without a limit; like them, the function is irreversible: the listeners
- * created afterwards are never called, the endpoints created afterwards are not closed by it.
+ * created afterwards are never called, the event queues created afterwards are closed from the start, the endpoints
+ * created afterwards are not closed by it.
+ *
+ * A second call is allowed: the listeners stay deactivated, and the call closes the event queues, the endpoints and
+ * the instrument profile connections created since the previous one and waits for those endpoints; with nothing to
+ * close, it returns #DXFG_EXECUTE_SUCCESSFULLY at once.
+ *
+ * Only the listeners of the `dxfg_*Listener_new` functions are stopped. These callbacks are not listeners and are still
+ * called after the function returns: the handlers of dxfg_v4_Promise_whenDone() and dxfg_v4_Promise_whenDoneAsync()
+ * when a promise completes, the functions of dxfg_v4_Object_finalize() when an object is collected, and the filters of
+ * dxfg_v4_DayFilter_new(), dxfg_v4_DayFilter_newWithUserData(), dxfg_v4_SessionFilter_new() and
+ * dxfg_v4_SessionFilter_newWithUserData() when a search uses them. Keep their user data until they cannot be called
+ * anymore: a promise handler or a finalizer until it has run (it runs once) or the isolate is torn down, a filter until
+ * its last handle is released.
+ *
+ * The function acts on the isolate of `thread` only. Another isolate of the process keeps its listeners and endpoints,
+ * and a new isolate created afterwards works from the start, also after graal_tear_down_isolate() of this one. The
+ * `oracle-g1` build variant allows one isolate per process, so there the process cannot create another one: after the
+ * shutdown its isolate serves only the calls that need no listener and no event queue, until the process exits.
+ *
+ * The function waits for the listeners' calls in progress and for the endpoints without a limit. To bound the wait, a
+ * wrapper calls it on a thread of its own, attached to the isolate, and waits for that thread with a timeout. When the
+ * timeout expires, the function is still running, so the wrapper must not free the user data of the listeners (a call
+ * may still be in progress), call graal_tear_down_isolate() (it waits for that thread to detach) or
+ * graal_detach_all_threads_and_tear_down_isolate() (that thread is in an SDK function). It may keep waiting, or report
+ * the hang and end the process with the isolate as it is: the threads of the isolate end with the process.
  *
  * Recommended shutdown sequence:
  * 1. dxfg_v4_system_shutdown(). After it returns, no listener's function is called and none of its calls is in
- *    progress, so the user data of the listeners can be freed; every poll of an event queue returns
- *    #DXFG_EVENT_QUEUE_CLOSED, so the polling threads can leave the SDK.
+ *    progress, so the user data of the listeners can be freed (not that of the promise handlers, the finalizers and
+ *    the filters, see above); every poll of an event queue returns #DXFG_EVENT_QUEUE_CLOSED, so the polling threads
+ *    can leave the SDK.
  * 2. Release the remaining handles (dxfg_v4_JavaObjectHandler_release()), the listeners among them.
  * 3. graal_tear_down_isolate(), if the isolate is torn down at all; the process may also just exit.
  *
@@ -210,6 +238,41 @@ int32_t dxfg_v4_system_shutdown(graal_isolatethread_t *thread);
  * @since 3.18.0
  */
 #define DXFG_V4_FEATURE_MESSAGE_CONNECTOR_IO_STATISTICS "message_connector_io_statistics"
+
+/**
+ * @brief The name of the feature "build info" (dxfg_v4_system_get_build_info()) for
+ * dxfg_v4_system_is_feature_supported().
+ * @since 3.19.0
+ */
+#define DXFG_V4_FEATURE_BUILD_INFO "build_info"
+
+/**
+ * @brief The key of dxfg_v4_system_get_build_info() for the version of QDS that the library is built with, e.g.
+ * `3.358`.
+ * @since 3.19.0
+ */
+#define DXFG_V4_BUILD_INFO_QD_VERSION "qd_version"
+
+/**
+ * @brief The key of dxfg_v4_system_get_build_info() for the vendor and the version of the runtime that the library is
+ * built with, e.g. `GraalVM CE 25.0.1+8.1` (Java: the system property `java.vendor.version`, else `java.vm.vendor`).
+ * @since 3.19.0
+ */
+#define DXFG_V4_BUILD_INFO_VENDOR "vendor"
+
+/**
+ * @brief The key of dxfg_v4_system_get_build_info() for the target machine of the build (`-march` of native-image),
+ * e.g. `compatibility` (the baseline CPU of the architecture) or `x86-64-v3`. The iOS libraries have no value.
+ * @since 3.19.0
+ */
+#define DXFG_V4_BUILD_INFO_MARCH "march"
+
+/**
+ * @brief The key of dxfg_v4_system_get_build_info() for the garbage collectors of the runtime, separated by `, `
+ * (Java: the names of `ManagementFactory.getGarbageCollectorMXBeans()`).
+ * @since 3.19.0
+ */
+#define DXFG_V4_BUILD_INFO_GC "gc"
 
 /**
  * @brief The runtime statistics of the isolate and its process (dxfg_v4_system_get_runtime_statistics()).
@@ -332,6 +395,25 @@ int32_t dxfg_v4_system_is_feature_supported(graal_isolatethread_t *thread, const
  * @since 3.17.0
  */
 int32_t dxfg_v4_system_get_runtime_statistics(graal_isolatethread_t *thread, DXFG_OUT dxfg_v4_runtime_stats_t *stats);
+
+/**
+ * @brief Returns a value that tells how the library was built and what runs it: the version of QDS, the vendor of the
+ * runtime, the target machine and the garbage collectors (the `DXFG_V4_BUILD_INFO_` macros).
+ *
+ * A tool records them next to its measurements, as the NetTest summary does (`tool.qd_version` and `tool.build`). An
+ * unknown key, also an empty one, is not an error: the value is NULL, as it is for a value that the library does not
+ * know (#DXFG_V4_BUILD_INFO_MARCH of an iOS library). The values are for display and records: their text may change
+ * with the runtime or the build, so a program must not parse them. New keys may be added in any release.
+ *
+ * @param[in] thread The current GraalVM Isolate's thread.
+ * @param[in] key The key (the `DXFG_V4_BUILD_INFO_` macros), a NUL-terminated UTF-8 string. It must not be NULL.
+ * @param[out] value The pointer to the variable that receives the value, a NUL-terminated UTF-8 string allocated by the
+ * SDK (release it with dxfg_v4_String_release()), or NULL; must not be NULL. It is written on success only.
+ * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error (also
+ * when `key` or `value` is NULL). Use dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
+ * @since 3.19.0
+ */
+int32_t dxfg_v4_system_get_build_info(graal_isolatethread_t *thread, const char *key, DXFG_OUT const char **value);
 
 /** @} */ // end of V4_System
 

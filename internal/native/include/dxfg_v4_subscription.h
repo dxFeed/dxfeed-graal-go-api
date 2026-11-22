@@ -95,9 +95,7 @@ int32_t dxfg_v4_DXFeedSubscription_newWithEventTypes(graal_isolatethread_t *thre
  * was thrown.
  *
  * Java: `DXFeedSubscription.getSubscriptionController()`.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_DXFeedSubscription_getSubscriptionController(
     graal_isolatethread_t *thread, dxfg_v4_subscription_t *sub,
     DXFG_OUT dxfg_v4_subscription_controller_t **subscriptionController);
@@ -488,7 +486,7 @@ int32_t dxfg_v4_DXFeedSubscription_getAggregationPeriodInfo(graal_isolatethread_
 /**
  * Returns the number of the events that were dropped because of a buffer overflow since the subscription was created.
  *
- * The function is experimental: the Java method is marked `@Experimental` and may change.
+ * The Java method is marked `@Experimental`; a change of it does not reach this function (see @ref V4_Conventions).
  *
  * Java: `DXFeedSubscription.getTotalDroppedEvents()`.
  *
@@ -497,9 +495,7 @@ int32_t dxfg_v4_DXFeedSubscription_getAggregationPeriodInfo(graal_isolatethread_
  * @param[out] droppedEvents The number of the dropped events. It is written on success only.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error (also
  * when `droppedEvents` is NULL). Use dxfg_v4_get_and_clear_thread_exception() to determine if an exception was thrown.
- * @experimental
  */
-DXFG_EXPERIMENTAL
 int32_t dxfg_v4_DXFeedSubscription_getTotalDroppedEvents(graal_isolatethread_t *thread, dxfg_v4_subscription_t *sub,
                                                          DXFG_OUT int64_t *droppedEvents);
 
