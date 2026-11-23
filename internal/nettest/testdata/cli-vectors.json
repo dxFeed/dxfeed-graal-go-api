@@ -212,6 +212,96 @@
     },
     {
       "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-n",
+        "--help"
+      ],
+      "exit": 0,
+      "settings": {
+        "name": "--help"
+      }
+    },
+    {
+      "section": "cli",
+      "args": [
+        "-h"
+      ],
+      "exit": 0,
+      "stdout_contains": "spec_version nettest/1"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "-help"
+      ],
+      "exit": 0,
+      "stdout_contains": "spec_version nettest/1"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "c",
+        ":7001",
+        "-S",
+        "100",
+        "-h"
+      ],
+      "exit": 0,
+      "stdout_contains": "spec_version nettest/1"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-n",
+        "-h"
+      ],
+      "exit": 0,
+      "settings": {
+        "name": "-h"
+      }
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "abc",
+        "--help"
+      ],
+      "exit": 0,
+      "stdout_contains": "spec_version nettest/1"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "c",
+        ":7001",
+        "--no-such-flag",
+        "-h"
+      ],
+      "exit": 0,
+      "stdout_contains": "spec_version nettest/1"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "x",
+        "-help"
+      ],
+      "exit": 0,
+      "stdout_contains": "spec_version nettest/1"
+    },
+    {
+      "section": "cli",
       "args": [],
       "exit": 2
     },
@@ -385,6 +475,19 @@
       ],
       "exit": 2,
       "error": "-r has a bad rate (a positive number with an optional k, M or G): '*/1e6'"
+    },
+    {
+      "section": "cli",
+      "args": [
+        "p",
+        ":7001",
+        "-S",
+        "100",
+        "-r",
+        "*/1001G"
+      ],
+      "exit": 2,
+      "error": "-r has a bad rate (a positive number with an optional k, M or G): '*/1001G'"
     },
     {
       "section": "cli",

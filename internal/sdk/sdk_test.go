@@ -26,6 +26,8 @@ func TestCheckVersion(t *testing.T) {
 		{"3.16", false},
 		{"3.17.0", false}, // the release before the pinned one: no I/O statistics of message connectors
 		{"3.17.9", false},
+		{"3.18.0", false}, // no build information of the library
+		{"3.18.9", false},
 		{"a.b.c", false},
 		{"3.-16.0", false},
 		{"+" + major + ".+" + minor + ".+0", false},

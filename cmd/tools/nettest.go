@@ -842,6 +842,7 @@ func (r *netTestRun) buildSummary(args []string, err error, code int) *nettest.S
 		TimeSource: "actual", TimeResolution: resolution, Intervals: r.summary.Intervals,
 		Connectors: r.snapshot.connectors,
 	}
+	s.Tool.QDVersion, s.Tool.Build = netTestBuildInfo()
 	if s.Connectors == nil {
 		s.Connectors = []nettest.SummaryConnector{}
 	}
@@ -859,6 +860,23 @@ func (r *netTestRun) buildSummary(args []string, err error, code int) *nettest.S
 			r.lastTick.Sub(r.startRuntimeAt).Nanoseconds())
 	}
 	return s
+}
+
+// netTestBuildInfo reads the QDS version and the build of the library for the summary; a value the library does not
+// give is null.
+func netTestBuildInfo() (*string, nettest.SummaryBuild) {
+	info, err := api.GetBuildInfo()
+	if err != nil {
+		return nil, nettest.SummaryBuild{}
+	}
+	value := func(v string) *string {
+		if v == "" {
+			return nil
+		}
+		return nettest.String(v)
+	}
+	return value(info.QDVersion), nettest.SummaryBuild{Vendor: value(info.Vendor), March: value(info.March),
+		GC: value(info.GC)}
 }
 
 // netTestRuntimeSample reads the heap and the collections of the isolate and the CPU time of the process; a value

@@ -263,6 +263,12 @@ func readSummary(t *testing.T, path string) map[string]any {
 	if err := json.Unmarshal(data, &summary); err != nil {
 		t.Fatal(err)
 	}
+	// The library of SDK 3.19.0 and newer gives its build information.
+	tool := summary["tool"].(map[string]any)
+	build := tool["build"].(map[string]any)
+	if tool["qd_version"] == nil || build["vendor"] == nil || build["gc"] == nil {
+		t.Errorf("%s: tool %v", path, tool)
+	}
 	var records float64
 	for _, interval := range summary["intervals"].([]any) {
 		records += interval.(map[string]any)["records"].(float64)

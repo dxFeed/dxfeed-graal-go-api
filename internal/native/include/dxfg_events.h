@@ -1090,7 +1090,6 @@ typedef struct dxfg_text_configuration_t {
  * It is an indexed event, its `clazz` is #DXFG_EVENT_NUAM_ORDER.
  *
  * https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/custom/NuamOrder.html
- * @experimental
  */
 typedef struct dxfg_nuam_order_t {
     /** The base structure: the fields of dxfg_order_t. */
@@ -1139,7 +1138,6 @@ typedef struct dxfg_nuam_order_t {
  * It is a time series event, its `clazz` is #DXFG_EVENT_NUAM_TIME_AND_SALE.
  *
  * https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/custom/NuamTimeAndSale.html
- * @experimental
  */
 typedef struct dxfg_nuam_time_and_sale_t {
     /** The base structure: the fields of dxfg_time_and_sale_t. */
@@ -1154,7 +1152,6 @@ typedef struct dxfg_nuam_time_and_sale_t {
  * It is a lasting event, its `clazz` is #DXFG_EVENT_NUAM_TRADE.
  *
  * https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/custom/NuamTrade.html
- * @experimental
  */
 typedef struct dxfg_nuam_trade_t {
     /** The base structure: the fields of dxfg_trade_t. */
@@ -1177,7 +1174,6 @@ typedef struct dxfg_nuam_trade_t {
  * It is a market event (neither lasting nor indexed), its `clazz` is #DXFG_EVENT_ORDER_IMBALANCE.
  *
  * https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/market/OrderImbalance.html
- * @experimental
  */
 typedef struct dxfg_order_imbalance_t {
     /** The base structure: the fields of dxfg_market_event_t. */

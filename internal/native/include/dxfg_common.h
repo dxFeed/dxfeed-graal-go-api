@@ -180,6 +180,61 @@ int32_t dxfg_free_strings(graal_isolatethread_t *thread, char** strings, int32_t
  *  - The types of its parameters have `dxfg_v4_` names: typedefs of the older types with the same layout. The
  *    constants of the enumerations keep their names.
  *
+ *  Migrate a call of an older function to the function that its deprecation message names, which is also the
+ *  `replacements` of the function in `dxfg-api.json`; never by the name. Since an overload is named by what it takes,
+ *  the same name may stand for another overload in the two generations, and a migration by the name compiles, or binds,
+ *  and calls another function. Without the digit suffix, the `dxfg_v4_` name of an older function may be its
+ *  replacement (dxfg_v4_AdditionalUnderlyings_getSPC() replaces dxfg_AdditionalUnderlyings_getSPC2()) or another
+ *  function: dxfg_DXEndpoint_getInstance2() is replaced by dxfg_v4_DXEndpoint_createWithRole(), while
+ *  dxfg_v4_DXEndpoint_getInstance() replaces dxfg_DXEndpoint_getInstance(). These older functions without a digit
+ *  suffix have a `dxfg_v4_` function of the same name that is another overload, each listed with its replacement and
+ *  the older function that the `dxfg_v4_` function of the same name replaces (the build checks the list against
+ *  `dxfg-api.json`):
+ *  <!-- dxfg-renamed:begin -->
+ *  - dxfg_AdditionalUnderlyings_getSPC() -> dxfg_v4_AdditionalUnderlyings_getSPCFromText();
+ *    dxfg_v4_AdditionalUnderlyings_getSPC() replaces dxfg_AdditionalUnderlyings_getSPC2().
+ *  - dxfg_InstrumentProfileCollector_updateInstrumentProfile() ->
+ *    dxfg_v4_InstrumentProfileCollector_updateInstrumentProfileHandle();
+ *    dxfg_v4_InstrumentProfileCollector_updateInstrumentProfile() replaces
+ *    dxfg_InstrumentProfileCollector_updateInstrumentProfile2().
+ *  - dxfg_InstrumentProfileCollector_updateInstrumentProfiles() ->
+ *    dxfg_v4_InstrumentProfileCollector_updateInstrumentProfileHandles();
+ *    dxfg_v4_InstrumentProfileCollector_updateInstrumentProfiles() replaces
+ *    dxfg_InstrumentProfileCollector_updateInstrumentProfiles2() and
+ *    dxfg_InstrumentProfileCollector_updateInstrumentProfiles3().
+ *  - dxfg_InstrumentProfileReader_read() -> dxfg_v4_InstrumentProfileReader_readAsHandles();
+ *    dxfg_v4_InstrumentProfileReader_read() replaces dxfg_InstrumentProfileReader_read3() and
+ *    dxfg_InstrumentProfileReader_read5().
+ *  - dxfg_InstrumentProfileReader_readCompressed() -> dxfg_v4_InstrumentProfileReader_readCompressedAsHandles();
+ *    dxfg_v4_InstrumentProfileReader_readCompressed() replaces dxfg_InstrumentProfileReader_readCompressed2() and
+ *    dxfg_InstrumentProfileReader_readCompressed3().
+ *  - dxfg_InstrumentProfileReader_readFromFile() -> dxfg_v4_InstrumentProfileReader_readFromFileAsHandles();
+ *    dxfg_v4_InstrumentProfileReader_readFromFile() replaces dxfg_InstrumentProfileReader_readFromFile4() and
+ *    dxfg_InstrumentProfileReader_readFromFile7().
+ *  - dxfg_Iterable_InstrumentProfile_next() -> dxfg_v4_Iterable_InstrumentProfile_nextHandle();
+ *    dxfg_v4_Iterable_InstrumentProfile_next() replaces dxfg_Iterable_InstrumentProfile_next2().
+ *  - dxfg_PriceLevelService_getOrders() -> dxfg_v4_PriceLevelService_getOrdersWithCaller();
+ *    dxfg_v4_PriceLevelService_getOrders() replaces dxfg_PriceLevelService_getOrders2().
+ *  - dxfg_PriceLevelService_getQuotes() -> dxfg_v4_PriceLevelService_getQuotesWithCaller();
+ *    dxfg_v4_PriceLevelService_getQuotes() replaces dxfg_PriceLevelService_getQuotes2().
+ *  - dxfg_Schedule_getInstance() -> dxfg_v4_Schedule_getInstanceByProfileHandle();
+ *    dxfg_v4_Schedule_getInstance() replaces dxfg_Schedule_getInstance4().
+ *  - dxfg_Schedule_getTradingVenues() -> dxfg_v4_Schedule_getTradingVenuesByProfileHandle();
+ *    dxfg_v4_Schedule_getTradingVenues() replaces dxfg_Schedule_getTradingVenues2().
+ *  <!-- dxfg-renamed:end -->
+ *
+ *  The replacements of a few older functions are alternatives of another shape rather than twins, so no `dxfg_v4_`
+ *  function has their names:
+ *  <!-- dxfg-alternatives:begin -->
+ *  - dxfg_DXEndpoint_executor() -> dxfg_v4_DXEndpoint_Builder_withExecutor(): the executor is set on the builder,
+ *    before the endpoint is built, not on an endpoint.
+ *  - dxfg_InstrumentProfileCustomFields_addNonEmptyFieldNames() ->
+ *    dxfg_v4_InstrumentProfileCustomFields_getNonEmptyFieldNames(): the same list, without the `updated` flag.
+ *  - dxfg_free_strings() -> dxfg_v4_string_list_release(): the v4 functions return lists instead of arrays and sizes.
+ *  - dxfg_free_string_to_double_map_entries() -> dxfg_v4_string_to_double_map_entry_list_release(): the same, for the
+ *    entries of a map.
+ *  <!-- dxfg-alternatives:end -->
+ *
  *  The `dxfg_v4_` prefix names a generation of the C API, not a release of the SDK: the rules above hold for every
  *  function and type with this prefix, and later releases, major ones included, add functions with the same prefix.
  *  A new generation appears only when these rules change. It is named after the major release in which it becomes
@@ -195,14 +250,19 @@ int32_t dxfg_free_strings(graal_isolatethread_t *thread, char** strings, int32_t
  *    symbol instead of calling it with a changed signature. A compatible addition adds a feature
  *    (dxfg_v4_system_is_feature_supported()) and keeps the revision. A function promoted to stable keeps its name.
  *
- *  The experimental functions are the twins of the Java API that is experimental (`@Experimental` in QD, and the
- *  transaction models taken from the experimental Java API), and the functions of the advanced headers: the
- *  `dxfg_v4_*.h` headers that dxfg_v4_api.h does not include, each one included on its own. The twins came out in
- *  3.12.0, before the tiers, and are experimental since 3.13.0; their older functions stay until 4.0.0, as the other
- *  deprecated functions do, and their deprecation messages say that the replacement is experimental. An advanced header
- *  may include the basic headers, never the other way round. The experimental event types say so in their descriptions;
- *  their structures are delivered as the other events are. Every declaration added after 3.12.0 names the release that
- *  added it (`@since`).
+ *  The experimental functions are the ones whose shape is not settled yet (the feed filters, the ready signal of an
+ *  event queue, the event peek of the time series model, the listener of the message connectors and the last connection
+ *  errors), and the functions of the advanced headers: the `dxfg_v4_*.h` headers that dxfg_v4_api.h does not include,
+ *  each one included on its own. An advanced header may include the basic headers, never the other way round. Every
+ *  declaration added after 3.12.0 names the release that added it (`@since`).
+ *
+ *  A stable function may call a Java member that is `@Experimental` in QD (`IndexedEventTxModel`,
+ *  `SubscriptionController`, `DXFeedSubscription.getSubscriptionController()` and `getTotalDroppedEvents()`, the Nuam
+ *  and `OrderImbalance` events). A change of the Java member does not reach the C function. If the member is removed
+ *  without a replacement, the function stays: its body is replaced by one that fails with
+ *  `UnsupportedOperationException`, and the function is deprecated and removed only in a major release. The layout of
+ *  a stable event structure does not change. These twins and the ones of the transaction models (`IndexedTxModel`,
+ *  `TimeSeriesTxModel`, part of the SDK) were experimental from 3.13.0 to 3.18.0 and are stable now.
  *
  *  The older and the v4 functions can be mixed on the same objects: a handle, a string or a list that one of them
  *  returned can be passed to the other one and released by the release function of either.

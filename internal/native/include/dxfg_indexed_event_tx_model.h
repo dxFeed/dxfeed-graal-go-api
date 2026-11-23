@@ -78,7 +78,7 @@ typedef void (*dxfg_IndexedEventTxModel_Listener_eventsReceived_f)(graal_isolate
 /**
  * Factory method to create a new builder for this model.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_newBuilder() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_newBuilder().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] eventType The type of indexed events processed by the model.
@@ -87,14 +87,14 @@ typedef void (*dxfg_IndexedEventTxModel_Listener_eventsReceived_f)(graal_isolate
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  * Use dxfg_JavaObjectHandler_release() to free the builder handle.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_newBuilder() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_newBuilder()")
 int32_t dxfg_IndexedEventTxModel_newBuilder(graal_isolatethread_t *thread, dxfg_event_clazz_t eventType,
                                             DXFG_OUT dxfg_indexed_event_tx_model_builder_t **builder);
 
 /**
  * Returns the indexed event subscription symbol associated with this model.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_getIndexedEventSubscriptionSymbol() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_getIndexedEventSubscriptionSymbol().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] model The current model.
@@ -103,7 +103,7 @@ int32_t dxfg_IndexedEventTxModel_newBuilder(graal_isolatethread_t *thread, dxfg_
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  * Use dxfg_Symbol_release() to free the symbol.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_getIndexedEventSubscriptionSymbol() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_getIndexedEventSubscriptionSymbol()")
 int32_t dxfg_IndexedEventTxModel_getIndexedEventSubscriptionSymbol(graal_isolatethread_t *thread,
                                                                    dxfg_indexed_event_tx_model_t *model,
                                                                    DXFG_OUT dxfg_symbol_t **symbol);
@@ -111,7 +111,7 @@ int32_t dxfg_IndexedEventTxModel_getIndexedEventSubscriptionSymbol(graal_isolate
 /**
  * Returns the symbol associated with this model.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_getSymbol() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_getSymbol().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] model The current model.
@@ -120,14 +120,14 @@ int32_t dxfg_IndexedEventTxModel_getIndexedEventSubscriptionSymbol(graal_isolate
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  * Use dxfg_String_release() to free the symbol.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_getSymbol() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_getSymbol()")
 int32_t dxfg_IndexedEventTxModel_getSymbol(graal_isolatethread_t *thread, dxfg_indexed_event_tx_model_t *model,
                                            DXFG_OUT const char **symbol);
 
 /**
  * Returns the source associated with this model.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_getSource() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_getSource().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] model The current model.
@@ -136,14 +136,14 @@ int32_t dxfg_IndexedEventTxModel_getSymbol(graal_isolatethread_t *thread, dxfg_i
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  * Use dxfg_IndexedEventSource_release() to free the source.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_getSource() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_getSource()")
 int32_t dxfg_IndexedEventTxModel_getSource(graal_isolatethread_t *thread, dxfg_indexed_event_tx_model_t *model,
                                            DXFG_OUT dxfg_indexed_event_source_t **source);
 
 /**
  * Returns the subscription controller for the underlying subscription.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_getSubscriptionController() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_getSubscriptionController().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] model The current model.
@@ -152,7 +152,7 @@ int32_t dxfg_IndexedEventTxModel_getSource(graal_isolatethread_t *thread, dxfg_i
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  * Use dxfg_JavaObjectHandler_release() to free the SubscriptionController handle.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_getSubscriptionController() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_getSubscriptionController()")
 int32_t
 dxfg_IndexedEventTxModel_getSubscriptionController(graal_isolatethread_t *thread, dxfg_indexed_event_tx_model_t *model,
                                                    DXFG_OUT dxfg_subscription_controller_t **subscriptionController);
@@ -160,7 +160,7 @@ dxfg_IndexedEventTxModel_getSubscriptionController(graal_isolatethread_t *thread
 /**
  * Returns whether this model is closed.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_isClosed() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_isClosed().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] model The current model.
@@ -168,27 +168,27 @@ dxfg_IndexedEventTxModel_getSubscriptionController(graal_isolatethread_t *thread
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_isClosed() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_isClosed()")
 int32_t dxfg_IndexedEventTxModel_isClosed(graal_isolatethread_t *thread, dxfg_indexed_event_tx_model_t *model,
                                           DXFG_OUT int32_t *isClosed);
 
 /**
  * Closes this model: it is detached from the feed for good and stops the notifications.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_close() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_close().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] model The current model.
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_close() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_close()")
 int32_t dxfg_IndexedEventTxModel_close(graal_isolatethread_t *thread, dxfg_indexed_event_tx_model_t *model);
 
 /**
  * Constructs a new builder for the specified event type.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_new() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_new().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] eventType The type of indexed events processed by the model.
@@ -197,7 +197,7 @@ int32_t dxfg_IndexedEventTxModel_close(graal_isolatethread_t *thread, dxfg_index
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  * Use dxfg_JavaObjectHandler_release() to free the builder handle.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_new() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_new()")
 int32_t dxfg_IndexedEventTxModel_Builder_new(graal_isolatethread_t *thread, dxfg_event_clazz_t eventType,
                                              DXFG_OUT dxfg_indexed_event_tx_model_builder_t **builder);
 
@@ -207,7 +207,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_new(graal_isolatethread_t *thread, dxfg
  * The feed can also be attached later, after the model has been built using the
  * @ref dxfg_IndexedEventTxModel_getSubscriptionController() "subscription controller".
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withFeed() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withFeed().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] builder The current builder.
@@ -215,7 +215,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_new(graal_isolatethread_t *thread, dxfg
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withFeed() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withFeed()")
 int32_t dxfg_IndexedEventTxModel_Builder_withFeed(graal_isolatethread_t *thread,
                                                   dxfg_indexed_event_tx_model_builder_t *builder, dxfg_feed_t *feed);
 
@@ -224,7 +224,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withFeed(graal_isolatethread_t *thread,
  *
  * This symbol and source cannot be added or changed after the model has been built.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withSymbol() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withSymbol().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] builder The current builder.
@@ -232,7 +232,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withFeed(graal_isolatethread_t *thread,
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withSymbol() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withSymbol()")
 int32_t dxfg_IndexedEventTxModel_Builder_withSymbol(graal_isolatethread_t *thread,
                                                     dxfg_indexed_event_tx_model_builder_t *builder,
                                                     dxfg_symbol_t *symbol);
@@ -242,7 +242,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withSymbol(graal_isolatethread_t *threa
  *
  * The symbol cannot be added or changed after the model has been built.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withStringSymbol() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withStringSymbol().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] builder The current builder.
@@ -250,7 +250,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withSymbol(graal_isolatethread_t *threa
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withStringSymbol() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withStringSymbol()")
 int32_t dxfg_IndexedEventTxModel_Builder_withSymbol2(graal_isolatethread_t *thread,
                                                      dxfg_indexed_event_tx_model_builder_t *builder,
                                                      const char *symbol);
@@ -260,7 +260,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withSymbol2(graal_isolatethread_t *thre
  *
  * The source cannot be added or changed after the model has been built.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withSource() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withSource().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] builder The current builder.
@@ -268,7 +268,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withSymbol2(graal_isolatethread_t *thre
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withSource() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withSource()")
 int32_t dxfg_IndexedEventTxModel_Builder_withSource(graal_isolatethread_t *thread,
                                                     dxfg_indexed_event_tx_model_builder_t *builder,
                                                     dxfg_indexed_event_source_t *source);
@@ -276,7 +276,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withSource(graal_isolatethread_t *threa
 /**
  * Creates a new listener for the model.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_Listener_new() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_Listener_new().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] eventsReceived The callback function pointer.
@@ -286,7 +286,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withSource(graal_isolatethread_t *threa
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  * Use dxfg_JavaObjectHandler_release() to free the listener handle.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Listener_new() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Listener_new()")
 int32_t dxfg_IndexedEventTxModel_Listener_new(graal_isolatethread_t *thread,
                                               dxfg_IndexedEventTxModel_Listener_eventsReceived_f eventsReceived,
                                               void *userData,
@@ -297,7 +297,7 @@ int32_t dxfg_IndexedEventTxModel_Listener_new(graal_isolatethread_t *thread,
  * The notification is invoked from a separate thread via the @ref dxfg_IndexedEventTxModel_Builder_withExecutor()
  * "executor". The listener cannot be added or changed after the model has been built.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withListener() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withListener().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] builder The current builder.
@@ -305,7 +305,7 @@ int32_t dxfg_IndexedEventTxModel_Listener_new(graal_isolatethread_t *thread,
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withListener() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withListener()")
 int32_t dxfg_IndexedEventTxModel_Builder_withListener(graal_isolatethread_t *thread,
                                                       dxfg_indexed_event_tx_model_builder_t *builder,
                                                       dxfg_indexed_event_tx_model_listener_t *listener);
@@ -316,7 +316,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withListener(graal_isolatethread_t *thr
  * This value can be changed later, after the model has been built using the
  * @ref dxfg_IndexedEventTxModel_getSubscriptionController() "subscription controller".
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withEventsBatchLimit() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withEventsBatchLimit().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] builder The current builder.
@@ -324,7 +324,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withListener(graal_isolatethread_t *thr
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withEventsBatchLimit() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withEventsBatchLimit()")
 int32_t dxfg_IndexedEventTxModel_Builder_withEventsBatchLimit(graal_isolatethread_t *thread,
                                                               dxfg_indexed_event_tx_model_builder_t *builder,
                                                               int32_t eventsBatchLimit);
@@ -335,7 +335,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withEventsBatchLimit(graal_isolatethrea
  * This value can be changed later, after the model has been built using the
  * @ref dxfg_IndexedEventTxModel_getSubscriptionController() "subscription controller".
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withAggregationPeriod() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withAggregationPeriod().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] builder The current builder.
@@ -343,7 +343,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withEventsBatchLimit(graal_isolatethrea
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withAggregationPeriod() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withAggregationPeriod()")
 int32_t dxfg_IndexedEventTxModel_Builder_withAggregationPeriod(graal_isolatethread_t *thread,
                                                                dxfg_indexed_event_tx_model_builder_t *builder,
                                                                dxfg_time_period_t *aggregationPeriod);
@@ -354,7 +354,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withAggregationPeriod(graal_isolatethre
  * This value can be changed later, after the model has been built using the
  * @ref dxfg_IndexedEventTxModel_getSubscriptionController() "subscription controller".
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withAggregationPeriodMillis() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withAggregationPeriodMillis().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] builder The current builder.
@@ -362,7 +362,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withAggregationPeriod(graal_isolatethre
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withAggregationPeriodMillis() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withAggregationPeriodMillis()")
 int32_t dxfg_IndexedEventTxModel_Builder_withAggregationPeriodMillis(graal_isolatethread_t *thread,
                                                                      dxfg_indexed_event_tx_model_builder_t *builder,
                                                                      int64_t aggregationPeriod);
@@ -373,7 +373,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withAggregationPeriodMillis(graal_isola
  * This executor can be changed later, after the model has been built using the
  * @ref dxfg_IndexedEventTxModel_getSubscriptionController() "subscription controller".
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withExecutor() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_withExecutor().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] builder The current builder.
@@ -381,7 +381,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withAggregationPeriodMillis(graal_isola
  * @return #DXFG_EXECUTE_SUCCESSFULLY (0) on successful function execution or #DXFG_EXECUTE_FAIL (-1) on error. Use
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withExecutor() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_withExecutor()")
 int32_t dxfg_IndexedEventTxModel_Builder_withExecutor(graal_isolatethread_t *thread,
                                                       dxfg_indexed_event_tx_model_builder_t *builder,
                                                       dxfg_executor_t *executor);
@@ -389,7 +389,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withExecutor(graal_isolatethread_t *thr
 /**
  * Builds a new instance of dxfg_indexed_event_tx_model_t with the provided configuration.
  *
- * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_build() (experimental).
+ * @deprecated Use dxfg_v4_IndexedEventTxModel_Builder_build().
  *
  * @param[in] thread The current GraalVM Isolate's thread.
  * @param[in] builder The current builder.
@@ -398,7 +398,7 @@ int32_t dxfg_IndexedEventTxModel_Builder_withExecutor(graal_isolatethread_t *thr
  * dxfg_get_and_clear_thread_exception_t() to determine if an exception was thrown.
  * Use dxfg_JavaObjectHandler_release() to free the model handle.
  */
-DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_build() (experimental)")
+DXFG_DEPRECATED("use dxfg_v4_IndexedEventTxModel_Builder_build()")
 int32_t dxfg_IndexedEventTxModel_Builder_build(graal_isolatethread_t *thread,
                                                dxfg_indexed_event_tx_model_builder_t *builder,
                                                DXFG_OUT dxfg_indexed_event_tx_model_t **model);
