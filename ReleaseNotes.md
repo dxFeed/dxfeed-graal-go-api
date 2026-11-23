@@ -5,6 +5,38 @@ Each version lists one item per Jira ticket. Changes merged since the last relea
 
 Versions before v0.4.0 were tagged without the `v` prefix, so Go tools see them only as pseudo-versions.
 
+## v1.1.0
+
+* **\[MDAPI-625]\[GO]** `tools nettest` follows the NetTest specification `nettest/1` more closely.
+  * A consumer that listens on a port no longer stops with `no_data` while no peer is connected: the time without
+    data counts only with open connections, as the `connections` field of the statistics lines shows them.
+  * Without `-r`, the metrics have no sample of `nettest_schedule_slip_seconds`, only its family.
+  * In the summary file, `schedule_slip.max_ns` leaves out the warm-up when a measured interval exists, and
+    `growth_ns_per_s` is truncated as in the other NetTest tools; `runtime.gc_count` and `runtime.gc_time_ms` are the
+    growth over the run, and `runtime.cpu_percent_mean` is the mean from the start of the instances.
+  * `-r` below 1 or above `1000G` is an error with the text of the other NetTest tools.
+  * The event times and the e2e lag have the nanosecond resolution on Windows too: the event time is the wall-clock
+    time at the start plus the monotonic time since then.
+  * `-Ddxscheme.nanoTime` is on for `true` in any case, as in Java.
+  * An option that takes a value takes the next argument whatever it is, as in the other NetTest tools: `-n --help`
+    names the run `--help`; a help option anywhere else prints the usage, even after an invalid argument.
+  * The `no_data` error gives its limit in milliseconds, as the other NetTest tools do.
+  * A signal while the symbols are read ends the run with the summary `stopped_by_signal` and without the endpoints;
+    a second signal ends the process at once, with the exit code 128 plus the signal number.
+  * A run shorter than the period prints its last block, counted from the start, when it lasts at least one second.
+* **\[MDAPI-630]\[GO]** dxFeed Graal Native SDK updated to 3.19.0, the minimum version of the native library now.
+  * A library of SDK 3.18 is refused at start-up: install the new one with
+    `go run github.com/dxfeed/dxfeed-graal-go-api/cmd/install-sdk` and point `CGO_LDFLAGS` and the run-time library
+    path to its directory (the directory name holds the SDK version).
+  * `api.GetBuildInfo()` tells how the library was built and what runs it: the QDS version, the vendor and version of
+    the runtime, the target machine of the build and the garbage collectors, as text for display and records. It
+    returns an error that wraps `api.ErrBuildInfoUnsupported` when the library does not give them.
+  * `tools nettest` writes them to `tool.qd_version` and `tool.build` of its summary file, which were `null`, and
+    passes the CLI vectors of the NetTest kit of SDK 3.19.0.
+  * The SDK migrated to QDS 3.358. Closing an endpoint built with an executor of `api.NewInPlaceExecutor()`
+    with `CloseAndAwaitTermination` no longer waits forever for the tasks nobody runs: the call runs them
+    while it waits, so the listeners of that endpoint may be called on the closing goroutine.
+
 ## v1.0.0
 
 * **\[MDAPI-559]\[GO]** The tools take the options of the tools of the dxFeed C++ API.
