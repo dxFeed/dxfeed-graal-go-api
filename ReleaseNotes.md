@@ -5,6 +5,11 @@ Each version lists one item per Jira ticket. Changes merged since the last relea
 
 Versions before v0.4.0 were tagged without the `v` prefix, so Go tools see them only as pseudo-versions.
 
+## v1.1.1
+
+* **\[MDAPI-634]\[GO]** `tools connect -t` and `tools dump -t` write the tape without `-p dxfeed.wildcard.enable=true`,
+  as the tools of the dxFeed C++ API do; `-p dxfeed.wildcard.enable=false` still turns the wildcard off.
+
 ## v1.1.0
 
 * **\[MDAPI-625]\[GO]** `tools nettest` follows the NetTest specification `nettest/1` more closely.
