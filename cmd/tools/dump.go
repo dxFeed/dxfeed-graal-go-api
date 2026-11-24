@@ -92,7 +92,14 @@ type tapeWriter struct {
 }
 
 func newTapeWriter(file string, properties map[string]string) (*tapeWriter, error) {
-	endpoint, err := newEndpoint(api.StreamPublisher, properties)
+	// The tape connector receives the events only with the wildcard subscription, so the wildcard is on unless -p
+	// turns it off, as in the tools of the C++ API: this endpoint takes only these properties, not the system property
+	// of the tools.
+	tapeProperties := map[string]string{"dxfeed.wildcard.enable": "true"}
+	for key, value := range properties {
+		tapeProperties[key] = value
+	}
+	endpoint, err := newEndpoint(api.StreamPublisher, tapeProperties)
 	if err != nil {
 		return nil, err
 	}
