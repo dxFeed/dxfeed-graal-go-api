@@ -8,6 +8,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -178,6 +179,34 @@ func TestQds(t *testing.T) {
 		if status != test.status || !strings.Contains(out, test.want) {
 			t.Errorf("tools %s: status %d, want %d and %q:\n%s", test.args, status, test.status, test.want, out)
 		}
+	}
+}
+
+// TestDumpTape checks that -t writes the events to the tape without dxfeed.wildcard.enable in -p, also with another
+// -p property, and writes none with -p dxfeed.wildcard.enable=false.
+func TestDumpTape(t *testing.T) {
+	const in = "../samples/convert-tape-file/ConvertTapeFile.in[speed=max]"
+	for _, test := range []struct {
+		name, properties string
+		events           bool
+	}{
+		{"default", "", true},
+		{"other property", " -p dxfeed.aggregationPeriod=0s", true},
+		{"wildcard off", " -p dxfeed.wildcard.enable=false", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			out := filepath.ToSlash(filepath.Join(t.TempDir(), "out.txt"))
+			args := "dump " + in + " Quote AAPL -q -t " + out + "[format=text]" + test.properties
+			status, output := runTools(t, args)
+			if status != 0 {
+				t.Fatalf("tools %s: status %d, want 0:\n%s", args, status, output)
+			}
+			tape, _ := os.ReadFile(out)
+			if events := strings.Count(string(tape), "\nQuote\tAAPL\t"); (events > 0) != test.events {
+				t.Errorf("tools %s: got %d Quote events in the tape, want events: %v:\n%s", args, events, test.events,
+					output)
+			}
+		})
 	}
 }
 
