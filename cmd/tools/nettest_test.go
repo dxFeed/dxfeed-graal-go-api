@@ -430,6 +430,21 @@ func TestNetTestNanoTime(t *testing.T) {
 	}
 }
 
+// TestWallNanosResolution checks that the event clock has the sub-millisecond resolution: time.Now() on Windows
+// steps by up to 1 ms, so 100 steps would take at least 50 ms and millions of reads.
+func TestWallNanosResolution(t *testing.T) {
+	const steps, maxReads = 100, 100_000
+	last, changes := wallNanos(), 0
+	for reads := 0; changes < steps; reads++ {
+		if reads == maxReads {
+			t.Fatalf("the event clock changed %d times in %d reads, want %d", changes, maxReads, steps)
+		}
+		if now := wallNanos(); now != last {
+			last, changes = now, changes+1
+		}
+	}
+}
+
 func TestNextTick(t *testing.T) {
 	for _, test := range []struct {
 		now    int64

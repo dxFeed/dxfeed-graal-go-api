@@ -347,8 +347,9 @@ the feed. Each release has them built as archives on the
   `--summary <file>` writes a JSON summary of the run and `--metrics-port [<host>:]<port>` serves the metrics in the
   Prometheus text format. Differences from the specification:
   * the optional `-X<option>`, `-XX:<option>` and `--legacy` are not supported and exit with the status 2;
-  * the event time is the wall-clock time at the start plus the monotonic time since then, as the specification
-    allows for .NET, not `time.Now()`, which steps by about 0.5 ms on Windows
+  * on Windows the event time is read from `GetSystemTimePreciseAsFileTime`, as in the C++ and Rust tools, not as
+    the wall-clock time at the start plus the monotonic time since then, as the specification prescribes: that clock
+    starts up to 1 ms behind the system time and drifts from it by tens of microseconds a second
 * [qds](cmd/tools/qds.go)
   runs the QDS tools of the SDK with their command line in one argument, such as
   `tools qds "connect demo.dxfeed.com:7300 Quote AAPL -stat 5s"`; without arguments it lists them
