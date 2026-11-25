@@ -20,18 +20,18 @@ import (
 type NuamOrderMapper struct{}
 
 // CEvent makes a native event from the Go event.
-func (NuamOrderMapper) CEvent(event interface{}) unsafe.Pointer {
+func (NuamOrderMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*order.NuamOrder)
-	n := (*C.dxfg_v4_nuam_order_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_nuam_order_t{})))
-	orderToC(&n.order_base, &e.Order, C.DXFG_EVENT_NUAM_ORDER)
+	n := (*C.dxfg_v4_nuam_order_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_nuam_order_t{})))
+	orderToC(a, &n.order_base, &e.Order, C.DXFG_EVENT_NUAM_ORDER)
 	n.actor_id = C.int32_t(e.ActorId())
 	n.participant_id = C.int32_t(e.ParticipantId())
 	n.submitter_id = C.int32_t(e.SubmitterId())
 	n.on_behalf_of_submitter_id = C.int32_t(e.OnBehalfOfSubmitterId())
-	n.client_order_id = cStringOrNil(e.ClientOrderId())
-	n.customer_account = cStringOrNil(e.CustomerAccount())
-	n.customer_info = cStringOrNil(e.CustomerInfo())
-	n.exchange_info = cStringOrNil(e.ExchangeInfo())
+	n.client_order_id = a.cStringOrNil(e.ClientOrderId())
+	n.customer_account = a.cStringOrNil(e.CustomerAccount())
+	n.customer_info = a.cStringOrNil(e.CustomerInfo())
+	n.exchange_info = a.cStringOrNil(e.ExchangeInfo())
 	n.time_in_force_data = C.int32_t(e.TimeInForceData())
 	n.trigger_order_book_id = C.int32_t(e.TriggerOrderBookId())
 	n.trigger_price = C.double(e.TriggerPrice())
@@ -86,10 +86,10 @@ func (NuamOrderMapper) FreeCEvent(event unsafe.Pointer) {
 type NuamTimeAndSaleMapper struct{}
 
 // CEvent makes a native event from the Go event.
-func (NuamTimeAndSaleMapper) CEvent(event interface{}) unsafe.Pointer {
+func (NuamTimeAndSaleMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*timeandsale.NuamTimeAndSale)
-	n := (*C.dxfg_v4_nuam_time_and_sale_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_nuam_time_and_sale_t{})))
-	timeAndSaleToC(&n.time_and_sale_base, &e.TimeAndSale, C.DXFG_EVENT_NUAM_TIME_AND_SALE)
+	n := (*C.dxfg_v4_nuam_time_and_sale_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_nuam_time_and_sale_t{})))
+	timeAndSaleToC(a, &n.time_and_sale_base, &e.TimeAndSale, C.DXFG_EVENT_NUAM_TIME_AND_SALE)
 	n.match_id = C.int64_t(e.MatchId())
 	return unsafe.Pointer(n)
 }
@@ -113,10 +113,10 @@ func (NuamTimeAndSaleMapper) FreeCEvent(event unsafe.Pointer) {
 type NuamTradeMapper struct{}
 
 // CEvent makes a native event from the Go event.
-func (NuamTradeMapper) CEvent(event interface{}) unsafe.Pointer {
+func (NuamTradeMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*trade.NuamTrade)
-	n := (*C.dxfg_v4_nuam_trade_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_nuam_trade_t{})))
-	tradeToC(&n.trade_base.trade_base, &e.TradeBase, C.DXFG_EVENT_NUAM_TRADE)
+	n := (*C.dxfg_v4_nuam_trade_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_nuam_trade_t{})))
+	tradeToC(a, &n.trade_base.trade_base, &e.TradeBase, C.DXFG_EVENT_NUAM_TRADE)
 	n.trade_stat_time = C.int64_t(e.TradeStatTime())
 	n.last_significant_price = C.double(e.LastSignificantPrice())
 	n.last_price_for_all = C.double(e.LastPriceForAll())

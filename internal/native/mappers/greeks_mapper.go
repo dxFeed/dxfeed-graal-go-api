@@ -15,11 +15,11 @@ import (
 
 type GreeksMapper struct{}
 
-func (m GreeksMapper) CEvent(event interface{}) unsafe.Pointer {
+func (m GreeksMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	g := event.(*greeks.Greeks)
-	n := (*C.dxfg_v4_greeks_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_greeks_t{})))
+	n := (*C.dxfg_v4_greeks_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_greeks_t{})))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_GREEKS
-	n.market_event.event_symbol = cString(*g.EventSymbol())
+	n.market_event.event_symbol = a.cString(*g.EventSymbol())
 	n.market_event.event_time = C.int64_t(g.EventTime())
 	n.event_flags = C.int32_t(g.EventFlags())
 	n.index = C.int64_t(g.Index())

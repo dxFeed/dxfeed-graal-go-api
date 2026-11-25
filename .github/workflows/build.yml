@@ -164,6 +164,10 @@ jobs:
       - name: Test
         run: go test -v ./...
 
+      # A fixed number of iterations: the benchmarks must run, their times on shared runners are only for reference.
+      - name: Benchmarks
+        run: go test -run '^$' -bench . -benchtime 200x -benchmem ./...
+
       # Many goroutines calling the API at once attach their OS threads to the isolate; each run is a new process, so
       # that every run attaches its threads anew. Attaching and detaching on every call used to hang here on Linux.
       - name: Concurrent calls in new processes

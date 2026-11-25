@@ -21,11 +21,11 @@ import (
 type OptionSaleMapper struct{}
 
 // CEvent makes a native event from the Go event.
-func (OptionSaleMapper) CEvent(event interface{}) unsafe.Pointer {
+func (OptionSaleMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*optionsale.OptionSale)
-	n := (*C.dxfg_v4_option_sale_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_option_sale_t{})))
+	n := (*C.dxfg_v4_option_sale_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_option_sale_t{})))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_OPTION_SALE
-	n.market_event.event_symbol = cString(*e.EventSymbol())
+	n.market_event.event_symbol = a.cString(*e.EventSymbol())
 	n.market_event.event_time = C.int64_t(e.EventTime())
 	n.event_flags = C.int32_t(e.EventFlags())
 	n.index = C.int64_t(e.Index())
@@ -36,12 +36,12 @@ func (OptionSaleMapper) CEvent(event interface{}) unsafe.Pointer {
 	n.size = C.double(e.Size())
 	n.bid_price = C.double(e.BidPrice())
 	n.ask_price = C.double(e.AskPrice())
-	n.exchange_sale_conditions = cStringOrNil(e.ExchangeSaleConditions())
+	n.exchange_sale_conditions = a.cStringOrNil(e.ExchangeSaleConditions())
 	n.flags = C.int32_t(e.Flags())
 	n.underlying_price = C.double(e.UnderlyingPrice())
 	n.volatility = C.double(e.Volatility())
 	n.delta = C.double(e.Delta())
-	n.option_symbol = cStringOrNil(e.OptionSymbol())
+	n.option_symbol = a.cStringOrNil(e.OptionSymbol())
 	return unsafe.Pointer(n)
 }
 
@@ -81,11 +81,11 @@ func (OptionSaleMapper) FreeCEvent(event unsafe.Pointer) {
 type MarketMakerMapper struct{}
 
 // CEvent makes a native event from the Go event.
-func (MarketMakerMapper) CEvent(event interface{}) unsafe.Pointer {
+func (MarketMakerMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*marketmaker.MarketMaker)
-	n := (*C.dxfg_v4_market_maker_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_market_maker_t{})))
+	n := (*C.dxfg_v4_market_maker_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_market_maker_t{})))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_MARKET_MAKER
-	n.market_event.event_symbol = cString(*e.EventSymbol())
+	n.market_event.event_symbol = a.cString(*e.EventSymbol())
 	n.market_event.event_time = C.int64_t(e.EventTime())
 	n.event_flags = C.int32_t(e.EventFlags())
 	n.index = C.int64_t(e.Index())
@@ -129,10 +129,10 @@ func (MarketMakerMapper) FreeCEvent(event unsafe.Pointer) {
 type OtcMarketsOrderMapper struct{}
 
 // CEvent makes a native event from the Go event.
-func (OtcMarketsOrderMapper) CEvent(event interface{}) unsafe.Pointer {
+func (OtcMarketsOrderMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*order.OtcMarketsOrder)
-	n := (*C.dxfg_v4_otc_markets_order_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_otc_markets_order_t{})))
-	orderToC(&n.order_base, &e.Order, C.DXFG_EVENT_OTC_MARKETS_ORDER)
+	n := (*C.dxfg_v4_otc_markets_order_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_otc_markets_order_t{})))
+	orderToC(a, &n.order_base, &e.Order, C.DXFG_EVENT_OTC_MARKETS_ORDER)
 	n.quote_access_payment = C.int32_t(e.QuoteAccessPayment())
 	n.otc_markets_flags = C.int32_t(e.OtcMarketsFlags())
 	return unsafe.Pointer(n)
@@ -158,11 +158,11 @@ func (OtcMarketsOrderMapper) FreeCEvent(event unsafe.Pointer) {
 type OrderImbalanceMapper struct{}
 
 // CEvent makes a native event from the Go event.
-func (OrderImbalanceMapper) CEvent(event interface{}) unsafe.Pointer {
+func (OrderImbalanceMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*orderimbalance.OrderImbalance)
-	n := (*C.dxfg_v4_order_imbalance_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_order_imbalance_t{})))
+	n := (*C.dxfg_v4_order_imbalance_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_order_imbalance_t{})))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_ORDER_IMBALANCE
-	n.market_event.event_symbol = cString(*e.EventSymbol())
+	n.market_event.event_symbol = a.cString(*e.EventSymbol())
 	n.market_event.event_time = C.int64_t(e.EventTime())
 	n.source_id = C.int32_t(e.SourceId())
 	n.time_sequence = C.int64_t(e.TimeSequence())

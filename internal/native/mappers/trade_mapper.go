@@ -23,9 +23,9 @@ func (t TradeMapper) GoEvent(native unsafe.Pointer) interface{} {
 	return tradeEvent
 }
 
-func (t TradeMapper) CEvent(event interface{}) unsafe.Pointer {
-	q := (*C.dxfg_v4_trade_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_trade_t{})))
-	tradeToC(&q.trade_base, &event.(*trade.Trade).TradeBase, C.DXFG_EVENT_TRADE)
+func (t TradeMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
+	q := (*C.dxfg_v4_trade_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_trade_t{})))
+	tradeToC(a, &q.trade_base, &event.(*trade.Trade).TradeBase, C.DXFG_EVENT_TRADE)
 	return unsafe.Pointer(q)
 }
 
@@ -37,9 +37,9 @@ func (TradeMapper) FreeCEvent(event unsafe.Pointer) {
 }
 
 // tradeToC fills the native trade base with the fields of the Go trade base and sets its clazz.
-func tradeToC(q *C.dxfg_v4_trade_base_t, tradeEvent *trade.TradeBase, clazz C.dxfg_event_clazz_t) {
+func tradeToC(a *Allocator, q *C.dxfg_v4_trade_base_t, tradeEvent *trade.TradeBase, clazz C.dxfg_event_clazz_t) {
 	q.market_event.event_type.clazz = clazz
-	q.market_event.event_symbol = cString(*tradeEvent.EventSymbol())
+	q.market_event.event_symbol = a.cString(*tradeEvent.EventSymbol())
 	q.market_event.event_time = C.int64_t(tradeEvent.EventTime())
 	q.time_sequence = C.int64_t(tradeEvent.TimeSequence())
 	q.time_nano_part = C.int32_t(tradeEvent.TimeNanoPart())

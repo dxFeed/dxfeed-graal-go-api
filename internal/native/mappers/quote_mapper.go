@@ -16,12 +16,12 @@ import (
 type QuoteMapper struct {
 }
 
-func (m QuoteMapper) CEvent(event interface{}) unsafe.Pointer {
+func (m QuoteMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	quoteEvent := event.(*quote.Quote)
 
-	q := (*C.dxfg_v4_quote_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_quote_t{})))
+	q := (*C.dxfg_v4_quote_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_quote_t{})))
 	q.market_event.event_type.clazz = C.DXFG_EVENT_QUOTE
-	q.market_event.event_symbol = cString(*quoteEvent.EventSymbol())
+	q.market_event.event_symbol = a.cString(*quoteEvent.EventSymbol())
 	q.market_event.event_time = C.int64_t(quoteEvent.EventTime())
 	q.time_millis_sequence = C.int32_t(quoteEvent.TimeMillisSequence())
 	q.time_nano_part = C.int32_t(quoteEvent.TimeNanoPart())
@@ -39,7 +39,6 @@ func (m QuoteMapper) CEvent(event interface{}) unsafe.Pointer {
 func (m QuoteMapper) GoEvent(native unsafe.Pointer) interface{} {
 	quoteNative := (*C.dxfg_v4_quote_t)(native)
 	q := quote.NewQuote(C.GoString(quoteNative.market_event.event_symbol))
-	q.SetEventSymbol(C.GoString(quoteNative.market_event.event_symbol))
 	q.SetEventTime(int64(quoteNative.market_event.event_time))
 	q.SetTimeMillisSequence(int32(quoteNative.time_millis_sequence))
 	q.SetTimeNanoPart(int32(quoteNative.time_nano_part))

@@ -18,11 +18,11 @@ import (
 // SeriesMapper maps the Series event.
 type SeriesMapper struct{}
 
-func (SeriesMapper) CEvent(event interface{}) unsafe.Pointer {
+func (SeriesMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*series.Series)
-	n := (*C.dxfg_v4_series_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_series_t{})))
+	n := (*C.dxfg_v4_series_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_series_t{})))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_SERIES
-	n.market_event.event_symbol = cString(*e.EventSymbol())
+	n.market_event.event_symbol = a.cString(*e.EventSymbol())
 	n.market_event.event_time = C.int64_t(e.EventTime())
 	n.event_flags = C.int32_t(e.EventFlags())
 	n.index = C.int64_t(e.Index())
@@ -66,11 +66,11 @@ func (SeriesMapper) FreeCEvent(event unsafe.Pointer) {
 // TheoPriceMapper maps the TheoPrice event.
 type TheoPriceMapper struct{}
 
-func (TheoPriceMapper) CEvent(event interface{}) unsafe.Pointer {
+func (TheoPriceMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*theoprice.TheoPrice)
-	n := (*C.dxfg_v4_theo_price_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_theo_price_t{})))
+	n := (*C.dxfg_v4_theo_price_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_theo_price_t{})))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_THEO_PRICE
-	n.market_event.event_symbol = cString(*e.EventSymbol())
+	n.market_event.event_symbol = a.cString(*e.EventSymbol())
 	n.market_event.event_time = C.int64_t(e.EventTime())
 	n.event_flags = C.int32_t(e.EventFlags())
 	n.index = C.int64_t(e.Index())

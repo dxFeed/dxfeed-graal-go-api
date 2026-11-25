@@ -50,7 +50,7 @@ func (p *DXPublisherHandle) Publish(events []interface{}) error {
 		// The SDK copies the events; the caller keeps ownership of the list.
 		defer l.Free()
 		return checkStatus(thread, C.dxfg_v4_DXPublisher_publishEvents(thread.ptr, p.ptr(),
-			(*C.dxfg_v4_event_type_list)(unsafe.Pointer(l))))
+			(*C.dxfg_v4_event_type_list)(l.Ptr())))
 	})
 }
 

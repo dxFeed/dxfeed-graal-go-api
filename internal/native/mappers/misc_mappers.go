@@ -17,13 +17,13 @@ import (
 // MessageMapper maps the Message event; the native attachment is a C string, NULL for no attachment.
 type MessageMapper struct{}
 
-func (MessageMapper) CEvent(event interface{}) unsafe.Pointer {
+func (MessageMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*misc.Message)
-	n := (*C.dxfg_v4_message_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_message_t{})))
+	n := (*C.dxfg_v4_message_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_message_t{})))
 	n.event_type.clazz = C.DXFG_EVENT_MESSAGE
-	n.event_symbol = cString(*e.EventSymbol())
+	n.event_symbol = a.cString(*e.EventSymbol())
 	n.event_time = C.int64_t(e.EventTime())
-	n.attachment = unsafe.Pointer(cStringOrNil(e.Attachment()))
+	n.attachment = unsafe.Pointer(a.cStringOrNil(e.Attachment()))
 	return unsafe.Pointer(n)
 }
 
@@ -46,14 +46,14 @@ func (MessageMapper) FreeCEvent(event unsafe.Pointer) {
 // TextMessageMapper maps the TextMessage event.
 type TextMessageMapper struct{}
 
-func (TextMessageMapper) CEvent(event interface{}) unsafe.Pointer {
+func (TextMessageMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*misc.TextMessage)
-	n := (*C.dxfg_v4_text_message_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_text_message_t{})))
+	n := (*C.dxfg_v4_text_message_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_text_message_t{})))
 	n.event_type.clazz = C.DXFG_EVENT_TEXT_MESSAGE
-	n.event_symbol = cString(*e.EventSymbol())
+	n.event_symbol = a.cString(*e.EventSymbol())
 	n.event_time = C.int64_t(e.EventTime())
 	n.time_sequence = C.int64_t(e.TimeSequence())
-	n.text = cStringOrNil(e.Text())
+	n.text = a.cStringOrNil(e.Text())
 	return unsafe.Pointer(n)
 }
 
@@ -77,14 +77,14 @@ func (TextMessageMapper) FreeCEvent(event unsafe.Pointer) {
 // ConfigurationMapper maps the Configuration event; the native attachment is a C string, NULL for no attachment.
 type ConfigurationMapper struct{}
 
-func (ConfigurationMapper) CEvent(event interface{}) unsafe.Pointer {
+func (ConfigurationMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*misc.Configuration)
-	n := (*C.dxfg_v4_configuration_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_configuration_t{})))
+	n := (*C.dxfg_v4_configuration_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_configuration_t{})))
 	n.event_type.clazz = C.DXFG_EVENT_CONFIGURATION
-	n.event_symbol = cString(*e.EventSymbol())
+	n.event_symbol = a.cString(*e.EventSymbol())
 	n.event_time = C.int64_t(e.EventTime())
 	n.version = C.int32_t(e.Version())
-	n.attachment = unsafe.Pointer(cStringOrNil(e.Attachment()))
+	n.attachment = unsafe.Pointer(a.cStringOrNil(e.Attachment()))
 	return unsafe.Pointer(n)
 }
 
@@ -108,15 +108,15 @@ func (ConfigurationMapper) FreeCEvent(event unsafe.Pointer) {
 // TextConfigurationMapper maps the TextConfiguration event.
 type TextConfigurationMapper struct{}
 
-func (TextConfigurationMapper) CEvent(event interface{}) unsafe.Pointer {
+func (TextConfigurationMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	e := event.(*misc.TextConfiguration)
-	n := (*C.dxfg_v4_text_configuration_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_text_configuration_t{})))
+	n := (*C.dxfg_v4_text_configuration_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_text_configuration_t{})))
 	n.event_type.clazz = C.DXFG_EVENT_TEXT_CONFIGURATION
-	n.event_symbol = cString(*e.EventSymbol())
+	n.event_symbol = a.cString(*e.EventSymbol())
 	n.event_time = C.int64_t(e.EventTime())
 	n.time_sequence = C.int64_t(e.TimeSequence())
 	n.version = C.int32_t(e.Version())
-	n.text = cStringOrNil(e.Text())
+	n.text = a.cStringOrNil(e.Text())
 	return unsafe.Pointer(n)
 }
 

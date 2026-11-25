@@ -33,11 +33,11 @@ func (t TradeETHMapper) GoEvent(native unsafe.Pointer) interface{} {
 	return tradeEvent
 }
 
-func (t TradeETHMapper) CEvent(event interface{}) unsafe.Pointer {
+func (t TradeETHMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	tradeEvent := event.(*trade.TradeETH)
-	q := (*C.dxfg_v4_trade_eth_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_trade_eth_t{})))
+	q := (*C.dxfg_v4_trade_eth_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_trade_eth_t{})))
 	q.trade_base.market_event.event_type.clazz = C.DXFG_EVENT_TRADE_ETH
-	q.trade_base.market_event.event_symbol = cString(*tradeEvent.EventSymbol())
+	q.trade_base.market_event.event_symbol = a.cString(*tradeEvent.EventSymbol())
 	q.trade_base.market_event.event_time = C.int64_t(tradeEvent.EventTime())
 	q.trade_base.time_sequence = C.int64_t(tradeEvent.TimeSequence())
 	q.trade_base.time_nano_part = C.int32_t(tradeEvent.TimeNanoPart())

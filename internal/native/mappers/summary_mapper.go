@@ -16,12 +16,12 @@ import (
 
 type SummaryMapper struct{}
 
-func (m SummaryMapper) CEvent(event interface{}) unsafe.Pointer {
+func (m SummaryMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	s := event.(*summary.Summary)
 
-	n := (*C.dxfg_v4_summary_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_summary_t{})))
+	n := (*C.dxfg_v4_summary_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_summary_t{})))
 	n.market_event.event_type.clazz = C.DXFG_EVENT_SUMMARY
-	n.market_event.event_symbol = cString(*s.EventSymbol())
+	n.market_event.event_symbol = a.cString(*s.EventSymbol())
 	n.market_event.event_time = C.int64_t(s.EventTime())
 	n.day_id = C.int32_t(s.DayId())
 	n.day_open_price = C.double(s.DayOpenPrice())
