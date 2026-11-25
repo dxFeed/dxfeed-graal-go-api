@@ -18,27 +18,42 @@ type CMapper interface {
 	// Define methods that your C types must satisfy
 }
 
-type ListMapper[T CMapper] struct {
+// cList has the layout of the C list types: the size, then the elements.
+type cList[T CMapper] struct {
 	size     C.int32_t
 	elements **T
 }
 
-func NewListMapper[T CMapper, U comparable](elements []U) *ListMapper[T] {
-	size := len(elements)
-	e := (**T)(C.malloc(C.size_t(size) * C.size_t(unsafe.Sizeof((*int)(nil)))))
-	slice := unsafe.Slice(e, C.size_t(size))
-	for i, element := range elements {
-		slice[i] = allocElement[T, U](element, mappers.AvailableMappers())
-	}
-
-	return &ListMapper[T]{
-		elements: e,
-		size:     C.int32_t(size),
-	}
+// ListMapper is a C list of events. The list, its elements and the events with their strings are in the C memory of
+// one allocator, so a list costs a few cgo calls whatever its size.
+type ListMapper[T CMapper] struct {
+	list  *cList[T]
+	alloc mappers.Allocator
 }
 
-// allocElement maps an event to C memory; the callers check beforehand that every element is an event with a mapper.
-func allocElement[T CMapper, U comparable](element U, mappers map[int32]mappers.MapperInterface) *T {
+// eventSizeEstimate is the C memory that an event with its strings usually takes, for the first block of a list.
+const eventSizeEstimate = 256
+
+func NewListMapper[T CMapper, U comparable](elements []U) *ListMapper[T] {
+	l := &ListMapper[T]{}
+	l.alloc.Reserve(unsafe.Sizeof(cList[T]{}) + uintptr(len(elements))*(unsafe.Sizeof((*T)(nil))+eventSizeEstimate))
+	l.list = (*cList[T])(l.alloc.Calloc(unsafe.Sizeof(cList[T]{})))
+	l.list.size = C.int32_t(len(elements))
+	l.list.elements = (**T)(l.alloc.Calloc(uintptr(len(elements)) * unsafe.Sizeof((*T)(nil))))
+	slice := unsafe.Slice(l.list.elements, len(elements))
+	available := mappers.AvailableMappers()
+	for i, element := range elements {
+		slice[i] = allocElement[T, U](&l.alloc, element, available)
+	}
+	return l
+}
+
+// Ptr returns the C list; it is valid until Free.
+func (l *ListMapper[T]) Ptr() unsafe.Pointer { return unsafe.Pointer(l.list) }
+
+// allocElement maps an event to C memory of the allocator; the callers check beforehand that every element is an
+// event with a mapper.
+func allocElement[T CMapper, U comparable](a *mappers.Allocator, element U, mappers map[int32]mappers.MapperInterface) *T {
 	event, ok := any(element).(events.EventType)
 	if !ok {
 		return nil
@@ -47,25 +62,14 @@ func allocElement[T CMapper, U comparable](element U, mappers map[int32]mappers.
 	if mapper == nil {
 		return nil
 	}
-	return (*T)(mapper.CEvent(event))
+	return (*T)(mapper.CEvent(a, event))
 }
 
-// Free frees the events and the array of the list; the list must not be used after that.
+// Free frees the list with its events; the list must not be used after that.
 func (l *ListMapper[T]) Free() {
-	if l == nil || l.elements == nil {
+	if l == nil || l.list == nil {
 		return
 	}
-	available := mappers.AvailableMappers()
-	for _, element := range unsafe.Slice(l.elements, int(l.size)) {
-		if element == nil {
-			continue
-		}
-		event := (*C.dxfg_v4_event_type_t)(unsafe.Pointer(element))
-		if mapper := available[int32(event.clazz)]; mapper != nil {
-			mapper.FreeCEvent(unsafe.Pointer(element))
-		}
-	}
-	C.free(unsafe.Pointer(l.elements))
-	l.elements = nil
-	l.size = 0
+	l.list = nil
+	l.alloc.Free()
 }

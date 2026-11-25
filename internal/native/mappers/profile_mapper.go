@@ -16,17 +16,17 @@ import (
 type ProfileMapper struct {
 }
 
-func (m ProfileMapper) CEvent(event interface{}) unsafe.Pointer {
+func (m ProfileMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	profile := event.(*profile.Profile)
-	p := (*C.dxfg_v4_profile_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_profile_t{})))
+	p := (*C.dxfg_v4_profile_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_profile_t{})))
 	p.market_event.event_type.clazz = C.DXFG_EVENT_PROFILE
-	p.market_event.event_symbol = cString(*profile.EventSymbol())
+	p.market_event.event_symbol = a.cString(*profile.EventSymbol())
 	p.market_event.event_time = C.int64_t(profile.EventTime())
 	if profile.Description() != nil {
-		p.description = cString(*profile.Description())
+		p.description = a.cString(*profile.Description())
 	}
 	if profile.StatusReason() != nil {
-		p.status_reason = cString(*profile.StatusReason())
+		p.status_reason = a.cString(*profile.StatusReason())
 	}
 	p.halt_end_time = C.int64_t(profile.HaltEndTime())
 	p.halt_start_time = C.int64_t(profile.HaltStartTime())

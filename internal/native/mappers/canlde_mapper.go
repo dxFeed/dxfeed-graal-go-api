@@ -23,10 +23,10 @@ func (c CandleMapper) GoEvent(nativeEvent unsafe.Pointer) interface{} {
 	return e
 }
 
-func (c CandleMapper) CEvent(event interface{}) unsafe.Pointer {
-	n := (*C.dxfg_v4_candle_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_candle_t{})))
+func (c CandleMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
+	n := (*C.dxfg_v4_candle_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_candle_t{})))
 	n.event_type.clazz = C.DXFG_EVENT_CANDLE
-	candleToC(event.(*candle.Candle), n)
+	candleToC(a, event.(*candle.Candle), n)
 	return unsafe.Pointer(n)
 }
 
@@ -47,10 +47,10 @@ func (DailyCandleMapper) GoEvent(nativeEvent unsafe.Pointer) interface{} {
 	return e
 }
 
-func (DailyCandleMapper) CEvent(event interface{}) unsafe.Pointer {
-	n := (*C.dxfg_v4_daily_candle_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_daily_candle_t{})))
+func (DailyCandleMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
+	n := (*C.dxfg_v4_daily_candle_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_daily_candle_t{})))
 	n.candle.event_type.clazz = C.DXFG_EVENT_DAILY_CANDLE
-	candleToC(&event.(*candle.DailyCandle).Candle, &n.candle)
+	candleToC(a, &event.(*candle.DailyCandle).Candle, &n.candle)
 	return unsafe.Pointer(n)
 }
 
@@ -80,8 +80,8 @@ func candleFromC(e *candle.Candle, n *C.dxfg_v4_candle_t) {
 }
 
 // candleToC copies the fields of e to a native candle; the event symbol is allocated with cString.
-func candleToC(e *candle.Candle, n *C.dxfg_v4_candle_t) {
-	n.event_symbol = cString(e.EventSymbol().String())
+func candleToC(a *Allocator, e *candle.Candle, n *C.dxfg_v4_candle_t) {
+	n.event_symbol = a.cString(e.EventSymbol().String())
 	n.event_time = C.int64_t(e.EventTime())
 	n.event_flags = C.int32_t(e.EventFlags())
 	n.index = C.int64_t(e.Index())

@@ -6,6 +6,7 @@ package mappers_test
 import (
 	"fmt"
 	"testing"
+	"unsafe"
 
 	"github.com/dxfeed/dxfeed-graal-go-api/internal/native/mappers"
 	"github.com/dxfeed/dxfeed-graal-go-api/pkg/events"
@@ -107,7 +108,7 @@ func TestFreeCEventFreesAllAllocations(t *testing.T) {
 		}
 		covered[code] = true
 		before := mappers.LiveAllocations()
-		native := mapper.CEvent(event)
+		native := mapper.CEvent(nil, event)
 		if mappers.LiveAllocations() == before {
 			t.Errorf("%T: CEvent allocated nothing", event)
 		}
@@ -129,11 +130,70 @@ func TestMapperRoundTrip(t *testing.T) {
 	available := mappers.AvailableMappers()
 	for _, event := range eventsWithAllStrings() {
 		mapper := available[event.Type().NativeCode()]
-		native := mapper.CEvent(event)
+		native := mapper.CEvent(nil, event)
 		got := mapper.GoEvent(native)
 		mapper.FreeCEvent(native)
 		if fmt.Sprint(got) != fmt.Sprint(event) {
 			t.Errorf("%T changed in the round trip:\n got %v\nwant %v", event, got, event)
 		}
+	}
+}
+
+// TestAllocatorRoundTrip maps all events into one allocator, many times over so that it takes several blocks, and
+// checks that every event maps back unchanged, that the blocks are the only C allocations and that Free releases them.
+func TestAllocatorRoundTrip(t *testing.T) {
+	available := mappers.AvailableMappers()
+	all := eventsWithAllStrings()
+	var a mappers.Allocator
+	for round := 0; round < 2; round++ { // the allocator is reused after Free
+		before := mappers.LiveAllocations()
+		natives := make([]unsafe.Pointer, 0, 1000*len(all))
+		for i := 0; i < 1000; i++ {
+			for _, event := range all {
+				natives = append(natives, available[event.Type().NativeCode()].CEvent(&a, event))
+			}
+		}
+		// A block larger than the default one.
+		big := a.Calloc(1 << 20)
+		if b := unsafe.Slice((*byte)(big), 1<<20); b[0] != 0 || b[len(b)-1] != 0 {
+			t.Fatal("Calloc returned memory that is not zeroed")
+		}
+		blocks := mappers.LiveAllocations() - before
+		if blocks < 2 || blocks > int64(len(natives))/100 {
+			t.Errorf("%d C allocations for %d events, want a few blocks", blocks, len(natives))
+		}
+		for i, native := range natives {
+			event := all[i%len(all)]
+			if got := available[event.Type().NativeCode()].GoEvent(native); fmt.Sprint(got) != fmt.Sprint(event) {
+				t.Fatalf("%T changed in the round trip:\n got %v\nwant %v", event, got, event)
+			}
+		}
+		a.Free()
+		if after := mappers.LiveAllocations(); after != before {
+			t.Errorf("%d allocations left after Free", after-before)
+		}
+	}
+}
+
+// TestAllocatorReserve checks that Reserve sizes the first block only, and that every allocation is aligned.
+func TestAllocatorReserve(t *testing.T) {
+	var a mappers.Allocator
+	defer a.Free()
+	before := mappers.LiveAllocations()
+	a.Reserve(1) // the smallest block, 1 KiB
+	for _, size := range []uintptr{1, 17, 100, 500} {
+		if p := a.Calloc(size); uintptr(p)%16 != 0 {
+			t.Errorf("Calloc(%d) = %p, not aligned to 16 bytes", size, p)
+		}
+	}
+	if n := mappers.LiveAllocations() - before; n != 1 {
+		t.Fatalf("%d C allocations for 650 bytes after Reserve, want 1", n)
+	}
+	a.Calloc(1 << 10) // does not fit into the first block
+	for i := 0; i < 60; i++ {
+		a.Calloc(1 << 10) // fits into the second block, which takes the default size
+	}
+	if n := mappers.LiveAllocations() - before; n != 2 {
+		t.Errorf("%d C allocations, want 2: the reserved block and a default one", n)
 	}
 }

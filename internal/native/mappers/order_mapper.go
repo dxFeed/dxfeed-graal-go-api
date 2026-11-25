@@ -16,9 +16,9 @@ import (
 type OrderMapper struct {
 }
 
-func (m OrderMapper) CEvent(event interface{}) unsafe.Pointer {
-	q := (*C.dxfg_v4_order_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_order_t{})))
-	orderToC(q, event.(*order.Order), C.DXFG_EVENT_ORDER)
+func (m OrderMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
+	q := (*C.dxfg_v4_order_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_order_t{})))
+	orderToC(a, q, event.(*order.Order), C.DXFG_EVENT_ORDER)
 	return unsafe.Pointer(q)
 }
 
@@ -36,10 +36,10 @@ func (OrderMapper) FreeCEvent(event unsafe.Pointer) {
 }
 
 // orderToC fills the native order with the fields of the Go order and sets its clazz.
-func orderToC(q *C.dxfg_v4_order_t, orderEvent *order.Order, clazz C.dxfg_event_clazz_t) {
+func orderToC(a *Allocator, q *C.dxfg_v4_order_t, orderEvent *order.Order, clazz C.dxfg_event_clazz_t) {
 	q.order_base.market_event.event_type.clazz = clazz
 
-	q.order_base.market_event.event_symbol = cString(*orderEvent.EventSymbol())
+	q.order_base.market_event.event_symbol = a.cString(*orderEvent.EventSymbol())
 	q.order_base.market_event.event_time = C.int64_t(orderEvent.EventTime())
 
 	q.order_base.event_flags = C.int32_t(orderEvent.EventFlags())
@@ -58,7 +58,7 @@ func orderToC(q *C.dxfg_v4_order_t, orderEvent *order.Order, clazz C.dxfg_event_
 	q.order_base.trade_price = C.double(orderEvent.TradePrice())
 	q.order_base.trade_size = C.double(orderEvent.TradeSize())
 
-	q.market_maker = cStringOrNil(orderEvent.MarketMaker())
+	q.market_maker = a.cStringOrNil(orderEvent.MarketMaker())
 }
 
 // orderFromC fills the Go order with the fields of the native order, except the event symbol.

@@ -90,7 +90,7 @@ func (f *DXFeedHandle) GetLastEvent(event interface{}) (interface{}, error) {
 	mapper := mappers.AvailableMappers()[e.Type().NativeCode()]
 	var result interface{}
 	err := executeInIsolateThread(func(thread *isolateThread) error {
-		cEvent := mapper.CEvent(e)
+		cEvent := mapper.CEvent(nil, e)
 		// The SDK copies the event; the caller keeps its ownership.
 		defer mapper.FreeCEvent(cEvent)
 		var last *C.dxfg_v4_event_type_t
@@ -117,7 +117,7 @@ func (f *DXFeedHandle) GetLastEvents(events []interface{}) ([]interface{}, error
 		defer l.Free()
 		var last *C.dxfg_v4_event_type_list
 		if err := checkStatus(thread, C.dxfg_v4_DXFeed_getLastEvents(thread.ptr, f.ptr(),
-			(*C.dxfg_v4_event_type_list)(unsafe.Pointer(l)), &last)); err != nil {
+			(*C.dxfg_v4_event_type_list)(l.Ptr()), &last)); err != nil {
 			return err
 		}
 		var err error

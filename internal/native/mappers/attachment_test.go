@@ -18,7 +18,7 @@ func TestNullAttachment(t *testing.T) {
 	for _, event := range []events.EventType{misc.NewMessage("MESSAGE"), misc.NewConfiguration("CONFIGURATION")} {
 		mapper := available[event.Type().NativeCode()]
 		// An event without an attachment gives a native event whose attachment is NULL.
-		native := mapper.CEvent(event)
+		native := mapper.CEvent(nil, event)
 		back := mapper.GoEvent(native)
 		mapper.FreeCEvent(native)
 		var attachment *string

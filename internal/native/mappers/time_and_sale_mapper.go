@@ -25,16 +25,9 @@ func convertString(value *C.char) *string {
 	}
 }
 
-func CString(str *string) *C.char {
-	if str == nil {
-		return nil
-	}
-	return cString(*str)
-}
-
-func (ts TimeAndSaleMapper) CEvent(event interface{}) unsafe.Pointer {
-	t := (*C.dxfg_v4_time_and_sale_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_time_and_sale_t{})))
-	timeAndSaleToC(t, event.(*timeandsale.TimeAndSale), C.DXFG_EVENT_TIME_AND_SALE)
+func (ts TimeAndSaleMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
+	t := (*C.dxfg_v4_time_and_sale_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_time_and_sale_t{})))
+	timeAndSaleToC(a, t, event.(*timeandsale.TimeAndSale), C.DXFG_EVENT_TIME_AND_SALE)
 	return unsafe.Pointer(t)
 }
 
@@ -52,9 +45,9 @@ func (TimeAndSaleMapper) FreeCEvent(event unsafe.Pointer) {
 }
 
 // timeAndSaleToC fills the native time and sale with the fields of the Go event and sets its clazz.
-func timeAndSaleToC(t *C.dxfg_v4_time_and_sale_t, timeAndSale *timeandsale.TimeAndSale, clazz C.dxfg_event_clazz_t) {
+func timeAndSaleToC(a *Allocator, t *C.dxfg_v4_time_and_sale_t, timeAndSale *timeandsale.TimeAndSale, clazz C.dxfg_event_clazz_t) {
 	t.market_event.event_type.clazz = clazz
-	t.market_event.event_symbol = cString(*timeAndSale.EventSymbol())
+	t.market_event.event_symbol = a.cString(*timeAndSale.EventSymbol())
 	t.market_event.event_time = C.int64_t(timeAndSale.EventTime())
 	t.time_nano_part = C.int32_t(timeAndSale.TimeNanoPart())
 	t.exchange_code = C.int16_t(timeAndSale.ExchangeCode())
@@ -62,9 +55,9 @@ func timeAndSaleToC(t *C.dxfg_v4_time_and_sale_t, timeAndSale *timeandsale.TimeA
 	t.size = C.double(timeAndSale.Size())
 	t.bid_price = C.double(timeAndSale.BidPrice())
 	t.ask_price = C.double(timeAndSale.AskPrice())
-	t.exchange_sale_conditions = CString(timeAndSale.ExchangeSaleConditions())
-	t.buyer = CString(timeAndSale.Buyer())
-	t.seller = CString(timeAndSale.Seller())
+	t.exchange_sale_conditions = a.cStringOrNil(timeAndSale.ExchangeSaleConditions())
+	t.buyer = a.cStringOrNil(timeAndSale.Buyer())
+	t.seller = a.cStringOrNil(timeAndSale.Seller())
 	t.event_flags = C.int32_t(timeAndSale.EventFlags())
 	t.index = C.int64_t(timeAndSale.Index())
 	t.flags = C.int32_t(timeAndSale.Flags())

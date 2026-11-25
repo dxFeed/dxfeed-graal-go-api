@@ -412,7 +412,7 @@ func TestRemoveSymbolsStopsDelivery(t *testing.T) {
 }
 
 // newLocalHub returns the feed and the publisher of a local hub endpoint that is closed when the test ends.
-func newLocalHub(t *testing.T) (*DXFeed, *DXPublisher) {
+func newLocalHub(t testing.TB) (*DXFeed, *DXPublisher) {
 	t.Helper()
 	endpoint, err := NewEndpoint(LocalHub)
 	if err != nil {

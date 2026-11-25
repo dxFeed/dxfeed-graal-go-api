@@ -293,7 +293,7 @@ func ValidatePriceLevels(orders []interface{}, timeGapBound int64, printQuotes b
 			print = 1
 		}
 		return checkStatus(thread, C.dxfg_v4_PriceLevelChecker_validate(thread.ptr,
-			(*C.dxfg_v4_event_type_list)(unsafe.Pointer(l)), C.int64_t(timeGapBound), print, &valid))
+			(*C.dxfg_v4_event_type_list)(l.Ptr()), C.int64_t(timeGapBound), print, &valid))
 	})
 	return valid != 0, err
 }

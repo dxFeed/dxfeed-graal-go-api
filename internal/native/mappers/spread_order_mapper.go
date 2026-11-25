@@ -16,13 +16,13 @@ import (
 type SpreadOrderMapper struct {
 }
 
-func (m SpreadOrderMapper) CEvent(event interface{}) unsafe.Pointer {
+func (m SpreadOrderMapper) CEvent(a *Allocator, event interface{}) unsafe.Pointer {
 	orderEvent := event.(*order.SpreadOrder)
 
-	q := (*C.dxfg_v4_spread_order_t)(cCalloc(unsafe.Sizeof(C.dxfg_v4_spread_order_t{})))
+	q := (*C.dxfg_v4_spread_order_t)(a.calloc(unsafe.Sizeof(C.dxfg_v4_spread_order_t{})))
 	q.order_base.market_event.event_type.clazz = C.DXFG_EVENT_SPREAD_ORDER
 
-	q.order_base.market_event.event_symbol = cString(*orderEvent.EventSymbol())
+	q.order_base.market_event.event_symbol = a.cString(*orderEvent.EventSymbol())
 	q.order_base.market_event.event_time = C.int64_t(orderEvent.EventTime())
 
 	q.order_base.event_flags = C.int32_t(orderEvent.EventFlags())
@@ -42,7 +42,7 @@ func (m SpreadOrderMapper) CEvent(event interface{}) unsafe.Pointer {
 	q.order_base.trade_size = C.double(orderEvent.TradeSize())
 
 	if orderEvent.SpreadSymbol() != nil {
-		q.spread_symbol = cString(*orderEvent.SpreadSymbol())
+		q.spread_symbol = a.cString(*orderEvent.SpreadSymbol())
 	}
 
 	return unsafe.Pointer(q)
