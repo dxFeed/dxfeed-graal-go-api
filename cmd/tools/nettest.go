@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"net"
 	"os"
 	"os/signal"
 	"strconv"
@@ -251,14 +250,6 @@ func (r *netTestRun) run(nanoTime string) error {
 		r.metrics.Serve(r.scrape)
 		fmt.Printf("{*NetTestMetrics-%s*} %s\n", config.Name, r.metrics.URL())
 	}
-	if config.ServerAddress() {
-		// The SDK binds the port in the background and only logs a failure: check that the port is free first.
-		listener, err := net.Listen("tcp", config.Address)
-		if err != nil {
-			return fmt.Errorf("the address %s cannot be listened on: %w", config.Address, err)
-		}
-		_ = listener.Close()
-	}
 	for _, p := range config.Properties {
 		if err := api.SetSystemProperty(p.Key, p.Value); err != nil {
 			return fmt.Errorf("SetSystemProperty %s: %w", p.Key, err)
@@ -384,8 +375,8 @@ func (r *netTestRun) startConsumers(symbols []string) error {
 		}
 	}
 	for _, instance := range r.instances {
-		if err := instance.endpoint.Connect(r.config.Address); err != nil {
-			return fmt.Errorf("connect to %s: %w", r.config.Address, err)
+		if err := r.connect(instance); err != nil {
+			return err
 		}
 	}
 	r.workers.Add(1)
@@ -511,14 +502,53 @@ func (r *netTestRun) openConnections() int {
 	return count
 }
 
+// serverStartTimeout is how long the start waits for a server socket to bind, as in the NetTest tool of the SDK.
+const serverStartTimeout = 3 * time.Second
+
+// connect connects an instance to the address. A listen address may carry connector options, such as
+// ":7400[bindAddr=127.0.0.1]", and the SDK binds its port in the background and only logs a failure: the connector of a
+// bound server socket reports itself as connected within milliseconds, one that cannot bind (the port is taken) stays
+// connecting. So for a listen address it waits until every server socket connector is connected, at most
+// serverStartTimeout. A client address never waits: with no peer its connector stays connecting, which is normal.
+func (r *netTestRun) connect(instance *netTestInstance) error {
+	address := r.config.Address
+	if err := instance.endpoint.Connect(address); err != nil {
+		return fmt.Errorf("connect to %s: %w", address, err)
+	}
+	if !r.config.ServerAddress() {
+		return nil
+	}
+	deadline := time.Now().Add(serverStartTimeout)
+	for {
+		connectors, err := instance.endpoint.Connectors()
+		if err != nil {
+			return fmt.Errorf("the connectors of %s: %w", address, err)
+		}
+		pending := false
+		for _, connector := range connectors {
+			if connector.Kind == api.ServerSocketConnector && connector.State != api.ConnectorConnected {
+				pending = true
+			}
+		}
+		if !pending {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("the address %s cannot be listened on: the server socket did not start in %v "+
+				"(is the port already in use?)", address, serverStartTimeout)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
 // startProducers connects each instance and starts its publishing loop.
 func (r *netTestRun) startProducers(symbols []string) error {
 	if r.config.Rate > 0 {
 		r.schedule = nettest.NewSchedule(r.config.Rate, r.config.Batch)
 	}
 	for i, instance := range r.instances {
-		if err := instance.endpoint.Connect(r.config.Address); err != nil {
-			return fmt.Errorf("connect to %s: %w", r.config.Address, err)
+		if err := r.connect(instance); err != nil {
+			return err
 		}
 		publisher, err := instance.endpoint.GetPublisher()
 		if err != nil {

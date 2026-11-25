@@ -149,6 +149,36 @@ func TestNetTestPortInUse(t *testing.T) {
 	}
 }
 
+// TestNetTestListenOptions checks that a listen address with connector options starts and serves a consumer.
+func TestNetTestListenOptions(t *testing.T) {
+	port := freePort(t)
+	summary := filepath.Join(t.TempDir(), "c.json")
+	producer := startTools(t, "nettest p :"+port+"[bindAddr=127.0.0.1] -S 10 -r */1k --duration 6s")
+	time.Sleep(time.Second)
+	status, out := runTools(t, "nettest c 127.0.0.1:"+port+" -S 10 --duration 3s --summary "+summary)
+	if status != 0 {
+		t.Fatalf("consumer: status %d:\n%s", status, out)
+	}
+	if c := readSummary(t, summary); c["status"] != "ok" || c["symbols_seen"] != float64(10) {
+		t.Errorf("consumer summary: status %v, symbols_seen %v:\n%s", c["status"], c["symbols_seen"], out)
+	}
+	if status, out := producer(); status != 0 {
+		t.Errorf("producer: status %d:\n%s", status, out)
+	}
+	// A taken port still fails the start.
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = listener.Close() }()
+	taken := strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
+	status, out = runTools(t, "nettest p :"+taken+"[bindAddr=127.0.0.1] -S 10 --duration 2s")
+	if status != 1 || !strings.Contains(out, "Error during nettest: the address :"+taken+
+		"[bindAddr=127.0.0.1] cannot be listened on") {
+		t.Errorf("taken port: status %d, want 1:\n%s", status, out)
+	}
+}
+
 // TestNetTestShortRun checks that a run shorter than the period prints its last block, counted from the start, when
 // it lasts at least one second.
 func TestNetTestShortRun(t *testing.T) {
