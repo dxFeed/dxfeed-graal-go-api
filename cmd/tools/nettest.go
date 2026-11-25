@@ -185,10 +185,8 @@ func (r *netTestRun) watchSignals(signals <-chan os.Signal, done <-chan struct{}
 	}
 }
 
-// now returns the wall-clock time of the events: the start of the run plus the monotonic time since it. time.Now()
-// on Windows steps by about 0.5 ms, which would quantize the event times and the e2e lags; the monotonic clock has
-// the nanosecond resolution.
-func (r *netTestRun) now() time.Time { return r.start.Add(time.Since(r.start)) }
+// now returns the wall-clock time of the events, see wallNanos.
+func (r *netTestRun) now() time.Time { return time.Unix(0, wallNanos()) }
 
 // runNetTest runs the tool and returns its exit code: it stops the workers, writes the summary file and only then
 // closes the endpoints.
@@ -392,7 +390,7 @@ type netTestListener struct {
 
 func (l *netTestListener) Update(events []any) {
 	r := l.run
-	now := r.now().UnixNano()
+	now := wallNanos()
 	r.warmupStartNs.CompareAndSwap(0, now)
 	var lagSum, withNano int64
 	lags := make([]int64, 0, len(events))
@@ -599,8 +597,8 @@ func (r *netTestRun) publish(number int, instance *netTestInstance, publisher *a
 				}
 			}
 		}
-		// One clock read: the monotonic part for the slip and the elapsed time, the wall-clock part for the events.
-		start := r.now()
+		// The monotonic clock for the slip and the elapsed time, the wall clock for the events.
+		start, wall := time.Now(), wallNanos()
 		if r.schedule != nil {
 			slip := max(start.Sub(due).Nanoseconds(), 0)
 			r.slipLast.Store(slip)
@@ -608,9 +606,9 @@ func (r *netTestRun) publish(number int, instance *netTestInstance, publisher *a
 				current = r.slipMax.Load()
 			}
 		} else {
-			r.warmupStartNs.CompareAndSwap(0, start.UnixNano())
+			r.warmupStartNs.CompareAndSwap(0, wall)
 		}
-		timeMillis, nano := nettest.SplitTime(start.UnixNano())
+		timeMillis, nano := nettest.SplitTime(wall)
 		for j := range batch {
 			index, row := nettest.Choose(random.Next(), len(symbols))
 			packed := nettest.PackTimeSequence(timeMillis, sequence)
