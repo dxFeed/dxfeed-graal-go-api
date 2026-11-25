@@ -5,6 +5,16 @@ Each version lists one item per Jira ticket. Changes merged since the last relea
 
 Versions before v0.4.0 were tagged without the `v` prefix, so Go tools see them only as pseudo-versions.
 
+## v1.1.3
+
+* **\[MDAPI-637]\[GO]** NetTest on Windows reads the event time from `GetSystemTimePreciseAsFileTime`, as the C++ and
+  Rust tools do: the start time plus the monotonic time drifted from the system clock by hundreds of microseconds, so
+  the e2e lags against the other APIs were wrong by up to about 1 ms
+* **\[MDAPI-638]\[GO]** Faster publishing: `DXPublisher.Publish` builds the event mappers once and puts a batch with its
+  strings into a few blocks of C memory instead of four allocations per event, so the NetTest producer publishes about
+  1.25M Trade events/s instead of 0.56M on one core; a Quote copies its symbol once on receive. Benchmarks of publishing
+  and receiving run in CI
+
 ## v1.1.2
 
 * **\[MDAPI-636]\[GO]** `tools nettest` listens on an address with connector options, such as `:7400[bindAddr=127.0.0.1]`;
